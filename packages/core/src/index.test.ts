@@ -28,6 +28,27 @@ describe('@adgate/core', () => {
     expect(core.classifyByRules('best vpn for public wifi').method).toBe('rules');
   });
 
+  it('exports the LLM classifier, its fake and the versioned prompt', () => {
+    expect(typeof core.OpenAiCompatibleClassifier).toBe('function');
+    expect(typeof core.FakeLlmClassifier).toBe('function');
+    expect(typeof core.fakeLlmFromFixtures).toBe('function');
+    expect(typeof core.fakeLlmSuccess).toBe('function');
+    expect(typeof core.parseLlmContent).toBe('function');
+    expect(typeof core.computePromptVersion).toBe('function');
+    expect(core.CLASSIFIER_PROMPT.length).toBeGreaterThan(200);
+    expect(core.PROMPT_VERSION).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(core.PROMPT_VERSION).not.toBe(core.RULES_VERSION);
+    expect(core.DEFAULT_LLM_TIMEOUT_MS).toBe(400);
+    expect(core.LLM_FAILURE_REASONS).toEqual([
+      'timeout',
+      'parse',
+      'invalid',
+      'http',
+      'network',
+      'aborted',
+    ]);
+  });
+
   it('re-exports PolicyValidationError from @adgate/schemas', () => {
     expect(core.PolicyValidationError).toBe(schemas.PolicyValidationError);
   });

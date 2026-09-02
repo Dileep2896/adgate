@@ -80,7 +80,7 @@
       ]
     },
     {
-      "id": "S07", "priority": 7, "dependsOn": ["S06"], "passes": false,
+      "id": "S07", "priority": 7, "dependsOn": ["S06"], "passes": true,
       "title": "LLM classifier with timeout and versioned prompt",
       "description": "LlmClassifier interface; OpenAiCompatibleClassifier calling a chat completions endpoint with strict JSON output, 400 ms timeout via AbortController, base URL, key, and model from injected config (not process.env in core). Prompt in one file with a sha256 prompt_version. FakeLlmClassifier for tests.",
       "acceptanceCriteria": [
