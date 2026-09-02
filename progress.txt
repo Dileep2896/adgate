@@ -1,0 +1,13 @@
+# adgate progress log
+# One entry per completed story. Newest at the bottom. Format:
+#
+# ## <YYYY-MM-DD> <story id> <title>
+# Built: one or two lines
+# Decisions: choices the next iteration must respect
+# Gotchas: anything that cost time
+# Ideas: out of scope improvements (do not implement)
+#
+# If blocked: a single line "NEEDS HUMAN: <story id> <reason>" and stop.
+
+## Codebase notes (maintained across iterations, edit in place)
+- (empty; add stable facts here such as "integration tests need DATABASE_URL_TEST")

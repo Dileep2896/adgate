@@ -1,0 +1,428 @@
+{
+  "project": "adgate",
+  "description": "Neutral policy, verification, and mediation gateway for ads inside AI chat and agents. See CLAUDE.md, docs/api.md, docs/policy.md, docs/audit.md, docs/BUILD_GUIDE.md.",
+  "branchName": "ralph/adgate-mvp",
+  "rules": [
+    "One story per iteration. Lowest priority number first, dependencies must all pass.",
+    "Tests first. All acceptance criteria are required, none are optional.",
+    "Never change the meaning of docs/api.md, docs/policy.md, docs/audit.md.",
+    "Fail closed. Postgres only. Ads never inside model output. Paid users never see ads by default."
+  ],
+  "stories": [
+    {
+      "id": "S01", "priority": 1, "dependsOn": [], "passes": false,
+      "title": "Monorepo scaffold",
+      "description": "pnpm workspaces + Turborepo, TypeScript strict, ESM, shared tsconfig.base.json, Vitest at root with per-package projects, ESLint + Prettier minimal config. Packages: schemas, core, gateway, sdk, each with src/index.ts and one passing smoke test.",
+      "acceptanceCriteria": [
+        "pnpm install, pnpm test, pnpm typecheck, pnpm lint all succeed from a clean clone",
+        "Root scripts exist: dev, test, typecheck, lint, db:migrate (db:migrate may be a placeholder that prints a message until S16)",
+        "Each of packages/schemas, packages/core, packages/gateway, packages/sdk has package.json, tsconfig.json, src/index.ts, and one *.test.ts that passes",
+        "turbo.json defines pipelines for build, test, typecheck, lint",
+        ".gitignore covers node_modules, dist, .env, .ralph/logs/*.log, coverage"
+      ]
+    },
+    {
+      "id": "S02", "priority": 2, "dependsOn": ["S01"], "passes": false,
+      "title": "Local infra, CI, license, README",
+      "description": "docker-compose.yml with Postgres 16 (healthcheck, volume, POSTGRES_DB adgate and adgate_test created via init script), .env.example, GitHub Actions workflow running install, typecheck, lint, test with a Postgres service, Apache 2.0 LICENSE text, README describing what adgate is and is not.",
+      "acceptanceCriteria": [
+        "docker compose up -d postgres starts a healthy Postgres with databases adgate and adgate_test",
+        ".env.example lists every env var the gateway will need with comments (DATABASE_URL, DATABASE_URL_TEST, ADGATE_SIGNING_KEY_PEM, ADGATE_SIGNING_KEY_ID, CLASSIFIER_BASE_URL, CLASSIFIER_API_KEY, CLASSIFIER_MODEL, ADMIN_PASSWORD, PORT)",
+        ".github/workflows/ci.yml runs on push and PR and passes on this commit",
+        "LICENSE contains the full Apache License 2.0 text",
+        "README.md has sections: What adgate is, What it is not, Quickstart (placeholder steps allowed until S39), Repo layout"
+      ]
+    },
+    {
+      "id": "S03", "priority": 3, "dependsOn": ["S01"], "passes": false,
+      "title": "Zod schemas for the API contract",
+      "description": "In packages/schemas: EvaluateRequest, EvaluateResponse, Classification, Creative, SuppressReason, AttestRequest, EventRequest, VerifyResponse exactly as in docs/api.md. Export TS types via z.infer and a toJsonSchema() helper that emits JSON Schema for every schema (for the Python SDK).",
+      "acceptanceCriteria": [
+        "Every JSON example in docs/api.md parses successfully with the matching schema",
+        "SuppressReason accepts only the listed reasons; sensitive_category:<name> is validated against the sensitive taxonomy in fixtures/classify-fixtures.json",
+        "EvaluateRequest rejects when both messages and context_summary are absent",
+        "toJsonSchema() writes packages/schemas/json/*.schema.json and a test asserts they are up to date",
+        "No hand-written TS types duplicate a schema"
+      ]
+    },
+    {
+      "id": "S04", "priority": 4, "dependsOn": ["S03"], "passes": false,
+      "title": "PolicyConfig schema, YAML loader, policy hash",
+      "description": "PolicyConfig schema with defaults from docs/policy.md, loadPolicyFromYaml(yaml) returning { policy, policy_hash }, canonical JSON helper in packages/core/src/canonical, mergeOverrides(policy, overrides) that only tightens and reports rejected keys.",
+      "acceptanceCriteria": [
+        "examples/policy.example.yaml loads and equals the defaulted policy",
+        "Unknown keys rejected; self_harm cannot be removed from blocked_categories; non-free tiers without allow_paid_tiers rejected",
+        "policy_hash is identical for two YAML documents with different key order and whitespace",
+        "mergeOverrides ignores loosening changes and returns them in rejected[]; tightening changes apply",
+        "Canonical JSON: sorted keys at every depth, no whitespace, tested against a fixture with nested objects and arrays"
+      ]
+    },
+    {
+      "id": "S05", "priority": 5, "dependsOn": ["S04"], "passes": false,
+      "title": "Policy engine",
+      "description": "packages/core/src/policy/evaluatePolicy({ classification, user, policy, capState, surface }) returning { allowed, reason, decisions[] } with the exact rule order from docs/policy.md. Pure function, no I/O.",
+      "acceptanceCriteria": [
+        "Rules run in documented order; first failure sets reason; every rule still appends a decision entry",
+        "Tests: paid user suppressed; region blocked; health suppressed even with intent 0.95; low confidence; low intent; each frequency cap at boundary (equal to cap is allowed only if strictly below)",
+        "competitor_exclusions recorded as pending",
+        "policy package has zero imports from gateway or any I/O library"
+      ]
+    },
+    {
+      "id": "S06", "priority": 6, "dependsOn": ["S03"], "passes": false,
+      "title": "Rules classifier",
+      "description": "packages/core/src/classify/rules: keyword and regex lists per sensitive category and per commercial category family from fixtures/classify-fixtures.json taxonomy. Returns a preliminary Classification with method rules. self_harm always sensitive.",
+      "acceptanceCriteria": [
+        "Every sensitive case in fixtures/classify-fixtures.json is flagged with the expected category by rules alone (zero false negatives)",
+        "No low-intent case (ids starting with l) is flagged sensitive",
+        "Keyword lists live in data files, one per category, easy to extend",
+        "Normalization handles case, punctuation, and common typos listed in a small alias file"
+      ]
+    },
+    {
+      "id": "S07", "priority": 7, "dependsOn": ["S06"], "passes": false,
+      "title": "LLM classifier with timeout and versioned prompt",
+      "description": "LlmClassifier interface; OpenAiCompatibleClassifier calling a chat completions endpoint with strict JSON output, 400 ms timeout via AbortController, base URL, key, and model from injected config (not process.env in core). Prompt in one file with a sha256 prompt_version. FakeLlmClassifier for tests.",
+      "acceptanceCriteria": [
+        "Timeout returns { ok: false, reason: timeout } without throwing",
+        "Malformed JSON from the model returns { ok: false, reason: parse }",
+        "prompt_version changes when the prompt file changes (test computes it)",
+        "No network calls in tests; fake used everywhere"
+      ]
+    },
+    {
+      "id": "S08", "priority": 8, "dependsOn": ["S07"], "passes": false,
+      "title": "classify() orchestrator with cache and merge",
+      "description": "classify(messages, deps) runs rules; if a sensitive category matched with high confidence, return immediately. Otherwise LLM, then merge (LLM wins on categories and intent, sensitive is the union, confidence = LLM confidence unless rules fired then min). In-memory LRU keyed by sha256(normalized text + prompt_version), 10 minute TTL, 50k max. Falls back to rules-only on LLM failure.",
+      "acceptanceCriteria": [
+        "Full fixture test: sensitive precision 100 percent, serve cases within intent bounds and categories_any satisfied, low cases under intent_max, using the fake LLM seeded from the fixtures",
+        "Cache hit returns method cached and skips the LLM",
+        "LLM failure path returns method rules with confidence from rules",
+        "classify never throws; a thrown error inside is converted to a rules-only result"
+      ]
+    },
+    {
+      "id": "S09", "priority": 9, "dependsOn": ["S03"], "passes": false,
+      "title": "DemandAdapter interface and DirectAdapter",
+      "description": "packages/core/src/demand: DemandAdapter, DemandRequest, DemandResponse, Candidate types. DirectAdapter takes an in-memory creative catalog and matches by category overlap (supports trailing wildcard like software.devtools.*) and keyword overlap; returns top 3 with ecpm_estimate and targeting_match in [0,1].",
+      "acceptanceCriteria": [
+        "examples/creatives.seed.json loads into DirectAdapter and the c001 fixture text yields the database creative first",
+        "Region filtering respects target_regions and the EU token",
+        "Inactive creatives never returned",
+        "Deterministic ordering on ties (by creative id)"
+      ]
+    },
+    {
+      "id": "S10", "priority": 10, "dependsOn": ["S09"], "passes": false,
+      "title": "AffiliateAdapter link builders",
+      "description": "Template based builders for partnerstack, impact, and amazon (Associates tag). Catalog entries carry url_template with {{program_id}} and {{tag}} placeholders filled from app-level affiliate config supplied by the caller. No network calls.",
+      "acceptanceCriteria": [
+        "Each network builds a correctly encoded URL from a template and config, tested",
+        "Missing affiliate config for a network yields zero candidates and a trace error, never a throw",
+        "Code comments state clearly that the app owner brings their own affiliate accounts"
+      ]
+    },
+    {
+      "id": "S11", "priority": 11, "dependsOn": ["S09", "S10"], "passes": false,
+      "title": "mediate() across adapters",
+      "description": "mediate(adapters, req, policy, { timeoutMs }) runs enabled adapters in parallel with Promise.allSettled and per-adapter timeout, filters competitor_exclusions by advertiser_domain, ranks by ecpm_estimate * targeting_match, returns { selected, trace } matching the demand block in docs/audit.md.",
+      "acceptanceCriteria": [
+        "A slow adapter does not delay a fast one beyond the timeout (fake timers)",
+        "Excluded advertisers appear in trace.excluded and are never selected",
+        "All adapters failing returns selected null and no throw",
+        "trace.responses has one entry per requested adapter with latency_ms"
+      ]
+    },
+    {
+      "id": "S12", "priority": 12, "dependsOn": ["S11"], "passes": false,
+      "title": "Koah and Gravity adapter stubs",
+      "description": "KoahAdapter and GravityAdapter implement DemandAdapter, accept config objects, and return a trace error NotConfigured unless enabled with credentials. Leave a documented TODO describing the expected request shape and a link placeholder for partner docs.",
+      "acceptanceCriteria": [
+        "Both adapters compile, are exported, and return { candidates: [], error: 'not_configured' } when disabled",
+        "mediate() with a disabled stub still returns results from other adapters",
+        "docs/decisions.md item 10 is referenced in the file header"
+      ]
+    },
+    {
+      "id": "S13", "priority": 13, "dependsOn": ["S04"], "passes": false,
+      "title": "Hashing and Ed25519 signing utilities",
+      "description": "packages/core/src/audit/crypto: sha256Hex(string), generateKeypair() returning PEM strings and a key_id, sign(hashHex, privatePem) returning ed25519:base64, verifySignature(hashHex, signature, publicPem). Uses node:crypto only.",
+      "acceptanceCriteria": [
+        "Round trip sign/verify passes; tampered hash fails",
+        "Signature format is exactly 'ed25519:' followed by base64",
+        "Works with keys loaded from PEM strings (as they will come from env)"
+      ]
+    },
+    {
+      "id": "S14", "priority": 14, "dependsOn": ["S13", "S05", "S11"], "passes": false,
+      "title": "buildAuditRecord and hash chain",
+      "description": "buildAuditRecord(input) assembles an AuditRecord per docs/audit.md from classification, policy result, mediation trace, selected creative, disclosure, app metadata, prev_hash. Computes record_hash over canonical JSON without record_hash and signature, plus prev_hash; signs it.",
+      "acceptanceCriteria": [
+        "The example in docs/audit.md validates against the AuditRecord schema",
+        "conversation_id_hash = sha256(salt + conversation_id) and raw ids never appear in the record",
+        "Suppress decisions produce a record with creative null and demand.requested empty",
+        "Two records built in sequence chain correctly (second.prev_hash equals first.record_hash); first uses 'genesis'"
+      ]
+    },
+    {
+      "id": "S15", "priority": 15, "dependsOn": ["S14"], "passes": false,
+      "title": "attest() and verify()",
+      "description": "attest(record, model_output_hash, now) returns a new signed record with separation_attestation true and supersedes_hash set. verify(record, publicKeys, { prevRecord, storedCreativeHash, supersededRecord }) returns { valid, checks[] } in the documented order.",
+      "acceptanceCriteria": [
+        "Tampering with any of: classification, creative.content_hash, disclosure.label, prev_hash, signature causes the correctly named check to fail",
+        "Rotation scenario with two key ids verifies both old and new records",
+        "Attested record verifies and its superseded record still verifies",
+        "verify never throws on malformed input; schema check fails instead"
+      ]
+    },
+    {
+      "id": "S16", "priority": 16, "dependsOn": ["S02", "S03"], "passes": false,
+      "title": "Gateway skeleton, config, Drizzle schema, migrations",
+      "description": "Hono app in packages/gateway with a Zod validated config module reading env, pino logger with request ids, GET /healthz, Drizzle schema for apps, api_keys, advertisers, creatives, audit_records, events, cap_state, classify_cache, raw_text (only used when store_raw_text), and drizzle-kit migrations. pnpm db:migrate runs them.",
+      "acceptanceCriteria": [
+        "pnpm db:migrate creates all tables on the docker Postgres",
+        "Indexes: audit_records(app_id, ts), events(audit_id), cap_state primary key (app_id, conversation_hash), classify_cache(expires_at)",
+        "GET /healthz returns { ok: true } in an integration test against the test database",
+        "Config validation fails fast with a readable error when an env var is missing"
+      ]
+    },
+    {
+      "id": "S17", "priority": 17, "dependsOn": ["S16"], "passes": false,
+      "title": "API keys, auth middleware, app and creative seeding",
+      "description": "argon2 hashed API keys with roles app and advertiser_read, constant time compare, bearer auth middleware that attaches app context, and scripts: create-app (prints the key once), seed-creatives (loads examples/creatives.seed.json).",
+      "acceptanceCriteria": [
+        "Requests without a valid key get 401 with the documented error body",
+        "Revoked keys are rejected",
+        "advertiser_read keys cannot call evaluate (403)",
+        "Seed script is idempotent"
+      ]
+    },
+    {
+      "id": "S18", "priority": 18, "dependsOn": ["S17", "S08", "S15"], "passes": false,
+      "title": "POST /v1/evaluate end to end",
+      "description": "Wire policy load + validated overrides, cap_state read, classify with Postgres cache in front of the LRU, evaluatePolicy, mediate with DirectAdapter (creatives from DB) and AffiliateAdapter, buildAuditRecord chained to the app's last record, persist, cap_state upsert, respond. Whole handler wrapped so any error returns HTTP 200 with decision suppress and reason error, logged with request id. Messages truncated to last 4 and 4,000 chars before classification.",
+      "acceptanceCriteria": [
+        "Integration tests: serve path returns a creative and audit_id; paid user, sensitive, low intent, frequency cap, no_fill, and region paths each return the exact documented reason",
+        "A simulated DB failure during audit persistence returns decision suppress reason error with status 200",
+        "Overrides that loosen policy are ignored and appear in the audit record as override_rejected",
+        "Second call in the same conversation is suppressed by frequency_cap per_session 1",
+        "Raw message text is not present in any table unless store_raw_text is true (test queries the DB)"
+      ]
+    },
+    {
+      "id": "S19", "priority": 19, "dependsOn": ["S18"], "passes": false,
+      "title": "Attest, events, click redirect",
+      "description": "POST /v1/attest, POST /v1/events (duplicate impressions ignored), GET /c/:audit_id logging a click and redirecting to the resolved destination (affiliate placeholders filled at this point).",
+      "acceptanceCriteria": [
+        "Attest creates a new audit record that verifies and supersedes the original",
+        "Second impression event for the same audit_id is a no-op",
+        "Click redirect returns 302 with the correct Location and writes a click event; unknown audit id returns 404",
+        "Events for an audit_id belonging to another app are rejected with 403"
+      ]
+    },
+    {
+      "id": "S20", "priority": 20, "dependsOn": ["S19"], "passes": false,
+      "title": "Audit read and verify endpoints",
+      "description": "GET /v1/audit/:id and GET /v1/verify/:id with app and advertiser_read authorization. verify loads prev record, stored creative hash, and superseded record as needed.",
+      "acceptanceCriteria": [
+        "A record tampered directly via SQL fails verify with the right check name",
+        "advertiser_read key can verify only records referencing its creatives",
+        "verify on a suppress record passes with separation_attested reported as not applicable"
+      ]
+    },
+    {
+      "id": "S21", "priority": 21, "dependsOn": ["S20"], "passes": false,
+      "title": "Rate limiting, OpenAPI, load script",
+      "description": "Token bucket per API key stored in Postgres behind a RateLimiter interface; 429 with Retry-After. /openapi.json generated from the Zod schemas. packages/gateway/scripts/load.ts drives evaluate with examples/evaluate.json and prints p50/p95.",
+      "acceptanceCriteria": [
+        "Rate limit trips in an integration test and resets after the window",
+        "openapi.json validates with an OpenAPI validator in a test",
+        "Load script runs against the local gateway and prints latency percentiles; docs/performance.md records the numbers from one run"
+      ]
+    },
+    {
+      "id": "S22", "priority": 22, "dependsOn": ["S03"], "passes": false,
+      "title": "@adgate/sdk core client",
+      "description": "createClient({ apiKey, baseUrl, timeoutMs }) with evaluate (never rejects; resolves to suppress with reason error on any failure), attest(auditId, modelOutputText) hashing locally with SubtleCrypto or node:crypto, track(auditId, type). tsup build to ESM and CJS with types. Works in Node 20 and browsers.",
+      "acceptanceCriteria": [
+        "Network error, timeout, and non-JSON response all resolve to a suppress decision",
+        "attest sends only the sha256 hash, tested by inspecting the request body",
+        "Build outputs dist/index.js, dist/index.cjs, dist/index.d.ts and the core entry is under 15 kB gzipped (test asserts size)"
+      ]
+    },
+    {
+      "id": "S23", "priority": 23, "dependsOn": ["S22"], "passes": false,
+      "title": "withGeneration and forStream helpers",
+      "description": "withGeneration(req, generate) runs evaluate in parallel with the caller's generate() and attests with the final text, returning { answer, decision }. forStream(req) returns { decisionPromise, onChunk, finish } accumulating a hash and attesting on finish.",
+      "acceptanceCriteria": [
+        "Both helpers call attest exactly once with the correct hash of the full text",
+        "If evaluate fails, the answer is still returned and decision is suppress",
+        "If generate throws, the error propagates and no attest is sent"
+      ]
+    },
+    {
+      "id": "S24", "priority": 24, "dependsOn": ["S22"], "passes": false,
+      "title": "React SponsoredSlot component",
+      "description": "@adgate/sdk/react exports SponsoredSlot({ decision, client, onDismiss }). Renders nothing on suppress. On serve: separate block, label from disclosure_label, headline, body, CTA link with rel sponsored noopener, aria-label Sponsored content, dismiss button firing a dismiss event, impression event once on viewport entry (IntersectionObserver, SSR safe). Refuses to render inside an ancestor with data-adgate-message=assistant and logs a warning.",
+      "acceptanceCriteria": [
+        "Testing Library tests for suppress, serve, dismiss, single impression, and the separation guard",
+        "No inline styles beyond a minimal default; accepts className",
+        "Component has no dependency on Next.js"
+      ]
+    },
+    {
+      "id": "S25", "priority": 25, "dependsOn": ["S23"], "passes": false,
+      "title": "Vercel AI SDK middleware",
+      "description": "@adgate/sdk/ai exports adgateMiddleware(client, { getUser, appId }) usable with wrapLanguageModel: runs evaluate on the latest user message in parallel with generation, attaches the decision to providerMetadata, attests with the final text (streaming and non streaming).",
+      "acceptanceCriteria": [
+        "Works with a fake language model in tests for both generate and stream paths",
+        "Decision is available to the caller without changing the model output text",
+        "Middleware never throws even when evaluate fails"
+      ]
+    },
+    {
+      "id": "S26", "priority": 26, "dependsOn": ["S03"], "passes": false,
+      "title": "Python SDK",
+      "description": "packages/sdk-python: package adgate (pyproject, hatchling, Python 3.10+). Pydantic v2 models generated from packages/schemas/json by a script and checked in. Sync and async clients (httpx) with evaluate (never raises), attest, track, and async with_generation. pytest with respx.",
+      "acceptanceCriteria": [
+        "Generated models round trip every example in docs/api.md",
+        "evaluate returns a suppress decision on connection error, timeout, and malformed JSON",
+        "pip install -e . and pytest pass in CI (add a python job)",
+        "Regeneration script fails CI if models are stale"
+      ]
+    },
+    {
+      "id": "S27", "priority": 27, "dependsOn": ["S24", "S25", "S21"], "passes": false,
+      "title": "examples/nextjs-chat",
+      "description": "Minimal Next.js chat using the Vercel AI SDK against an OpenAI compatible endpoint, wired with adgateMiddleware and SponsoredSlot, a free/paid toggle to show paid suppression, and a README with 5 minute setup against the local gateway.",
+      "acceptanceCriteria": [
+        "pnpm --filter nextjs-chat dev runs and a devtools question shows a labeled sponsored block after the answer",
+        "Toggling paid results in no slot and the audit record shows reason paid_user",
+        "The slot is rendered outside the assistant message container"
+      ]
+    },
+    {
+      "id": "S28", "priority": 28, "dependsOn": ["S26", "S21"], "passes": false,
+      "title": "examples/fastapi-chat",
+      "description": "FastAPI app streaming answers with SSE and emitting a separate 'sponsored' SSE event after the answer using the Python SDK; tiny HTML page that renders the slot below the message.",
+      "acceptanceCriteria": [
+        "uvicorn runs; a devtools question yields an answer stream then one sponsored event",
+        "Sensitive question yields no sponsored event and the audit record shows the sensitive reason"
+      ]
+    },
+    {
+      "id": "S29", "priority": 29, "dependsOn": ["S27", "S28"], "passes": false,
+      "title": "docs/integration.md",
+      "description": "Integration guide for three shapes: web chat UI, agent framework loop (evaluate on the user goal at task start, render the slot only in the final report), coding agent CLI (one labeled line after the final answer, never inside code blocks). Copy paste snippets for TS and Python.",
+      "acceptanceCriteria": [
+        "Every snippet compiles or runs against the current SDKs (add a docs test that type checks TS snippets)",
+        "Guide states the disclosure and separation rules explicitly for each shape"
+      ]
+    },
+    {
+      "id": "S30", "priority": 30, "dependsOn": ["S21"], "passes": false,
+      "title": "Dashboard scaffold",
+      "description": "packages/dashboard: Next.js App Router + Tailwind, single admin password from env with a cookie session, read only Drizzle queries module, layout with nav for apps, creatives, audit, reports.",
+      "acceptanceCriteria": [
+        "pnpm dev serves the dashboard on :3000 with login",
+        "Unauthenticated requests redirect to login",
+        "Playwright smoke test logs in and sees the nav"
+      ]
+    },
+    {
+      "id": "S31", "priority": 31, "dependsOn": ["S30"], "passes": false,
+      "title": "Apps pages: list, create, policy editor",
+      "description": "/apps lists apps; create app generates and shows the API key once; /apps/[id]/policy edits YAML with inline validation errors from loadPolicyFromYaml and shows the policy_hash.",
+      "acceptanceCriteria": [
+        "Invalid YAML shows the schema error message next to the editor and does not save",
+        "Saving bumps policy_version and updates policy_hash",
+        "Key is shown exactly once and never retrievable again"
+      ]
+    },
+    {
+      "id": "S32", "priority": 32, "dependsOn": ["S31"], "passes": false,
+      "title": "App overview metrics",
+      "description": "/apps/[id]: last 30 days of turns evaluated, ad eligible rate, fill rate, impressions, clicks, CTR, estimated revenue (sum of ecpm_estimate per impression / 1000), RPM per 1000 eligible turns, suppress reason breakdown, with recharts. Global /apps header shows YC metrics: apps integrated, total turns, eligible rate, RPM, advertisers with a generated report.",
+      "acceptanceCriteria": [
+        "Metric calculations live in a pure module with unit tests against fixture data (hand computed expected values in the test)",
+        "Charts render with empty data without errors",
+        "Queries use indexes (EXPLAIN in a test is optional, but no full scans on audit_records without app_id and ts)"
+      ]
+    },
+    {
+      "id": "S33", "priority": 33, "dependsOn": ["S30"], "passes": false,
+      "title": "Creatives CRUD",
+      "description": "/creatives: list, create, edit, deactivate direct and affiliate creatives; validation mirrors the DB schema and the Creative schema.",
+      "acceptanceCriteria": [
+        "Creating a creative makes it immediately eligible for DirectAdapter (integration test through evaluate)",
+        "Deactivated creatives disappear from results without deleting audit history"
+      ]
+    },
+    {
+      "id": "S34", "priority": 34, "dependsOn": ["S30"], "passes": false,
+      "title": "Audit search and detail with live verify",
+      "description": "/audit: filter by app, date range, decision, reason; detail page shows the record, the chain neighbors, and runs verify() live listing every check.",
+      "acceptanceCriteria": [
+        "A tampered record (inserted via SQL in a test) is displayed as invalid with the failing check highlighted",
+        "Pagination works past 1,000 records"
+      ]
+    },
+    {
+      "id": "S35", "priority": 35, "dependsOn": ["S32", "S34"], "passes": false,
+      "title": "Verification report generator",
+      "description": "/reports/new: pick advertiser and date range; generate a report with impressions and clicks by app, category distribution, sensitive exposures (must be zero), disclosure compliance percent, separation attestation percent, chain integrity result; downloadable JSON bundle of underlying records and a printable HTML view.",
+      "acceptanceCriteria": [
+        "Report calculations in a pure module with unit tests against a fixture that includes at least one attested, one unattested, and one suppress record",
+        "JSON bundle re-verifies offline using packages/core verify with the public key",
+        "Generating a report increments the advertisers-with-report metric on /apps"
+      ]
+    },
+    {
+      "id": "S36", "priority": 36, "dependsOn": ["S21", "S35"], "passes": false,
+      "title": "Security pass",
+      "description": "Body size limits, message truncation confirmed, CORS allowlist from env, helmet style headers, SQL parameterization review, dependency audit script, SECURITY.md with disclosure policy.",
+      "acceptanceCriteria": [
+        "Requests over the body limit get 413",
+        "CORS blocks origins not in the allowlist in a test",
+        "pnpm audit --prod reports no critical vulnerabilities or documents accepted ones in SECURITY.md"
+      ]
+    },
+    {
+      "id": "S37", "priority": 37, "dependsOn": ["S36"], "passes": false,
+      "title": "Privacy: retention job and docs",
+      "description": "scripts/retention.ts deletes audit records, events, and raw_text older than each app's privacy.retain_days (chain integrity note: deletion is from the oldest end only). docs/privacy.md lists every stored field and its purpose.",
+      "acceptanceCriteria": [
+        "Retention test: records older than retain_days are deleted, newer ones kept, chain verify still passes for kept records when prevRecord is missing due to retention (verify reports chain as 'pruned' not failed)",
+        "A test asserts no table contains raw message text when store_raw_text is false"
+      ]
+    },
+    {
+      "id": "S38", "priority": 38, "dependsOn": ["S36"], "passes": false,
+      "title": "Prometheus metrics",
+      "description": "GET /metrics with counters for decisions by reason, histograms for evaluate latency and per adapter latency, classifier cache hit ratio.",
+      "acceptanceCriteria": [
+        "Metrics endpoint is protected by a separate METRICS_TOKEN env var",
+        "After one serve and one suppress in tests, counters reflect both"
+      ]
+    },
+    {
+      "id": "S39", "priority": 39, "dependsOn": ["S29", "S37", "S38"], "passes": false,
+      "title": "Docs and quickstart",
+      "description": "README 10 minute quickstart (docker compose up, migrate, create app, seed creatives, run example), CONTRIBUTING.md, regenerate docs/api-reference.md from openapi.json (docs/api.md stays the human written contract and is not modified).",
+      "acceptanceCriteria": [
+        "A fresh clone following README reaches a served sponsored slot in the nextjs example",
+        "docs/api-reference.md is generated by a script and a test checks it is current"
+      ]
+    },
+    {
+      "id": "S40", "priority": 40, "dependsOn": ["S39", "S26"], "passes": false,
+      "title": "Release pipeline",
+      "description": "Changesets for versioning; GitHub Actions publish @adgate/sdk and @adgate/schemas to npm and adgate to PyPI on tag; Dockerfile for the gateway published to GHCR; tag v0.1.0 instructions in CONTRIBUTING.md.",
+      "acceptanceCriteria": [
+        "Dry run publish jobs succeed in CI (use --dry-run flags; real publish requires secrets the human adds)",
+        "Docker image builds and /healthz responds when run with docker",
+        "CHANGELOG.md generated by changesets exists"
+      ]
+    }
+  ]
+}

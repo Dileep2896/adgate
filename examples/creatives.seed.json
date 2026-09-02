@@ -1,0 +1,44 @@
+[
+  {
+    "advertiser": "Example DB Cloud",
+    "advertiser_domain": "exampledb.dev",
+    "headline": "Managed Postgres with a free tier",
+    "body": "Spin up a database in 30 seconds. No credit card.",
+    "cta": "Try it free",
+    "url_template": "https://exampledb.dev/?ref=adgate",
+    "target_categories": ["software.devtools.database"],
+    "target_regions": ["US", "CA", "GB", "EU"],
+    "keywords": ["postgres", "database", "hosting", "supabase", "neon"],
+    "ecpm": 12,
+    "source": "direct",
+    "active": true
+  },
+  {
+    "advertiser": "Example Deploy",
+    "advertiser_domain": "exampledeploy.dev",
+    "headline": "Deploy your side project in one command",
+    "body": "Free hobby tier, custom domains, zero config.",
+    "cta": "Deploy now",
+    "url_template": "https://exampledeploy.dev/?ref=adgate",
+    "target_categories": ["software.devtools.hosting", "software.devtools.*"],
+    "target_regions": ["US", "CA", "GB", "EU"],
+    "keywords": ["deploy", "hosting", "vercel", "render", "fly"],
+    "ecpm": 9,
+    "source": "direct",
+    "active": true
+  },
+  {
+    "advertiser": "Example Language App",
+    "advertiser_domain": "examplelang.app",
+    "headline": "Learn Spanish in 10 minutes a day",
+    "body": "Free for the first month.",
+    "cta": "Start learning",
+    "url_template": "https://partner.example/track?pid={{program_id}}&u=https://examplelang.app",
+    "target_categories": ["education.language"],
+    "target_regions": ["US", "CA", "GB", "EU"],
+    "keywords": ["learn spanish", "language app", "duolingo"],
+    "ecpm": 6,
+    "source": "affiliate",
+    "active": true
+  }
+]

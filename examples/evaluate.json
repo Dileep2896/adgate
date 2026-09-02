@@ -1,0 +1,10 @@
+{
+  "app_id": "app_example",
+  "conversation_id": "conv_demo_1",
+  "turn_id": "turn_1",
+  "user": { "tier": "free", "region": "US", "locale": "en-US" },
+  "messages": [
+    { "role": "user", "content": "which postgres hosting should I use for a side project with a free tier" }
+  ],
+  "surface": { "type": "chat", "placement": "after_answer", "max_creatives": 1 }
+}

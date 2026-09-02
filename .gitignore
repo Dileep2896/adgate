@@ -1,0 +1,16 @@
+node_modules
+dist
+.next
+coverage
+.env
+.env.*
+!.env.example
+.ralph/logs/*.log
+.turbo
+__pycache__
+*.egg-info
+.venv
+.claude/settings.local.json
+
+# original starter archive, not part of the repo
+adgate-starter.zip
