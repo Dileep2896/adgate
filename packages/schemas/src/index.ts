@@ -8,6 +8,7 @@ export * from './evaluate.js';
 export * from './events.js';
 export * from './json-schema.js';
 export * from './policy.js';
+export * from './policy-decision.js';
 export * from './policy-loader.js';
 export * from './policy-overrides.js';
 export * from './policy-parts.js';

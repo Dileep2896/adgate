@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Frequency-cap counters the gateway reads before evaluating policy. The policy engine is pure and receives them as input.",
+  "properties": {
+    "session_count": {
+      "description": "Ads already served in this conversation.",
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "day_count": {
+      "description": "Ads already served to this user today. Only meaningful when user.user_hash is present.",
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "turns_since_last": {
+      "anyOf": [
+        {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Turns since the last ad in this conversation, or null when no ad has been served yet."
+    }
+  },
+  "required": [
+    "session_count",
+    "day_count",
+    "turns_since_last"
+  ],
+  "title": "CapState",
+  "type": "object"
+}

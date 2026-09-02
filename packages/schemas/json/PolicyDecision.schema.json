@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "One entry of an audit record policy_decisions list: the outcome of one rule. Every rule records an entry, pass or fail.",
+  "properties": {
+    "rule": {
+      "description": "A docs/policy.md rule name, listed in the order the rules run.",
+      "enum": [
+        "serve_to_tiers",
+        "regions",
+        "blocked_categories",
+        "min_confidence",
+        "min_commercial_intent",
+        "frequency_caps",
+        "competitor_exclusions"
+      ],
+      "title": "PolicyRule",
+      "type": "string"
+    },
+    "result": {
+      "description": "pass or fail for rules resolved by the policy engine; pending for competitor_exclusions, which is resolved during creative selection.",
+      "enum": [
+        "pass",
+        "fail",
+        "pending"
+      ],
+      "title": "PolicyDecisionResult",
+      "type": "string"
+    },
+    "detail": {
+      "description": "Human-readable context, e.g. session=0/1 day=1/3 turns_since=9. Never contains message text.",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "rule",
+    "result"
+  ],
+  "title": "PolicyDecision",
+  "type": "object"
+}

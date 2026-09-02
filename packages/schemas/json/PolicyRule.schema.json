@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A docs/policy.md rule name, listed in the order the rules run.",
+  "enum": [
+    "serve_to_tiers",
+    "regions",
+    "blocked_categories",
+    "min_confidence",
+    "min_commercial_intent",
+    "frequency_caps",
+    "competitor_exclusions"
+  ],
+  "title": "PolicyRule",
+  "type": "string"
+}

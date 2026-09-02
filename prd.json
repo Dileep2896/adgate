@@ -58,7 +58,7 @@
       ]
     },
     {
-      "id": "S05", "priority": 5, "dependsOn": ["S04"], "passes": false,
+      "id": "S05", "priority": 5, "dependsOn": ["S04"], "passes": true,
       "title": "Policy engine",
       "description": "packages/core/src/policy/evaluatePolicy({ classification, user, policy, capState, surface }) returning { allowed, reason, decisions[] } with the exact rule order from docs/policy.md. Pure function, no I/O.",
       "acceptanceCriteria": [
