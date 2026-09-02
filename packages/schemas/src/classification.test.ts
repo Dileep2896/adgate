@@ -31,8 +31,9 @@ describe('Classification', () => {
     expect(Classification.safeParse({ ...valid, sensitive: [] }).success).toBe(true);
   });
 
-  it('accepts only llm or rules as method and requires prompt_version', () => {
+  it('accepts only llm, rules or cached as method and requires prompt_version', () => {
     expect(Classification.safeParse({ ...valid, method: 'llm' }).success).toBe(true);
+    expect(Classification.safeParse({ ...valid, method: 'cached' }).success).toBe(true);
     expect(Classification.safeParse({ ...valid, method: 'magic' }).success).toBe(false);
     expect(Classification.safeParse({ ...valid, prompt_version: '' }).success).toBe(false);
   });

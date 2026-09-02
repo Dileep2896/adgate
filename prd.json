@@ -91,7 +91,7 @@
       ]
     },
     {
-      "id": "S08", "priority": 8, "dependsOn": ["S07"], "passes": false,
+      "id": "S08", "priority": 8, "dependsOn": ["S07"], "passes": true,
       "title": "classify() orchestrator with cache and merge",
       "description": "classify(messages, deps) runs rules; if a sensitive category matched with high confidence, return immediately. Otherwise LLM, then merge (LLM wins on categories and intent, sensitive is the union, confidence = LLM confidence unless rules fired then min). In-memory LRU keyed by sha256(normalized text + prompt_version), 10 minute TTL, 50k max. Falls back to rules-only on LLM failure.",
       "acceptanceCriteria": [

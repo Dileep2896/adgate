@@ -4,6 +4,7 @@
  */
 export * from './canonical/canonicalize.js';
 export * from './canonical/sha256.js';
+export * from './classify/index.js';
 export * from './classify/llm/index.js';
 export * from './classify/rules/index.js';
 export * from './policy/eu-members.js';

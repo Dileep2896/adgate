@@ -65,10 +65,11 @@
       "type": "number"
     },
     "method": {
-      "description": "llm when the LLM classifier answered in time, rules when only the rule stage ran.",
+      "description": "llm when the LLM classifier answered in time, rules when only the rule stage ran, cached when a recent classification of the same text was reused.",
       "enum": [
         "llm",
-        "rules"
+        "rules",
+        "cached"
       ],
       "title": "ClassificationMethod",
       "type": "string"

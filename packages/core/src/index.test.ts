@@ -49,6 +49,18 @@ describe('@adgate/core', () => {
     ]);
   });
 
+  it('exports the classify orchestrator, its cache and text preparation', () => {
+    expect(typeof core.classify).toBe('function');
+    expect(typeof core.prepareText).toBe('function');
+    expect(typeof core.createLruCache).toBe('function');
+    expect(typeof core.classifyCacheKey).toBe('function');
+    expect(typeof core.mergeClassifications).toBe('function');
+    expect(typeof core.failClosedClassification).toBe('function');
+    expect(core.DEFAULT_PREPARE_OPTIONS).toEqual({ maxMessages: 4, maxChars: 4000 });
+    expect(core.DEFAULT_CACHE_MAX_ENTRIES).toBe(50_000);
+    expect(core.DEFAULT_CACHE_TTL_MS).toBe(600_000);
+  });
+
   it('re-exports PolicyValidationError from @adgate/schemas', () => {
     expect(core.PolicyValidationError).toBe(schemas.PolicyValidationError);
   });

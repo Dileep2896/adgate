@@ -4,9 +4,10 @@ import { ContentCategory, SensitiveCategory } from './taxonomy.js';
 
 const UnitInterval = z.number().min(0).max(1);
 
-export const ClassificationMethod = z.enum(['llm', 'rules']).meta({
+export const ClassificationMethod = z.enum(['llm', 'rules', 'cached']).meta({
   title: 'ClassificationMethod',
-  description: 'llm when the LLM classifier answered in time, rules when only the rule stage ran.',
+  description:
+    'llm when the LLM classifier answered in time, rules when only the rule stage ran, cached when a recent classification of the same text was reused.',
 });
 export type ClassificationMethod = z.infer<typeof ClassificationMethod>;
 
