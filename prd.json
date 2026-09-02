@@ -22,7 +22,7 @@
       ]
     },
     {
-      "id": "S02", "priority": 2, "dependsOn": ["S01"], "passes": false,
+      "id": "S02", "priority": 2, "dependsOn": ["S01"], "passes": true,
       "title": "Local infra, CI, license, README",
       "description": "docker-compose.yml with Postgres 16 (healthcheck, volume, POSTGRES_DB adgate and adgate_test created via init script), .env.example, GitHub Actions workflow running install, typecheck, lint, test with a Postgres service, Apache 2.0 LICENSE text, README describing what adgate is and is not.",
       "acceptanceCriteria": [

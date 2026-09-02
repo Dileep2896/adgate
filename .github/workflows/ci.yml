@@ -1,0 +1,81 @@
+# adgate continuous integration.
+#
+# Runs on every push and pull request: install (frozen lockfile), typecheck, lint, test.
+# A Postgres 16 service container backs the integration tests that later stories add,
+# exposed to the job through DATABASE_URL and DATABASE_URL_TEST on port 5432.
+# Local dev may publish Postgres on another host port (PGPORT_HOST in .env.example);
+# CI always uses 5432.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: install, typecheck, lint, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: adgate
+          POSTGRES_PASSWORD: adgate
+          POSTGRES_DB: adgate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U adgate"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://adgate:adgate@localhost:5432/adgate
+      DATABASE_URL_TEST: postgres://adgate:adgate@localhost:5432/adgate_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        # No explicit version on purpose: pnpm/action-setup reads the exact version from the
+        # "packageManager" field in package.json (pnpm@9.15.9), so the two can never drift.
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create adgate_test database
+        # Service containers cannot mount scripts/db/init.sql, so the test database is created
+        # here with the psql client that ships on ubuntu-latest. Idempotent: a re-run is a no-op.
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT 'CREATE DATABASE adgate_test'
+          WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'adgate_test')\gexec
+          SQL
+          psql "$DATABASE_URL_TEST" -v ON_ERROR_STOP=1 -tAc 'SELECT current_database()'
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
