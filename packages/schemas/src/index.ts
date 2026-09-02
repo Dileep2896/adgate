@@ -4,6 +4,7 @@
 export * from './classification.js';
 export * from './common.js';
 export * from './creative.js';
+export * from './demand.js';
 export * from './evaluate.js';
 export * from './events.js';
 export * from './json-schema.js';

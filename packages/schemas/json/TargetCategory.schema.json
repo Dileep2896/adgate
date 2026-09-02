@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A content category such as software.devtools.database, or a trailing-wildcard pattern such as software.devtools.* that matches every deeper category.",
+  "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.\\*)?$",
+  "title": "TargetCategory",
+  "type": "string"
+}

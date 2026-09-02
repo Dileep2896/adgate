@@ -19,6 +19,14 @@ import {
   User,
 } from './common.js';
 import { Creative, DemandSource } from './creative.js';
+import {
+  Candidate,
+  CatalogCreative,
+  DemandRequest,
+  DemandResponse,
+  SeedCreative,
+  TargetCategory,
+} from './demand.js';
 import { Decision, EvaluateRequest, EvaluateResponse } from './evaluate.js';
 import { AttestRequest, EventRequest, EventType } from './events.js';
 import { PolicyConfig } from './policy.js';
@@ -39,6 +47,12 @@ export const CONTRACT_SCHEMAS = {
   CapState,
   Classification,
   Creative,
+  CatalogCreative,
+  SeedCreative,
+  TargetCategory,
+  DemandRequest,
+  DemandResponse,
+  Candidate,
   SuppressReason,
   AttestRequest,
   EventRequest,

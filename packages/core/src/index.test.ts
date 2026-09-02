@@ -61,6 +61,22 @@ describe('@adgate/core', () => {
     expect(core.DEFAULT_CACHE_TTL_MS).toBe(600_000);
   });
 
+  it('exports the demand adapter surface and the ULID helpers', () => {
+    expect(typeof core.createDirectAdapter).toBe('function');
+    expect(typeof core.DirectAdapter).toBe('function');
+    expect(typeof core.selectDirectCandidates).toBe('function');
+    expect(typeof core.assignCreativeIds).toBe('function');
+    expect(typeof core.keywordsFromRulesMatches).toBe('function');
+    expect(typeof core.matchesTargetCategory).toBe('function');
+    expect(typeof core.creativeServesRegion).toBe('function');
+    expect(core.DEFAULT_DEMAND_TIMEOUT_MS).toBe(250);
+    expect(core.DIRECT_MAX_CANDIDATES).toBe(3);
+    expect(core.CREATIVE_ID_PREFIX).toBe('cr_');
+    expect(typeof core.ulid).toBe('function');
+    expect(typeof core.prefixedUlid).toBe('function');
+    expect(core.ULID_PATTERN.test(core.ulid())).toBe(true);
+  });
+
   it('re-exports PolicyValidationError from @adgate/schemas', () => {
     expect(core.PolicyValidationError).toBe(schemas.PolicyValidationError);
   });

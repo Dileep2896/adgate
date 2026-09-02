@@ -102,7 +102,7 @@
       ]
     },
     {
-      "id": "S09", "priority": 9, "dependsOn": ["S03"], "passes": false,
+      "id": "S09", "priority": 9, "dependsOn": ["S03"], "passes": true,
       "title": "DemandAdapter interface and DirectAdapter",
       "description": "packages/core/src/demand: DemandAdapter, DemandRequest, DemandResponse, Candidate types. DirectAdapter takes an in-memory creative catalog and matches by category overlap (supports trailing wildcard like software.devtools.*) and keyword overlap; returns top 3 with ecpm_estimate and targeting_match in [0,1].",
       "acceptanceCriteria": [

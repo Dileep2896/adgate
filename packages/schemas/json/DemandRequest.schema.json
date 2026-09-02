@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "What the gateway hands every demand adapter for one evaluation.",
+  "properties": {
+    "app_id": {
+      "description": "Identifier with the \"app_\" prefix.",
+      "minLength": 5,
+      "pattern": "^app_.*",
+      "title": "AppId",
+      "type": "string"
+    },
+    "classification": {
+      "description": "What the classifier concluded about the conversation turn. Never contains message text.",
+      "properties": {
+        "commercial_intent": {
+          "description": "0..1 likelihood the user is in a buying context.",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "categories": {
+          "description": "Commercial categories detected, most relevant first.",
+          "items": {
+            "description": "A commercial content category. Matches fixtures/classify-fixtures.json.",
+            "enum": [
+              "software.devtools.database",
+              "software.devtools.hosting",
+              "software.devtools.ci",
+              "software.devtools.observability",
+              "software.devtools.ai",
+              "software.security",
+              "software.productivity",
+              "shopping.electronics",
+              "shopping.home",
+              "shopping.sportswear",
+              "shopping.pets",
+              "travel.flights",
+              "travel.hotels",
+              "travel.connectivity",
+              "education.language",
+              "education.courses",
+              "entertainment.streaming",
+              "food.delivery",
+              "general"
+            ],
+            "title": "ContentCategory",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "sensitive": {
+          "description": "Sensitive topics detected. Any entry blocks ads under strict detection.",
+          "items": {
+            "description": "A sensitive topic that blocks ads. Matches fixtures/classify-fixtures.json.",
+            "enum": [
+              "health",
+              "finance",
+              "politics",
+              "legal",
+              "adult",
+              "gambling",
+              "weapons",
+              "religion",
+              "self_harm"
+            ],
+            "title": "SensitiveCategory",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "confidence": {
+          "description": "0..1 classifier confidence in this result.",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "method": {
+          "description": "llm when the LLM classifier answered in time, rules when only the rule stage ran, cached when a recent classification of the same text was reused.",
+          "enum": [
+            "llm",
+            "rules",
+            "cached"
+          ],
+          "title": "ClassificationMethod",
+          "type": "string"
+        },
+        "prompt_version": {
+          "description": "Version of the classifier prompt or rule set, e.g. sha256:<hex>.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "commercial_intent",
+        "categories",
+        "sensitive",
+        "confidence",
+        "method",
+        "prompt_version"
+      ],
+      "title": "Classification",
+      "type": "object"
+    },
+    "surface": {
+      "description": "Where the sponsored slot would be rendered.",
+      "properties": {
+        "type": {
+          "enum": [
+            "chat",
+            "agent",
+            "cli"
+          ],
+          "title": "SurfaceType",
+          "type": "string"
+        },
+        "placement": {
+          "const": "after_answer",
+          "description": "Always after_answer in v1.",
+          "type": "string"
+        },
+        "max_creatives": {
+          "description": "Upper bound on creatives to return. v1 returns at most one.",
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "placement"
+      ],
+      "title": "Surface",
+      "type": "object"
+    },
+    "user": {
+      "description": "The user fields a demand adapter may see. Never the tier or user_hash.",
+      "properties": {
+        "region": {
+          "description": "ISO 3166 alpha-2 country code.",
+          "pattern": "^[A-Z]{2}$",
+          "type": "string"
+        },
+        "locale": {
+          "description": "BCP 47 locale, e.g. en-US.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "title": "DemandUser",
+      "type": "object"
+    },
+    "exclusions": {
+      "description": "Advertiser domains that must not be selected (policy competitor_exclusions). Mediation enforces them; adapters receive them so they can skip work.",
+      "items": {
+        "description": "An advertiser domain that must never be shown, e.g. competitor.com.",
+        "minLength": 1,
+        "title": "AdvertiserDomain",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "keywords": {
+      "description": "Normalized dictionary terms the rules classifier matched (never raw message text). Adapters use them for keyword overlap.",
+      "items": {
+        "description": "A dictionary term matched case-insensitively on whole words. Never message text.",
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "app_id",
+    "classification",
+    "surface",
+    "user",
+    "exclusions"
+  ],
+  "title": "DemandRequest",
+  "type": "object"
+}

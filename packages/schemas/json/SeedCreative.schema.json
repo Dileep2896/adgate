@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A catalog creative before an id is assigned: the shape of examples/creatives.seed.json entries.",
+  "properties": {
+    "advertiser": {
+      "description": "Advertiser display name.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "advertiser_domain": {
+      "description": "Advertiser domain, e.g. exampledb.dev. Matched against policy competitor_exclusions.",
+      "minLength": 1,
+      "title": "AdvertiserDomain",
+      "type": "string"
+    },
+    "headline": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "cta": {
+      "description": "Call-to-action label.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "url_template": {
+      "description": "Destination URL. Affiliate entries may contain placeholders such as {{program_id}} that the affiliate adapter fills in.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "target_categories": {
+      "description": "Categories the creative targets. An empty list matches no category.",
+      "items": {
+        "description": "A content category such as software.devtools.database, or a trailing-wildcard pattern such as software.devtools.* that matches every deeper category.",
+        "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.\\*)?$",
+        "title": "TargetCategory",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "target_regions": {
+      "description": "ISO 3166-1 alpha-2 codes or the token EU. An empty list means every region.",
+      "items": {
+        "description": "ISO 3166-1 alpha-2 country code, or the token EU.",
+        "pattern": "^[A-Z]{2}$",
+        "title": "PolicyRegion",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "keywords": {
+      "description": "Dictionary terms that raise targeting_match when the request carries them.",
+      "items": {
+        "description": "A dictionary term matched case-insensitively on whole words. Never message text.",
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "ecpm": {
+      "description": "Expected revenue per thousand impressions, in currency units.",
+      "minimum": 0,
+      "type": "number"
+    },
+    "source": {
+      "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+      "enum": [
+        "direct",
+        "affiliate",
+        "koah",
+        "gravity"
+      ],
+      "title": "DemandSource",
+      "type": "string"
+    },
+    "active": {
+      "description": "Inactive creatives are never returned by any adapter.",
+      "type": "boolean"
+    },
+    "network": {
+      "description": "Affiliate entries only.",
+      "enum": [
+        "partnerstack",
+        "impact",
+        "amazon"
+      ],
+      "title": "AffiliateNetwork",
+      "type": "string"
+    },
+    "program_id": {
+      "description": "Affiliate entries only: the app owner’s own program or tracking id.",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "advertiser",
+    "advertiser_domain",
+    "headline",
+    "body",
+    "cta",
+    "url_template",
+    "target_categories",
+    "target_regions",
+    "keywords",
+    "ecpm",
+    "source",
+    "active"
+  ],
+  "title": "SeedCreative",
+  "type": "object"
+}
