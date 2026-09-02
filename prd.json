@@ -10,7 +10,7 @@
   ],
   "stories": [
     {
-      "id": "S01", "priority": 1, "dependsOn": [], "passes": false,
+      "id": "S01", "priority": 1, "dependsOn": [], "passes": true,
       "title": "Monorepo scaffold",
       "description": "pnpm workspaces + Turborepo, TypeScript strict, ESM, shared tsconfig.base.json, Vitest at root with per-package projects, ESLint + Prettier minimal config. Packages: schemas, core, gateway, sdk, each with src/index.ts and one passing smoke test.",
       "acceptanceCriteria": [

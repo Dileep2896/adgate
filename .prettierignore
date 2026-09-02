@@ -1,0 +1,12 @@
+node_modules
+dist
+.next
+coverage
+.turbo
+pnpm-lock.yaml
+# hand-formatted by design; the build loop edits prd.json in place
+prd.json
+fixtures/
+docs/
+*.md
+.ralph/
