@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Identifier with the \"aud_\" prefix.",
+  "minLength": 5,
+  "pattern": "^aud_.*",
+  "title": "AuditId",
+  "type": "string"
+}

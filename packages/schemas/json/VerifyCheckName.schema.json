@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "enum": [
+    "schema",
+    "record_hash",
+    "chain",
+    "signature",
+    "creative_hash",
+    "disclosure_present",
+    "separation_attested",
+    "supersedes"
+  ],
+  "title": "VerifyCheckName",
+  "type": "string"
+}

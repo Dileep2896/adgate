@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Body of GET /v1/verify/:id.",
+  "properties": {
+    "valid": {
+      "type": "boolean"
+    },
+    "checks": {
+      "items": {
+        "description": "Result of one verification check.",
+        "properties": {
+          "name": {
+            "enum": [
+              "schema",
+              "record_hash",
+              "chain",
+              "signature",
+              "creative_hash",
+              "disclosure_present",
+              "separation_attested",
+              "supersedes"
+            ],
+            "title": "VerifyCheckName",
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "detail": {
+            "description": "Free-form detail, e.g. key_id=k_2026_09.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "ok"
+        ],
+        "title": "VerifyCheck",
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "valid",
+    "checks"
+  ],
+  "title": "VerifyResponse",
+  "type": "object"
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Identifier with the \"app_\" prefix.",
+  "minLength": 5,
+  "pattern": "^app_.*",
+  "title": "AppId",
+  "type": "string"
+}

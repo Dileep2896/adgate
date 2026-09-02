@@ -1,4 +1,12 @@
 /**
- * @adgate/schemas entry point. The stories that build this package add their exports here.
+ * @adgate/schemas: the Zod implementation of docs/api.md. Every TS type is z.infer of a schema.
  */
-export const packageName = '@adgate/schemas' as const;
+export * from './classification.js';
+export * from './common.js';
+export * from './creative.js';
+export * from './evaluate.js';
+export * from './events.js';
+export * from './json-schema.js';
+export * from './suppress-reason.js';
+export * from './taxonomy.js';
+export * from './verify.js';

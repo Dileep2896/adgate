@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The end user of the app for this turn.",
+  "properties": {
+    "tier": {
+      "description": "free or paid. Apps may add other strings; anything not in serve_to_tiers is suppressed.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "region": {
+      "description": "ISO 3166 alpha-2 country code.",
+      "pattern": "^[A-Z]{2}$",
+      "type": "string"
+    },
+    "locale": {
+      "description": "BCP 47 locale, e.g. en-US.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "user_hash": {
+      "description": "Optional stable per-user hash (sha256). Enables per_user_per_day frequency caps.",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "tier"
+  ],
+  "title": "User",
+  "type": "object"
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A sensitive topic that blocks ads. Matches fixtures/classify-fixtures.json.",
+  "enum": [
+    "health",
+    "finance",
+    "politics",
+    "legal",
+    "adult",
+    "gambling",
+    "weapons",
+    "religion",
+    "self_harm"
+  ],
+  "title": "SensitiveCategory",
+  "type": "string"
+}

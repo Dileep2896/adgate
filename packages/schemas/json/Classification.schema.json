@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "What the classifier concluded about the conversation turn. Never contains message text.",
+  "properties": {
+    "commercial_intent": {
+      "description": "0..1 likelihood the user is in a buying context.",
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "categories": {
+      "description": "Commercial categories detected, most relevant first.",
+      "items": {
+        "description": "A commercial content category. Matches fixtures/classify-fixtures.json.",
+        "enum": [
+          "software.devtools.database",
+          "software.devtools.hosting",
+          "software.devtools.ci",
+          "software.devtools.observability",
+          "software.devtools.ai",
+          "software.security",
+          "software.productivity",
+          "shopping.electronics",
+          "shopping.home",
+          "shopping.sportswear",
+          "shopping.pets",
+          "travel.flights",
+          "travel.hotels",
+          "travel.connectivity",
+          "education.language",
+          "education.courses",
+          "entertainment.streaming",
+          "food.delivery",
+          "general"
+        ],
+        "title": "ContentCategory",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "sensitive": {
+      "description": "Sensitive topics detected. Any entry blocks ads under strict detection.",
+      "items": {
+        "description": "A sensitive topic that blocks ads. Matches fixtures/classify-fixtures.json.",
+        "enum": [
+          "health",
+          "finance",
+          "politics",
+          "legal",
+          "adult",
+          "gambling",
+          "weapons",
+          "religion",
+          "self_harm"
+        ],
+        "title": "SensitiveCategory",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "confidence": {
+      "description": "0..1 classifier confidence in this result.",
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "method": {
+      "description": "llm when the LLM classifier answered in time, rules when only the rule stage ran.",
+      "enum": [
+        "llm",
+        "rules"
+      ],
+      "title": "ClassificationMethod",
+      "type": "string"
+    },
+    "prompt_version": {
+      "description": "Version of the classifier prompt or rule set, e.g. sha256:<hex>.",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "commercial_intent",
+    "categories",
+    "sensitive",
+    "confidence",
+    "method",
+    "prompt_version"
+  ],
+  "title": "Classification",
+  "type": "object"
+}

@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "serve"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "creative": {
+            "type": "object"
+          },
+          "reason": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "suppress"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "creative": {
+            "type": "null"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ],
+  "description": "Body of POST /v1/evaluate. Always HTTP 200; internal failures suppress with reason error.",
+  "properties": {
+    "decision": {
+      "enum": [
+        "serve",
+        "suppress"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "description": "Why no ad was served: paid_user, region_blocked, sensitive_category:<name> (name from the sensitive taxonomy), low_confidence, low_commercial_intent, frequency_cap, no_fill, or error.",
+          "enum": [
+            "paid_user",
+            "region_blocked",
+            "low_confidence",
+            "low_commercial_intent",
+            "frequency_cap",
+            "no_fill",
+            "error",
+            "sensitive_category:health",
+            "sensitive_category:finance",
+            "sensitive_category:politics",
+            "sensitive_category:legal",
+            "sensitive_category:adult",
+            "sensitive_category:gambling",
+            "sensitive_category:weapons",
+            "sensitive_category:religion",
+            "sensitive_category:self_harm"
+          ],
+          "title": "SuppressReason",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "null when decision is serve."
+    },
+    "classification": {
+      "description": "What the classifier concluded about the conversation turn. Never contains message text.",
+      "properties": {
+        "commercial_intent": {
+          "description": "0..1 likelihood the user is in a buying context.",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "categories": {
+          "description": "Commercial categories detected, most relevant first.",
+          "items": {
+            "description": "A commercial content category. Matches fixtures/classify-fixtures.json.",
+            "enum": [
+              "software.devtools.database",
+              "software.devtools.hosting",
+              "software.devtools.ci",
+              "software.devtools.observability",
+              "software.devtools.ai",
+              "software.security",
+              "software.productivity",
+              "shopping.electronics",
+              "shopping.home",
+              "shopping.sportswear",
+              "shopping.pets",
+              "travel.flights",
+              "travel.hotels",
+              "travel.connectivity",
+              "education.language",
+              "education.courses",
+              "entertainment.streaming",
+              "food.delivery",
+              "general"
+            ],
+            "title": "ContentCategory",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "sensitive": {
+          "description": "Sensitive topics detected. Any entry blocks ads under strict detection.",
+          "items": {
+            "description": "A sensitive topic that blocks ads. Matches fixtures/classify-fixtures.json.",
+            "enum": [
+              "health",
+              "finance",
+              "politics",
+              "legal",
+              "adult",
+              "gambling",
+              "weapons",
+              "religion",
+              "self_harm"
+            ],
+            "title": "SensitiveCategory",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "confidence": {
+          "description": "0..1 classifier confidence in this result.",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "method": {
+          "description": "llm when the LLM classifier answered in time, rules when only the rule stage ran.",
+          "enum": [
+            "llm",
+            "rules"
+          ],
+          "title": "ClassificationMethod",
+          "type": "string"
+        },
+        "prompt_version": {
+          "description": "Version of the classifier prompt or rule set, e.g. sha256:<hex>.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "commercial_intent",
+        "categories",
+        "sensitive",
+        "confidence",
+        "method",
+        "prompt_version"
+      ],
+      "title": "Classification",
+      "type": "object"
+    },
+    "creative": {
+      "anyOf": [
+        {
+          "description": "A sponsored creative to render in a separate labeled block after the answer.",
+          "properties": {
+            "id": {
+              "description": "Identifier with the \"cr_\" prefix.",
+              "minLength": 4,
+              "pattern": "^cr_.*",
+              "title": "CreativeId",
+              "type": "string"
+            },
+            "advertiser": {
+              "description": "Advertiser display name.",
+              "minLength": 1,
+              "type": "string"
+            },
+            "headline": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "cta": {
+              "description": "Call-to-action label.",
+              "minLength": 1,
+              "type": "string"
+            },
+            "url": {
+              "description": "Always the gateway click redirect (/c/:audit_id), never the advertiser directly.",
+              "minLength": 1,
+              "type": "string"
+            },
+            "source": {
+              "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+              "enum": [
+                "direct",
+                "affiliate",
+                "koah",
+                "gravity"
+              ],
+              "title": "DemandSource",
+              "type": "string"
+            },
+            "disclosure_label": {
+              "description": "Label the SDK must render, e.g. Sponsored.",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "advertiser",
+            "headline",
+            "body",
+            "cta",
+            "url",
+            "source",
+            "disclosure_label"
+          ],
+          "title": "Creative",
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "null when decision is suppress."
+    },
+    "audit_id": {
+      "description": "Returned for every evaluation, including suppressions.",
+      "minLength": 5,
+      "pattern": "^aud_.*",
+      "title": "AuditId",
+      "type": "string"
+    },
+    "latency_ms": {
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "decision",
+    "reason",
+    "classification",
+    "creative",
+    "audit_id",
+    "latency_ms"
+  ],
+  "title": "EvaluateResponse",
+  "type": "object"
+}

@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "anyOf": [
+    {
+      "required": [
+        "messages"
+      ]
+    },
+    {
+      "required": [
+        "context_summary"
+      ]
+    }
+  ],
+  "description": "Body of POST /v1/evaluate.",
+  "properties": {
+    "app_id": {
+      "description": "Identifier with the \"app_\" prefix.",
+      "minLength": 5,
+      "pattern": "^app_.*",
+      "title": "AppId",
+      "type": "string"
+    },
+    "conversation_id": {
+      "description": "App-side conversation id. Stored only as a salted hash.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "turn_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "user": {
+      "description": "The end user of the app for this turn.",
+      "properties": {
+        "tier": {
+          "description": "free or paid. Apps may add other strings; anything not in serve_to_tiers is suppressed.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "region": {
+          "description": "ISO 3166 alpha-2 country code.",
+          "pattern": "^[A-Z]{2}$",
+          "type": "string"
+        },
+        "locale": {
+          "description": "BCP 47 locale, e.g. en-US.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "user_hash": {
+          "description": "Optional stable per-user hash (sha256). Enables per_user_per_day frequency caps.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "tier"
+      ],
+      "title": "User",
+      "type": "object"
+    },
+    "messages": {
+      "description": "The last few turns, newest last. Required unless context_summary is sent.",
+      "items": {
+        "description": "One conversation turn. Servers truncate to the last 4 messages and 4,000 characters before classification.",
+        "properties": {
+          "role": {
+            "enum": [
+              "system",
+              "user",
+              "assistant",
+              "tool"
+            ],
+            "title": "MessageRole",
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "Message",
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "context_summary": {
+      "description": "Short summary sent instead of raw messages. Required unless messages is sent.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "surface": {
+      "description": "Where the sponsored slot would be rendered.",
+      "properties": {
+        "type": {
+          "enum": [
+            "chat",
+            "agent",
+            "cli"
+          ],
+          "title": "SurfaceType",
+          "type": "string"
+        },
+        "placement": {
+          "const": "after_answer",
+          "description": "Always after_answer in v1.",
+          "type": "string"
+        },
+        "max_creatives": {
+          "description": "Upper bound on creatives to return. v1 returns at most one.",
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "placement"
+      ],
+      "title": "Surface",
+      "type": "object"
+    },
+    "policy_overrides": {
+      "additionalProperties": {},
+      "description": "Partial PolicyConfig merged over the stored policy. May only make policy stricter.",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "app_id",
+    "conversation_id",
+    "turn_id",
+    "user",
+    "surface"
+  ],
+  "title": "EvaluateRequest",
+  "type": "object"
+}

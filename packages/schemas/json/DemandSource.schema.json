@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+  "enum": [
+    "direct",
+    "affiliate",
+    "koah",
+    "gravity"
+  ],
+  "title": "DemandSource",
+  "type": "string"
+}

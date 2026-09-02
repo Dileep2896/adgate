@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A commercial content category. Matches fixtures/classify-fixtures.json.",
+  "enum": [
+    "software.devtools.database",
+    "software.devtools.hosting",
+    "software.devtools.ci",
+    "software.devtools.observability",
+    "software.devtools.ai",
+    "software.security",
+    "software.productivity",
+    "shopping.electronics",
+    "shopping.home",
+    "shopping.sportswear",
+    "shopping.pets",
+    "travel.flights",
+    "travel.hotels",
+    "travel.connectivity",
+    "education.language",
+    "education.courses",
+    "entertainment.streaming",
+    "food.delivery",
+    "general"
+  ],
+  "title": "ContentCategory",
+  "type": "string"
+}

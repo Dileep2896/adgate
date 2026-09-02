@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "llm when the LLM classifier answered in time, rules when only the rule stage ran.",
+  "enum": [
+    "llm",
+    "rules"
+  ],
+  "title": "ClassificationMethod",
+  "type": "string"
+}

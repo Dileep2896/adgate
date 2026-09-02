@@ -11,12 +11,17 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "json"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --sourcemap --clean",
+    "gen:json": "tsx src/gen-json.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
+  },
+  "dependencies": {
+    "zod": "^4.5.4"
   }
 }

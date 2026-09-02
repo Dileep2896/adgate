@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Result of one verification check.",
+  "properties": {
+    "name": {
+      "enum": [
+        "schema",
+        "record_hash",
+        "chain",
+        "signature",
+        "creative_hash",
+        "disclosure_present",
+        "separation_attested",
+        "supersedes"
+      ],
+      "title": "VerifyCheckName",
+      "type": "string"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "detail": {
+      "description": "Free-form detail, e.g. key_id=k_2026_09.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "ok"
+  ],
+  "title": "VerifyCheck",
+  "type": "object"
+}

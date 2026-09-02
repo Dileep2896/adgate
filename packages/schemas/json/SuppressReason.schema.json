@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Why no ad was served: paid_user, region_blocked, sensitive_category:<name> (name from the sensitive taxonomy), low_confidence, low_commercial_intent, frequency_cap, no_fill, or error.",
+  "enum": [
+    "paid_user",
+    "region_blocked",
+    "low_confidence",
+    "low_commercial_intent",
+    "frequency_cap",
+    "no_fill",
+    "error",
+    "sensitive_category:health",
+    "sensitive_category:finance",
+    "sensitive_category:politics",
+    "sensitive_category:legal",
+    "sensitive_category:adult",
+    "sensitive_category:gambling",
+    "sensitive_category:weapons",
+    "sensitive_category:religion",
+    "sensitive_category:self_harm"
+  ],
+  "title": "SuppressReason",
+  "type": "string"
+}

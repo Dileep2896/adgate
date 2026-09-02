@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A SHA-256 digest written as sha256:<hex>.",
+  "minLength": 8,
+  "pattern": "^sha256:.*",
+  "title": "Sha256Hash",
+  "type": "string"
+}

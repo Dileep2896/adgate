@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Body of POST /v1/attest, sent after the model answer is complete. Returns 204.",
+  "properties": {
+    "audit_id": {
+      "description": "Identifier with the \"aud_\" prefix.",
+      "minLength": 5,
+      "pattern": "^aud_.*",
+      "title": "AuditId",
+      "type": "string"
+    },
+    "model_output_hash": {
+      "description": "sha256 of the complete model answer.",
+      "minLength": 8,
+      "pattern": "^sha256:.*",
+      "title": "Sha256Hash",
+      "type": "string"
+    },
+    "rendered": {
+      "description": "Whether the sponsored block was actually rendered.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "audit_id",
+    "model_output_hash",
+    "rendered"
+  ],
+  "title": "AttestRequest",
+  "type": "object"
+}

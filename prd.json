@@ -34,7 +34,7 @@
       ]
     },
     {
-      "id": "S03", "priority": 3, "dependsOn": ["S01"], "passes": false,
+      "id": "S03", "priority": 3, "dependsOn": ["S01"], "passes": true,
       "title": "Zod schemas for the API contract",
       "description": "In packages/schemas: EvaluateRequest, EvaluateResponse, Classification, Creative, SuppressReason, AttestRequest, EventRequest, VerifyResponse exactly as in docs/api.md. Export TS types via z.infer and a toJsonSchema() helper that emits JSON Schema for every schema (for the Python SDK).",
       "acceptanceCriteria": [

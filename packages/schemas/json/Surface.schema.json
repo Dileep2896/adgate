@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Where the sponsored slot would be rendered.",
+  "properties": {
+    "type": {
+      "enum": [
+        "chat",
+        "agent",
+        "cli"
+      ],
+      "title": "SurfaceType",
+      "type": "string"
+    },
+    "placement": {
+      "const": "after_answer",
+      "description": "Always after_answer in v1.",
+      "type": "string"
+    },
+    "max_creatives": {
+      "description": "Upper bound on creatives to return. v1 returns at most one.",
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "type",
+    "placement"
+  ],
+  "title": "Surface",
+  "type": "object"
+}
