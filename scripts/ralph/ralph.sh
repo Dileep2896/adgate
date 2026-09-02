@@ -37,7 +37,7 @@ for i in $(seq 1 "$MAX"); do
   # -p runs Claude Code non-interactively with the given prompt. CLAUDE.md is loaded automatically.
   # --dangerously-skip-permissions lets it edit and run commands without prompting.
   # Only run this in a repo you can reset, ideally in a container or a throwaway clone.
-  claude -p "$(cat "$PROMPT_FILE")" --dangerously-skip-permissions "${model_flag[@]}" 2>&1 | tee "$log" || true
+  claude -p "$(cat "$PROMPT_FILE")" --dangerously-skip-permissions ${model_flag[@]+"${model_flag[@]}"} 2>&1 | tee "$log" || true
 
   if grep -q "<promise>COMPLETE</promise>" "$log"; then echo "Loop reported completion."; exit 0; fi
 
