@@ -69,7 +69,7 @@
       ]
     },
     {
-      "id": "S06", "priority": 6, "dependsOn": ["S03"], "passes": false,
+      "id": "S06", "priority": 6, "dependsOn": ["S03"], "passes": true,
       "title": "Rules classifier",
       "description": "packages/core/src/classify/rules: keyword and regex lists per sensitive category and per commercial category family from fixtures/classify-fixtures.json taxonomy. Returns a preliminary Classification with method rules. self_harm always sensitive.",
       "acceptanceCriteria": [

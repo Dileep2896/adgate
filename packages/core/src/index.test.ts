@@ -20,6 +20,14 @@ describe('@adgate/core', () => {
     expect(core.EU_MEMBER_STATES).toHaveLength(27);
   });
 
+  it('exports the rules classifier', () => {
+    expect(typeof core.classifyByRules).toBe('function');
+    expect(typeof core.normalizeText).toBe('function');
+    expect(typeof core.computeRulesVersion).toBe('function');
+    expect(core.RULES_VERSION).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(core.classifyByRules('best vpn for public wifi').method).toBe('rules');
+  });
+
   it('re-exports PolicyValidationError from @adgate/schemas', () => {
     expect(core.PolicyValidationError).toBe(schemas.PolicyValidationError);
   });
