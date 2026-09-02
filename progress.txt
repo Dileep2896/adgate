@@ -10,4 +10,4 @@
 # If blocked: a single line "NEEDS HUMAN: <story id> <reason>" and stop.
 
 ## Codebase notes (maintained across iterations, edit in place)
-- (empty; add stable facts here such as "integration tests need DATABASE_URL_TEST")
+- Docker Postgres host port is ${PGPORT_HOST:-5432} in docker-compose.yml. On this dev machine a native Postgres owns 5432, so .env sets PGPORT_HOST=5433 and both DATABASE_URL values use 5433. CI and fresh clones keep 5432. Always read the port from env, never hardcode 5432.

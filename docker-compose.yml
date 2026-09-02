@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: adgate
       POSTGRES_DB: adgate
     ports:
-      - "5432:5432"
+      - "${PGPORT_HOST:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./scripts/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
