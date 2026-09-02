@@ -77,6 +77,30 @@ describe('EvaluateRequest', () => {
     const parsed = EvaluateRequest.parse({ ...EVALUATE_REQUEST_EXAMPLE, extra: 1 });
     expect(parsed).not.toHaveProperty('extra');
   });
+
+  it('accepts deep-partial policy_overrides without back-filling defaults', () => {
+    const policy_overrides = {
+      min_confidence: 0.9,
+      frequency_caps: { per_session: 0 },
+      demand: [{ source: 'affiliate', enabled: false }],
+    };
+    const parsed = EvaluateRequest.parse({ ...EVALUATE_REQUEST_EXAMPLE, policy_overrides });
+    expect(parsed.policy_overrides).toEqual(policy_overrides);
+  });
+
+  it('rejects unknown or invalid keys inside policy_overrides', () => {
+    for (const policy_overrides of [
+      { min_intent: 0.9 },
+      { frequency_caps: { per_day: 1 } },
+      { min_confidence: 2 },
+      { blocked_categories: ['spam'] },
+      'strict',
+    ]) {
+      expect(
+        EvaluateRequest.safeParse({ ...EVALUATE_REQUEST_EXAMPLE, policy_overrides }).success,
+      ).toBe(false);
+    }
+  });
 });
 
 describe('EvaluateResponse', () => {

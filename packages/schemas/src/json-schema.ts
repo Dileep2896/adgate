@@ -21,6 +21,8 @@ import {
 import { Creative, DemandSource } from './creative.js';
 import { Decision, EvaluateRequest, EvaluateResponse } from './evaluate.js';
 import { AttestRequest, EventRequest, EventType } from './events.js';
+import { PolicyConfig } from './policy.js';
+import { PolicyOverrides } from './policy-overrides.js';
 import { SuppressReason } from './suppress-reason.js';
 import { ContentCategory, SensitiveCategory } from './taxonomy.js';
 import { VerifyCheck, VerifyCheckName, VerifyResponse } from './verify.js';
@@ -29,6 +31,8 @@ import { VerifyCheck, VerifyCheckName, VerifyResponse } from './verify.js';
 export const CONTRACT_SCHEMAS = {
   EvaluateRequest,
   EvaluateResponse,
+  PolicyConfig,
+  PolicyOverrides,
   Classification,
   Creative,
   SuppressReason,

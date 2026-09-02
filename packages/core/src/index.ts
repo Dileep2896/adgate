@@ -1,4 +1,11 @@
 /**
- * @adgate/core entry point. The stories that build this package add their exports here.
+ * @adgate/core: pure logic (no HTTP, DB, env or network). One module per responsibility, all
+ * re-exported here. Depends on @adgate/schemas only; never the other way round.
  */
-export const packageName = '@adgate/core' as const;
+export * from './canonical/canonicalize.js';
+export * from './canonical/sha256.js';
+export * from './policy/hash.js';
+export * from './policy/load.js';
+export * from './policy/merge.js';
+// Re-exported so callers of loadPolicyFromYaml can catch it without a second import.
+export { PolicyValidationError } from '@adgate/schemas';

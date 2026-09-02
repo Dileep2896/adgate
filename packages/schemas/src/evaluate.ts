@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Classification } from './classification.js';
 import { AppId, AuditId, Message, Surface, User } from './common.js';
 import { Creative } from './creative.js';
+import { PolicyOverrides } from './policy-overrides.js';
 import { SuppressReason } from './suppress-reason.js';
 
 export const Decision = z.enum(['serve', 'suppress']).meta({ title: 'Decision' });
@@ -28,12 +29,9 @@ export const EvaluateRequest = z
       .optional()
       .describe('Short summary sent instead of raw messages. Required unless messages is sent.'),
     surface: Surface,
-    policy_overrides: z
-      .record(z.string(), z.unknown())
-      .optional()
-      .describe(
-        'Partial PolicyConfig merged over the stored policy. May only make policy stricter.',
-      ),
+    policy_overrides: PolicyOverrides.optional().describe(
+      'Partial PolicyConfig merged over the stored policy. May only make policy stricter.',
+    ),
   })
   .refine((request) => request.messages !== undefined || request.context_summary !== undefined, {
     message: 'At least one of messages or context_summary is required',

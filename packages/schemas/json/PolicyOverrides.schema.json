@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Deep-partial PolicyConfig sent as EvaluateRequest.policy_overrides. Only values that make the stored policy stricter are applied; the rest are ignored and recorded as override_rejected.",
+  "properties": {
+    "version": {
+      "const": 1,
+      "type": "number"
+    },
+    "app_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "serve_to_tiers": {
+      "items": {
+        "description": "A user tier name, e.g. free or paid.",
+        "minLength": 1,
+        "title": "PolicyTier",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "allow_paid_tiers": {
+      "type": "boolean"
+    },
+    "blocked_categories": {
+      "items": {
+        "description": "A sensitive topic that blocks ads. Matches fixtures/classify-fixtures.json.",
+        "enum": [
+          "health",
+          "finance",
+          "politics",
+          "legal",
+          "adult",
+          "gambling",
+          "weapons",
+          "religion",
+          "self_harm"
+        ],
+        "title": "SensitiveCategory",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "sensitive_detection": {
+      "description": "strict suppresses on any sensitive signal from rules OR the LLM.",
+      "enum": [
+        "strict",
+        "balanced"
+      ],
+      "title": "SensitiveDetection",
+      "type": "string"
+    },
+    "min_commercial_intent": {
+      "description": "A score threshold between 0 and 1.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "PolicyThreshold",
+      "type": "number"
+    },
+    "min_confidence": {
+      "description": "A score threshold between 0 and 1.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "PolicyThreshold",
+      "type": "number"
+    },
+    "competitor_exclusions": {
+      "items": {
+        "description": "An advertiser domain that must never be shown, e.g. competitor.com.",
+        "minLength": 1,
+        "title": "AdvertiserDomain",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "frequency_caps": {
+      "additionalProperties": false,
+      "properties": {
+        "per_session": {
+          "description": "A frequency cap: a non-negative integer.",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "PolicyCap",
+          "type": "integer"
+        },
+        "per_user_per_day": {
+          "description": "A frequency cap: a non-negative integer.",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "PolicyCap",
+          "type": "integer"
+        },
+        "min_turns_between": {
+          "description": "A frequency cap: a non-negative integer.",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "PolicyCap",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "disclosure": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "description": "Label rendered on the sponsored block. Must be non-empty.",
+          "minLength": 1,
+          "title": "DisclosureLabel",
+          "type": "string"
+        },
+        "position": {
+          "const": "after_answer",
+          "description": "Only after_answer exists in v1.",
+          "title": "DisclosurePosition",
+          "type": "string"
+        },
+        "style": {
+          "const": "separate_block",
+          "description": "Only separate_block exists in v1.",
+          "title": "DisclosureStyle",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "demand": {
+      "items": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "const": "direct",
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "const": "affiliate",
+                "type": "string"
+              },
+              "network": {
+                "description": "When omitted, every affiliate entry matches.",
+                "enum": [
+                  "partnerstack",
+                  "impact",
+                  "amazon"
+                ],
+                "title": "AffiliateNetwork",
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "const": "koah",
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "const": "gravity",
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "type": "object"
+          }
+        ],
+        "title": "DemandEntryOverride"
+      },
+      "type": "array"
+    },
+    "privacy": {
+      "additionalProperties": false,
+      "properties": {
+        "store_raw_text": {
+          "type": "boolean"
+        },
+        "retain_days": {
+          "description": "Retention window in days, at least 1.",
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "PolicyRetainDays",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "regions": {
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "items": {
+            "description": "ISO 3166-1 alpha-2 country code, or the token EU.",
+            "pattern": "^[A-Z]{2}$",
+            "title": "PolicyRegion",
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "title": "PolicyOverrides",
+  "type": "object"
+}

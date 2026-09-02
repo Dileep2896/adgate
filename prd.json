@@ -46,7 +46,7 @@
       ]
     },
     {
-      "id": "S04", "priority": 4, "dependsOn": ["S03"], "passes": false,
+      "id": "S04", "priority": 4, "dependsOn": ["S03"], "passes": true,
       "title": "PolicyConfig schema, YAML loader, policy hash",
       "description": "PolicyConfig schema with defaults from docs/policy.md, loadPolicyFromYaml(yaml) returning { policy, policy_hash }, canonical JSON helper in packages/core/src/canonical, mergeOverrides(policy, overrides) that only tightens and reports rejected keys.",
       "acceptanceCriteria": [

@@ -28,12 +28,18 @@ describe('json/*.schema.json', () => {
   });
 
   it('renders draft 2020-12 documents titled after the schema, with a trailing newline', () => {
+    // docs/policy.md rejects unknown keys, so only the policy schemas close their object.
+    const strict: ContractSchemaName[] = ['PolicyConfig', 'PolicyOverrides'];
     for (const [name, content] of Object.entries(renderJsonSchemas())) {
       expect(content.endsWith('}\n')).toBe(true);
       const parsed = JSON.parse(content) as Record<string, unknown>;
       expect(parsed['$schema']).toBe('https://json-schema.org/draft/2020-12/schema');
       expect(parsed['title']).toBe(name);
-      expect(parsed).not.toHaveProperty('additionalProperties');
+      if (strict.includes(name as ContractSchemaName)) {
+        expect(parsed['additionalProperties']).toBe(false);
+      } else {
+        expect(parsed).not.toHaveProperty('additionalProperties');
+      }
     }
   });
 

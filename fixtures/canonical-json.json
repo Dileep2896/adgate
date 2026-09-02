@@ -1,0 +1,70 @@
+{
+  "description": "Canonical JSON vectors (docs/audit.md). Every value in `inputs` must canonicalize to exactly `expected`. Shared with other language SDKs.",
+  "cases": [
+    {
+      "name": "nested objects and arrays: keys sorted at every depth, array order kept",
+      "inputs": [
+        {
+          "zeta": { "b": [3, 1, 2], "a": { "y": null, "x": true } },
+          "alpha": [{ "k2": "v2", "k1": "v1" }, [{ "n": 1 }, "s"]],
+          "mid": 0.5
+        },
+        {
+          "mid": 0.5,
+          "alpha": [{ "k1": "v1", "k2": "v2" }, [{ "n": 1 }, "s"]],
+          "zeta": { "a": { "x": true, "y": null }, "b": [3, 1, 2] }
+        }
+      ],
+      "expected": "{\"alpha\":[{\"k1\":\"v1\",\"k2\":\"v2\"},[{\"n\":1},\"s\"]],\"mid\":0.5,\"zeta\":{\"a\":{\"x\":true,\"y\":null},\"b\":[3,1,2]}}"
+    },
+    {
+      "name": "numbers in shortest round-trip form",
+      "inputs": [{ "a": 1.0, "b": 1e21, "c": 0.30000000000000004, "d": -0, "e": 1e-7, "f": 100, "g": -12.5 }],
+      "expected": "{\"a\":1,\"b\":1e+21,\"c\":0.30000000000000004,\"d\":0,\"e\":1e-7,\"f\":100,\"g\":-12.5}"
+    },
+    {
+      "name": "strings: non-ASCII kept as UTF-8, quotes, backslashes and control characters escaped",
+      "inputs": [{ "s": "é ✓ \"q\" \\ \n\t 😀" }],
+      "expected": "{\"s\":\"é ✓ \\\"q\\\" \\\\ \\n\\t 😀\"}"
+    },
+    {
+      "name": "integer-like keys are sorted lexicographically, not numerically",
+      "inputs": [{ "10": "ten", "2": "two", "a": "A", "1": "one" }, { "a": "A", "1": "one", "2": "two", "10": "ten" }],
+      "expected": "{\"1\":\"one\",\"10\":\"ten\",\"2\":\"two\",\"a\":\"A\"}"
+    },
+    {
+      "name": "keys compare by UTF-16 code unit: uppercase, then underscore, then lowercase",
+      "inputs": [{ "b": 1, "B": 2, "_": 3, "a": 4 }],
+      "expected": "{\"B\":2,\"_\":3,\"a\":4,\"b\":1}"
+    },
+    {
+      "name": "empty containers and every scalar type",
+      "inputs": [{ "o": {}, "a": [], "n": null, "t": true, "f": false, "s": "" }],
+      "expected": "{\"a\":[],\"f\":false,\"n\":null,\"o\":{},\"s\":\"\",\"t\":true}"
+    },
+    {
+      "name": "top-level array",
+      "inputs": [[{ "b": 1, "a": 2 }, 3, "x", null]],
+      "expected": "[{\"a\":2,\"b\":1},3,\"x\",null]"
+    },
+    {
+      "name": "top-level scalars",
+      "inputs": ["hi"],
+      "expected": "\"hi\""
+    },
+    {
+      "name": "policy-shaped document",
+      "inputs": [
+        {
+          "version": 1,
+          "app_id": "my-chat-app",
+          "regions": { "allow": ["US", "CA", "GB", "EU"] },
+          "frequency_caps": { "per_user_per_day": 3, "per_session": 1, "min_turns_between": 4 },
+          "demand": [{ "source": "direct", "enabled": true }, { "network": "partnerstack", "source": "affiliate", "enabled": true }],
+          "min_confidence": 0.7
+        }
+      ],
+      "expected": "{\"app_id\":\"my-chat-app\",\"demand\":[{\"enabled\":true,\"source\":\"direct\"},{\"enabled\":true,\"network\":\"partnerstack\",\"source\":\"affiliate\"}],\"frequency_caps\":{\"min_turns_between\":4,\"per_session\":1,\"per_user_per_day\":3},\"min_confidence\":0.7,\"regions\":{\"allow\":[\"US\",\"CA\",\"GB\",\"EU\"]},\"version\":1}"
+    }
+  ]
+}

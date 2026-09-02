@@ -1,0 +1,370 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "else": {
+        "properties": {
+          "serve_to_tiers": {
+            "items": {
+              "const": "free"
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "allow_paid_tiers": {
+            "const": true
+          }
+        },
+        "required": [
+          "allow_paid_tiers"
+        ]
+      }
+    }
+  ],
+  "description": "An app policy (docs/policy.md). Omitted fields take the documented defaults; unknown keys are rejected.",
+  "properties": {
+    "version": {
+      "const": 1,
+      "default": 1,
+      "description": "Policy schema version. Only 1 exists.",
+      "type": "number"
+    },
+    "app_id": {
+      "description": "The app this policy belongs to.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "serve_to_tiers": {
+      "default": [
+        "free"
+      ],
+      "description": "Tiers that may see ads. Any other tier is suppressed with reason paid_user.",
+      "items": {
+        "description": "A user tier name, e.g. free or paid.",
+        "minLength": 1,
+        "title": "PolicyTier",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "allow_paid_tiers": {
+      "default": false,
+      "description": "Must be explicitly true to include non-free tiers in serve_to_tiers.",
+      "type": "boolean"
+    },
+    "blocked_categories": {
+      "contains": {
+        "const": "self_harm"
+      },
+      "default": [
+        "health",
+        "finance",
+        "politics",
+        "legal",
+        "adult",
+        "gambling",
+        "weapons",
+        "religion",
+        "self_harm"
+      ],
+      "description": "Sensitive categories that suppress ads. self_harm cannot be removed.",
+      "items": {
+        "description": "A sensitive topic that blocks ads. Matches fixtures/classify-fixtures.json.",
+        "enum": [
+          "health",
+          "finance",
+          "politics",
+          "legal",
+          "adult",
+          "gambling",
+          "weapons",
+          "religion",
+          "self_harm"
+        ],
+        "title": "SensitiveCategory",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "sensitive_detection": {
+      "default": "strict",
+      "description": "strict suppresses on any sensitive signal from rules OR the LLM.",
+      "enum": [
+        "strict",
+        "balanced"
+      ],
+      "title": "SensitiveDetection",
+      "type": "string"
+    },
+    "min_commercial_intent": {
+      "default": 0.6,
+      "description": "A score threshold between 0 and 1.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "PolicyThreshold",
+      "type": "number"
+    },
+    "min_confidence": {
+      "default": 0.7,
+      "description": "A score threshold between 0 and 1.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "PolicyThreshold",
+      "type": "number"
+    },
+    "competitor_exclusions": {
+      "default": [],
+      "items": {
+        "description": "An advertiser domain that must never be shown, e.g. competitor.com.",
+        "minLength": 1,
+        "title": "AdvertiserDomain",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "frequency_caps": {
+      "additionalProperties": false,
+      "default": {
+        "min_turns_between": 4,
+        "per_session": 1,
+        "per_user_per_day": 3
+      },
+      "properties": {
+        "per_session": {
+          "default": 1,
+          "description": "Per conversation.",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "PolicyCap",
+          "type": "integer"
+        },
+        "per_user_per_day": {
+          "default": 3,
+          "description": "Requires user.user_hash; if absent, per_session applies only.",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "PolicyCap",
+          "type": "integer"
+        },
+        "min_turns_between": {
+          "default": 4,
+          "description": "Turns that must pass between two ads.",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "PolicyCap",
+          "type": "integer"
+        }
+      },
+      "title": "FrequencyCaps",
+      "type": "object"
+    },
+    "disclosure": {
+      "additionalProperties": false,
+      "default": {
+        "label": "Sponsored",
+        "position": "after_answer",
+        "style": "separate_block"
+      },
+      "description": "How the sponsored block is labeled and placed.",
+      "properties": {
+        "label": {
+          "default": "Sponsored",
+          "description": "Label rendered on the sponsored block. Must be non-empty.",
+          "minLength": 1,
+          "title": "DisclosureLabel",
+          "type": "string"
+        },
+        "position": {
+          "const": "after_answer",
+          "default": "after_answer",
+          "description": "Only after_answer exists in v1.",
+          "title": "DisclosurePosition",
+          "type": "string"
+        },
+        "style": {
+          "const": "separate_block",
+          "default": "separate_block",
+          "description": "Only separate_block exists in v1.",
+          "title": "DisclosureStyle",
+          "type": "string"
+        }
+      },
+      "title": "Disclosure",
+      "type": "object"
+    },
+    "demand": {
+      "default": [
+        {
+          "enabled": true,
+          "source": "direct"
+        },
+        {
+          "enabled": true,
+          "network": "partnerstack",
+          "source": "affiliate"
+        },
+        {
+          "enabled": false,
+          "source": "koah"
+        },
+        {
+          "enabled": false,
+          "source": "gravity"
+        }
+      ],
+      "description": "Ordered list; only enabled sources are queried.",
+      "items": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "const": "direct",
+                "type": "string"
+              },
+              "enabled": {
+                "default": true,
+                "description": "Only enabled sources are queried.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "const": "affiliate",
+                "type": "string"
+              },
+              "network": {
+                "description": "Affiliate network used by an affiliate demand entry.",
+                "enum": [
+                  "partnerstack",
+                  "impact",
+                  "amazon"
+                ],
+                "title": "AffiliateNetwork",
+                "type": "string"
+              },
+              "enabled": {
+                "default": true,
+                "description": "Only enabled sources are queried.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source",
+              "network"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "const": "koah",
+                "type": "string"
+              },
+              "enabled": {
+                "default": true,
+                "description": "Only enabled sources are queried.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "const": "gravity",
+                "type": "string"
+              },
+              "enabled": {
+                "default": true,
+                "description": "Only enabled sources are queried.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "type": "object"
+          }
+        ],
+        "title": "DemandEntry"
+      },
+      "type": "array"
+    },
+    "privacy": {
+      "additionalProperties": false,
+      "default": {
+        "retain_days": 90,
+        "store_raw_text": false
+      },
+      "properties": {
+        "store_raw_text": {
+          "default": false,
+          "description": "When false, only hashes and classification are persisted.",
+          "type": "boolean"
+        },
+        "retain_days": {
+          "default": 90,
+          "description": "Retention window in days, at least 1.",
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "PolicyRetainDays",
+          "type": "integer"
+        }
+      },
+      "title": "Privacy",
+      "type": "object"
+    },
+    "regions": {
+      "additionalProperties": false,
+      "default": {
+        "allow": [
+          "US",
+          "CA",
+          "GB",
+          "EU"
+        ]
+      },
+      "description": "Regions in which ads may be served.",
+      "properties": {
+        "allow": {
+          "default": [
+            "US",
+            "CA",
+            "GB",
+            "EU"
+          ],
+          "items": {
+            "description": "ISO 3166-1 alpha-2 country code, or the token EU.",
+            "pattern": "^[A-Z]{2}$",
+            "title": "PolicyRegion",
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Regions",
+      "type": "object"
+    }
+  },
+  "required": [
+    "app_id"
+  ],
+  "title": "PolicyConfig",
+  "type": "object"
+}
