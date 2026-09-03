@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Per-app affiliate identifiers, one optional entry per AffiliateNetwork. The app owner brings their own accounts; a network without an entry yields no affiliate candidates.",
+  "properties": {
+    "partnerstack": {
+      "additionalProperties": false,
+      "description": "The app owner’s PartnerStack identifiers. Never a credential.",
+      "properties": {
+        "program_id": {
+          "description": "The PartnerStack partner key or link id that appears in tracked links ({{program_id}}).",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "program_id"
+      ],
+      "title": "PartnerStackConfig",
+      "type": "object"
+    },
+    "impact": {
+      "additionalProperties": false,
+      "description": "The app owner’s impact.com identifiers. Never a credential.",
+      "properties": {
+        "program_id": {
+          "description": "The impact.com program or media partner id that appears in tracked links ({{program_id}}).",
+          "minLength": 1,
+          "type": "string"
+        },
+        "campaign_id": {
+          "description": "Optional campaign id for templates that carry {{campaign_id}}.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "program_id"
+      ],
+      "title": "ImpactConfig",
+      "type": "object"
+    },
+    "amazon": {
+      "additionalProperties": false,
+      "description": "The app owner’s Amazon Associates identifiers. Never a credential.",
+      "properties": {
+        "tag": {
+          "description": "The Associates tracking id (Associate tag), e.g. mysite-20, set as tag=.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "marketplace": {
+          "description": "When set, templates must point at this storefront (tags are storefront-specific).",
+          "enum": [
+            "com",
+            "ca",
+            "com.mx",
+            "com.br",
+            "co.uk",
+            "de",
+            "fr",
+            "es",
+            "it",
+            "nl",
+            "se",
+            "pl",
+            "com.be",
+            "com.tr",
+            "ae",
+            "sa",
+            "eg",
+            "in",
+            "sg",
+            "co.jp",
+            "com.au"
+          ],
+          "title": "AmazonMarketplace",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tag"
+      ],
+      "title": "AmazonConfig",
+      "type": "object"
+    }
+  },
+  "title": "AffiliateConfig",
+  "type": "object"
+}

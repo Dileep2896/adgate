@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Affiliate network used by an affiliate demand entry.",
+  "enum": [
+    "partnerstack",
+    "impact",
+    "amazon"
+  ],
+  "title": "AffiliateNetwork",
+  "type": "string"
+}

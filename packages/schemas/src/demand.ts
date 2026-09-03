@@ -60,12 +60,16 @@ export const CatalogCreative = z
       .describe('Expected revenue per thousand impressions, in currency units.'),
     source: DemandSource,
     active: z.boolean().describe('Inactive creatives are never returned by any adapter.'),
-    network: AffiliateNetwork.optional().describe('Affiliate entries only.'),
+    network: AffiliateNetwork.optional().describe(
+      'Affiliate entries only. When absent, the affiliate adapter treats the creative as belonging to its own network (the one named in the policy’s affiliate demand entry).',
+    ),
     program_id: z
       .string()
       .min(1)
       .optional()
-      .describe('Affiliate entries only: the app owner’s own program or tracking id.'),
+      .describe(
+        'Affiliate entries only: overrides the app-level AffiliateConfig id for this creative (program_id for partnerstack and impact, the Associates tag for amazon). Always the app owner’s own id.',
+      ),
   })
   .meta({
     title: 'CatalogCreative',

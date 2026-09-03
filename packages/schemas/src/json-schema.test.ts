@@ -27,8 +27,9 @@ describe('json/*.schema.json', () => {
   });
 
   it('renders draft 2020-12 documents titled after the schema, with a trailing newline', () => {
-    // docs/policy.md rejects unknown keys, so only the policy schemas close their object.
-    const strict: ContractSchemaName[] = ['PolicyConfig', 'PolicyOverrides'];
+    // docs/policy.md rejects unknown keys, so only the config-time schemas (policy and the
+    // app-level affiliate config) close their object; wire schemas stay open.
+    const strict: ContractSchemaName[] = ['PolicyConfig', 'PolicyOverrides', 'AffiliateConfig'];
     for (const [name, content] of Object.entries(renderJsonSchemas())) {
       expect(content.endsWith('}\n')).toBe(true);
       const parsed = JSON.parse(content) as Record<string, unknown>;

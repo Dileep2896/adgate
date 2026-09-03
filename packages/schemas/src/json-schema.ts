@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { AffiliateConfig } from './affiliate.js';
 import { Classification, ClassificationMethod } from './classification.js';
 import {
   AppId,
@@ -29,6 +30,7 @@ import { AttestRequest, EventRequest, EventType } from './events.js';
 import { PolicyConfig } from './policy.js';
 import { CapState, PolicyDecision, PolicyRule } from './policy-decision.js';
 import { PolicyOverrides } from './policy-overrides.js';
+import { AffiliateNetwork } from './policy-parts.js';
 import { SuppressReason } from './suppress-reason.js';
 import { ContentCategory, SensitiveCategory } from './taxonomy.js';
 import { VerifyCheck, VerifyCheckName, VerifyResponse } from './verify.js';
@@ -39,6 +41,8 @@ export const CONTRACT_SCHEMAS = {
   EvaluateResponse,
   PolicyConfig,
   PolicyOverrides,
+  AffiliateConfig,
+  AffiliateNetwork,
   PolicyDecision,
   PolicyRule,
   CapState,

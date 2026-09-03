@@ -87,7 +87,7 @@
       "type": "boolean"
     },
     "network": {
-      "description": "Affiliate entries only.",
+      "description": "Affiliate entries only. When absent, the affiliate adapter treats the creative as belonging to its own network (the one named in the policy’s affiliate demand entry).",
       "enum": [
         "partnerstack",
         "impact",
@@ -97,7 +97,7 @@
       "type": "string"
     },
     "program_id": {
-      "description": "Affiliate entries only: the app owner’s own program or tracking id.",
+      "description": "Affiliate entries only: overrides the app-level AffiliateConfig id for this creative (program_id for partnerstack and impact, the Associates tag for amazon). Always the app owner’s own id.",
       "minLength": 1,
       "type": "string"
     }

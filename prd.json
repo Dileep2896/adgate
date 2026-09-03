@@ -113,7 +113,7 @@
       ]
     },
     {
-      "id": "S10", "priority": 10, "dependsOn": ["S09"], "passes": false,
+      "id": "S10", "priority": 10, "dependsOn": ["S09"], "passes": true,
       "title": "AffiliateAdapter link builders",
       "description": "Template based builders for partnerstack, impact, and amazon (Associates tag). Catalog entries carry url_template with {{program_id}} and {{tag}} placeholders filled from app-level affiliate config supplied by the caller. No network calls.",
       "acceptanceCriteria": [

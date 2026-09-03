@@ -1,13 +1,14 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
 /**
  * CLAUDE.md: pure logic lives in packages/core with no HTTP, DB, env or network access. The
- * demand directory may reach @adgate/schemas and node:crypto (through ../ids/ulid.ts, for
- * creative ids) and nothing else outside src/. Same approach as ../policy/evaluate-purity.test.ts.
+ * demand directory (affiliate/ included) may reach @adgate/schemas and node:crypto (through
+ * ../ids/ulid.ts, for creative ids) and nothing else outside src/. Same approach as
+ * ../policy/evaluate-purity.test.ts. The affiliate adapter builds links, it never fetches them.
  */
 const demandDir = dirname(fileURLToPath(import.meta.url));
 const srcDir = resolve(demandDir, '..');
@@ -17,6 +18,15 @@ const BANNED =
 
 const isImplementation = (name: string) =>
   name.endsWith('.ts') && !name.endsWith('.test.ts') && !name.endsWith('.fixture.ts');
+const listFiles = (dir: string): string[] =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+    entry.isDirectory() ? listFiles(join(dir, entry.name)) : [join(dir, entry.name)],
+  );
+/** Every file under dir, recursively, as sorted paths relative to the demand directory. */
+const walk = (dir: string): string[] =>
+  listFiles(dir)
+    .map((file) => relative(demandDir, file))
+    .sort();
 const specifiersOf = (file: string) =>
   [...readFileSync(file, 'utf8').matchAll(SPECIFIER)].map((match) => match[1] ?? '');
 const resolveRelative = (from: string, specifier: string) =>
@@ -43,16 +53,26 @@ const reachableBareImports = (file: string, seen = new Set<string>()): Set<strin
 };
 
 describe('demand package purity', () => {
-  const files = readdirSync(demandDir).filter(isImplementation);
+  const files = walk(demandDir).filter((file) => isImplementation(basename(file)));
 
   it('has the expected implementation files', () => {
-    expect(files.sort()).toEqual([
+    expect(files).toEqual([
+      'affiliate/adapter.ts',
+      'affiliate/amazon.ts',
+      'affiliate/impact.ts',
+      'affiliate/index.ts',
+      'affiliate/partnerstack.ts',
+      'affiliate/registry.ts',
+      'affiliate/template.ts',
+      'affiliate/types.ts',
       'catalog.ts',
       'direct.ts',
       'index.ts',
       'keywords.ts',
       'match.ts',
       'regions.ts',
+      'response.ts',
+      'select.ts',
       'types.ts',
     ]);
   });
@@ -76,10 +96,13 @@ describe('demand package purity', () => {
     const bare = [...reachableBareImports(join(demandDir, 'index.ts'))].sort();
     expect(bare).toEqual(['@adgate/schemas', 'node:crypto']);
     expect([...reachableBareImports(join(demandDir, 'direct.ts'))]).toEqual(['@adgate/schemas']);
+    expect([...reachableBareImports(join(demandDir, 'affiliate/index.ts'))]).toEqual([
+      '@adgate/schemas',
+    ]);
   });
 
   it('keeps every file under 300 lines (CLAUDE.md)', () => {
-    for (const name of readdirSync(demandDir)) {
+    for (const name of walk(demandDir)) {
       const lines = readFileSync(join(demandDir, name), 'utf8').split('\n').length;
       expect(lines, `${name} has ${lines} lines`).toBeLessThanOrEqual(300);
     }
