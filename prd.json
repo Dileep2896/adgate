@@ -210,7 +210,7 @@
       ]
     },
     {
-      "id": "S19", "priority": 19, "dependsOn": ["S18"], "passes": false,
+      "id": "S19", "priority": 19, "dependsOn": ["S18"], "passes": true,
       "title": "Attest, events, click redirect",
       "description": "POST /v1/attest, POST /v1/events (duplicate impressions ignored), GET /c/:audit_id logging a click and redirecting to the resolved destination (affiliate placeholders filled at this point).",
       "acceptanceCriteria": [

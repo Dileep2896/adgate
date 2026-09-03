@@ -56,17 +56,26 @@ export const readLatestAudit = async (
   return row === undefined ? null : { seq: row.seq, record_hash: row.recordHash };
 };
 
+/**
+ * SELECT ... FOR UPDATE on the apps row: every append to the app's chain (an evaluation here,
+ * an attestation in attest/store.ts) takes this lock first, inside its own transaction, so
+ * chain positions are handed out one at a time per app. Throws when the app does not exist.
+ */
+export const lockApp = async (tx: DbOrTx, appId: string): Promise<void> => {
+  const [locked] = await tx
+    .select({ id: apps.id })
+    .from(apps)
+    .where(eq(apps.id, appId))
+    .for('update');
+  if (locked === undefined) {
+    throw new Error(`audit store: app ${appId} not found`);
+  }
+};
+
 export const createAuditStore = (db: Db): AuditStore => ({
   persist: (input) =>
     db.transaction(async (tx) => {
-      const [locked] = await tx
-        .select({ id: apps.id })
-        .from(apps)
-        .where(eq(apps.id, input.appId))
-        .for('update');
-      if (locked === undefined) {
-        throw new Error(`audit store: app ${input.appId} not found`);
-      }
+      await lockApp(tx, input.appId);
       const previous = await readLatestAudit(tx, input.appId);
       const record = input.build(previous);
       const seq = (previous?.seq ?? 0) + 1;

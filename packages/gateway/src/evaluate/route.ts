@@ -4,6 +4,7 @@ import type { Context } from 'hono';
 
 import type { AppEnv } from '../app-env.js';
 import { errorResponse } from '../http-error.js';
+import { INVALID_REQUEST_CODE, parseJsonBody } from '../request-body.js';
 import type { EvaluateDeps } from './deps.js';
 import { AUDIT_ID_PREFIX, evaluate } from './pipeline.js';
 import { errorEvaluateResponse } from './response.js';
@@ -11,36 +12,19 @@ import { errorEvaluateResponse } from './response.js';
 /**
  * POST /v1/evaluate (docs/api.md), mounted behind bearerAuth({ roles: ['app'] }). The HTTP
  * boundary does three things before the pipeline: reject a body that is not JSON or not an
- * EvaluateRequest with 400 invalid_request, reject an app_id that is not the key's with 403,
+ * EvaluateRequest with 400 invalid_request (request-body.ts), reject an app_id that is not the
+ * key's with 403,
  * and hand the validated request to evaluate(), whose answer is always HTTP 200 (docs/api.md
  * "Error behavior"). One log line per evaluation carries ids, enums and timings, never the
  * messages, the context summary or the key.
  */
-export const INVALID_REQUEST_CODE = 'invalid_request';
 export const APP_MISMATCH_MESSAGE = 'app_id does not belong to the API key';
 
 type ParsedBody = { ok: true; request: EvaluateRequest } | { ok: false; message: string };
 
-/** `path: message` for the first issues. Zod messages name types and options, not values. */
-const summarizeIssues = (
-  issues: readonly { path: readonly PropertyKey[]; message: string }[],
-): string =>
-  issues
-    .slice(0, 5)
-    .map((issue) => `${issue.path.map(String).join('.') || '(root)'}: ${issue.message}`)
-    .join('; ');
-
 export const parseEvaluateBody = async (c: Context<AppEnv>): Promise<ParsedBody> => {
-  let raw: unknown;
-  try {
-    raw = await c.req.json();
-  } catch {
-    return { ok: false, message: 'request body is not valid JSON' };
-  }
-  const result = EvaluateRequest.safeParse(raw);
-  return result.success
-    ? { ok: true, request: result.data }
-    : { ok: false, message: `invalid EvaluateRequest: ${summarizeIssues(result.error.issues)}` };
+  const parsed = await parseJsonBody(c, EvaluateRequest, 'EvaluateRequest');
+  return parsed.ok ? { ok: true, request: parsed.data } : parsed;
 };
 
 export const evaluateRoute =

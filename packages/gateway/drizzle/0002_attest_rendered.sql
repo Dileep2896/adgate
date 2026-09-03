@@ -1,0 +1,1 @@
+ALTER TABLE "audit_records" ADD COLUMN "attest_rendered" boolean;

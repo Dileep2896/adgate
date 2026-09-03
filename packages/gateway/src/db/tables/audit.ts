@@ -57,6 +57,12 @@ export const auditRecords = pgTable(
     advertiserId: text('advertiser_id'),
     ts: timestamptz('ts').notNull(),
     record: jsonb('record').$type<AuditRecord>().notNull(),
+    /**
+     * AttestRequest.rendered as the SDK reported it, on the attested row only (null on every
+     * unattested row). The signed record has no such field (docs/audit.md), so it lives beside
+     * the record for reports, never inside it.
+     */
+    attestRendered: boolean('attest_rendered'),
     createdAt: createdAt(),
   },
   (table) => [
