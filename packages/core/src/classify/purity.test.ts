@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 /**
  * CLAUDE.md: pure logic lives in packages/core with no HTTP, DB, env or network access. The
  * orchestrator composes the rules and llm stages (which have their own purity tests) and may
- * reach @adgate/schemas and node:crypto (through ../canonical/sha256, for the cache key) and
+ * reach @adgate/schemas and node:crypto (through ../audit/crypto, for the cache key) and
  * nothing else outside src/. Time is injected (deps.now), so nothing here reads a clock except
  * as the documented Date.now default.
  */

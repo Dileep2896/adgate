@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * CLAUDE.md: pure logic lives in packages/core with no HTTP, DB, env or network access. The
- * rules classifier may reach node:crypto (through ../canonical/sha256, for RULES_VERSION) and
+ * rules classifier may reach node:crypto (through ../audit/crypto, for RULES_VERSION) and
  * nothing else outside src/. Same approach as policy/evaluate-purity.test.ts.
  */
 const rulesDir = dirname(fileURLToPath(import.meta.url));

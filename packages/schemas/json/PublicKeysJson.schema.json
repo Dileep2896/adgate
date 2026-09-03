@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": {
+    "description": "An Ed25519 public key as an SPKI PEM string (-----BEGIN PUBLIC KEY-----).",
+    "pattern": "^-----BEGIN PUBLIC KEY-----\\r?\\n[A-Za-z0-9+/=\\r\\n]+-----END PUBLIC KEY-----\\r?\\n?$",
+    "title": "PublicKeyPem",
+    "type": "string"
+  },
+  "description": "Shape of ADGATE_PUBLIC_KEYS_JSON: key_id -> SPKI PEM public key, including every retired key (old public keys remain available for verification forever).",
+  "propertyNames": {
+    "description": "Identifier of the Ed25519 key pair that signed a record, e.g. k_2026_09.",
+    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+    "title": "KeyId",
+    "type": "string"
+  },
+  "title": "PublicKeysJson",
+  "type": "object"
+}

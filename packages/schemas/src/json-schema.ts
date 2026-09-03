@@ -28,6 +28,7 @@ import {
 import { DemandResponseSummary, DemandTrace, ExcludedCandidate } from './demand-trace.js';
 import { Decision, EvaluateRequest, EvaluateResponse } from './evaluate.js';
 import { AttestRequest, EventRequest, EventType } from './events.js';
+import { Ed25519Signature, KeyId, PublicKeyPem, PublicKeysJson } from './keys.js';
 import { GravityConfig, KoahConfig } from './network-adapters.js';
 import { PolicyConfig } from './policy.js';
 import { CapState, PolicyDecision, PolicyRule } from './policy-decision.js';
@@ -47,6 +48,10 @@ export const CONTRACT_SCHEMAS = {
   AffiliateNetwork,
   KoahConfig,
   GravityConfig,
+  PublicKeysJson,
+  PublicKeyPem,
+  KeyId,
+  Ed25519Signature,
   PolicyDecision,
   PolicyRule,
   CapState,

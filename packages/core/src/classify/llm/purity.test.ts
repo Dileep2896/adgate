@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
  * CLAUDE.md: pure logic lives in packages/core with no HTTP, DB, env or network access. The LLM
  * stage is the one place in core that can reach the network, and only through the fetch the
  * gateway injects (LlmClassifierConfig.fetch is required; there is no platform default). Its
- * import graph may reach @adgate/schemas and node:crypto (through ../../canonical/sha256, for
+ * import graph may reach @adgate/schemas and node:crypto (through ../../audit/crypto, for
  * PROMPT_VERSION) and nothing else outside src/. Same approach as ../rules/purity.test.ts.
  */
 const llmDir = dirname(fileURLToPath(import.meta.url));

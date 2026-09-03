@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Identifier of the Ed25519 key pair that signed a record, e.g. k_2026_09.",
+  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+  "title": "KeyId",
+  "type": "string"
+}

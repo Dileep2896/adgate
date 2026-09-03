@@ -1,7 +1,7 @@
 import type { PolicyConfig, Sha256Hash } from '@adgate/schemas';
 
+import { sha256Prefixed } from '../audit/crypto.js';
 import { canonicalize } from '../canonical/canonicalize.js';
-import { sha256Prefixed } from '../canonical/sha256.js';
 
 /**
  * docs/policy.md: policy_hash is sha256 over the canonical JSON of the fully defaulted policy, so

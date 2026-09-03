@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "An Ed25519 public key as an SPKI PEM string (-----BEGIN PUBLIC KEY-----).",
+  "pattern": "^-----BEGIN PUBLIC KEY-----\\r?\\n[A-Za-z0-9+/=\\r\\n]+-----END PUBLIC KEY-----\\r?\\n?$",
+  "title": "PublicKeyPem",
+  "type": "string"
+}

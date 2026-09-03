@@ -29,7 +29,7 @@ describe('json/*.schema.json', () => {
   it('renders draft 2020-12 documents titled after the schema, with a trailing newline', () => {
     // docs/policy.md rejects unknown keys, so only the config-time schemas (policy, the
     // app-level affiliate config and the partner network configs) close their object; wire
-    // schemas stay open.
+    // schemas stay open. A z.record describes its values through additionalProperties.
     const strict: ContractSchemaName[] = [
       'PolicyConfig',
       'PolicyOverrides',
@@ -37,6 +37,7 @@ describe('json/*.schema.json', () => {
       'KoahConfig',
       'GravityConfig',
     ];
+    const records: ContractSchemaName[] = ['PublicKeysJson'];
     for (const [name, content] of Object.entries(renderJsonSchemas())) {
       expect(content.endsWith('}\n')).toBe(true);
       const parsed = JSON.parse(content) as Record<string, unknown>;
@@ -44,6 +45,9 @@ describe('json/*.schema.json', () => {
       expect(parsed['title']).toBe(name);
       if (strict.includes(name as ContractSchemaName)) {
         expect(parsed['additionalProperties']).toBe(false);
+      } else if (records.includes(name as ContractSchemaName)) {
+        expect(typeof parsed['additionalProperties']).toBe('object');
+        expect(parsed['propertyNames']).toMatchObject({ type: 'string' });
       } else {
         expect(parsed).not.toHaveProperty('additionalProperties');
       }

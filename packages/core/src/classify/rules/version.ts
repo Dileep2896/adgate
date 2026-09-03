@@ -1,5 +1,5 @@
 import { canonicalize } from '../../canonical/canonicalize.js';
-import { sha256Prefixed } from '../../canonical/sha256.js';
+import { sha256Prefixed } from '../../audit/crypto.js';
 import { RULES_DATA } from './data/index.js';
 import type { RulesData } from './types.js';
 

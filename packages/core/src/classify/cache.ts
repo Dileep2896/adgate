@@ -1,6 +1,6 @@
 import type { Classification } from '@adgate/schemas';
 
-import { sha256Prefixed } from '../canonical/sha256.js';
+import { sha256Prefixed } from '../audit/crypto.js';
 import { PROMPT_VERSION } from './llm/prompt.js';
 import { normalizeText } from './rules/normalize.js';
 import { RULES_VERSION } from './rules/version.js';

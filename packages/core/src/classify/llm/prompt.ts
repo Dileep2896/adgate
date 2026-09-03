@@ -1,6 +1,6 @@
 import { CATEGORIES_TAXONOMY, SENSITIVE_TAXONOMY } from '@adgate/schemas';
 
-import { sha256Prefixed } from '../../canonical/sha256.js';
+import { sha256Prefixed } from '../../audit/crypto.js';
 
 /**
  * The classifier system prompt. One string constant, built from the taxonomy constants so the

@@ -13,6 +13,36 @@ describe('@adgate/core', () => {
     expect(typeof core.mergeOverrides).toBe('function');
   });
 
+  it('exports the audit hashing, signing and key helpers', () => {
+    expect(typeof core.sign).toBe('function');
+    expect(typeof core.verifySignature).toBe('function');
+    expect(typeof core.verifyWithPublicKey).toBe('function');
+    expect(typeof core.decodeSignature).toBe('function');
+    expect(typeof core.loadPrivateKey).toBe('function');
+    expect(typeof core.loadPublicKey).toBe('function');
+    expect(typeof core.generateKeypair).toBe('function');
+    expect(typeof core.defaultKeyId).toBe('function');
+    expect(typeof core.derivePublicPem).toBe('function');
+    expect(typeof core.createKeyRing).toBe('function');
+    expect(typeof core.parsePublicKeysJson).toBe('function');
+    expect(typeof core.isKeyId).toBe('function');
+    expect(typeof core.AuditKeyError).toBe('function');
+    expect(core.SIGNATURE_PREFIX).toBe('ed25519:');
+    expect(core.ED25519_SIGNATURE_BYTES).toBe(64);
+    expect(core.KEY_ID_PREFIX).toBe('k_');
+    const pair = core.generateKeypair({ now: () => Date.UTC(2026, 8, 2) });
+    expect(pair.key_id).toBe('k_2026_09');
+    const hash = core.sha256Prefixed('record');
+    const signature = core.sign(hash, pair.private_pem);
+    expect(core.verifySignature(hash, signature, pair.public_pem)).toBe(true);
+    expect(
+      core.createKeyRing({ [pair.key_id]: pair.public_pem }).verify(hash, signature, pair.key_id),
+    ).toEqual({
+      ok: true,
+      detail: 'key_id=k_2026_09',
+    });
+  });
+
   it('exports the policy engine and the region helpers', () => {
     expect(typeof core.evaluatePolicy).toBe('function');
     expect(typeof core.isRegionAllowed).toBe('function');

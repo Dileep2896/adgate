@@ -144,7 +144,7 @@
       ]
     },
     {
-      "id": "S13", "priority": 13, "dependsOn": ["S04"], "passes": false,
+      "id": "S13", "priority": 13, "dependsOn": ["S04"], "passes": true,
       "title": "Hashing and Ed25519 signing utilities",
       "description": "packages/core/src/audit/crypto: sha256Hex(string), generateKeypair() returning PEM strings and a key_id, sign(hashHex, privatePem) returning ed25519:base64, verifySignature(hashHex, signature, publicPem). Uses node:crypto only.",
       "acceptanceCriteria": [

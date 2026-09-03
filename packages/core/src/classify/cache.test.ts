@@ -1,7 +1,7 @@
 import type { Classification } from '@adgate/schemas';
 import { describe, expect, it } from 'vitest';
 
-import { sha256Prefixed } from '../canonical/sha256.js';
+import { sha256Prefixed } from '../audit/crypto.js';
 import {
   DEFAULT_CACHE_MAX_ENTRIES,
   DEFAULT_CACHE_TTL_MS,
