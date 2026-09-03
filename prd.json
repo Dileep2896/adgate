@@ -176,7 +176,7 @@
       ]
     },
     {
-      "id": "S16", "priority": 16, "dependsOn": ["S02", "S03"], "passes": false,
+      "id": "S16", "priority": 16, "dependsOn": ["S02", "S03"], "passes": true,
       "title": "Gateway skeleton, config, Drizzle schema, migrations",
       "description": "Hono app in packages/gateway with a Zod validated config module reading env, pino logger with request ids, GET /healthz, Drizzle schema for apps, api_keys, advertisers, creatives, audit_records, events, cap_state, classify_cache, raw_text (only used when store_raw_text), and drizzle-kit migrations. pnpm db:migrate runs them.",
       "acceptanceCriteria": [

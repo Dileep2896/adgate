@@ -12,13 +12,31 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "drizzle"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --sourcemap --clean",
+    "build": "tsup src/index.ts src/server.ts src/db/migrate.ts src/keygen.ts --format esm --dts --sourcemap --clean",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "node -e \"console.log('db:migrate: no migrations yet; drizzle-kit migrations arrive with story S16')\"",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:generate": "drizzle-kit generate",
+    "keygen": "tsx src/keygen.ts",
     "lint": "eslint ."
+  },
+  "dependencies": {
+    "@adgate/core": "workspace:*",
+    "@adgate/schemas": "workspace:*",
+    "@hono/node-server": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.13.5",
+    "pino": "^10.3.1",
+    "postgres": "^3.4.9",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.10"
   }
 }
