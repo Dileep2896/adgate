@@ -3,7 +3,7 @@ import { createPublicKey, generateKeyPairSync, type KeyObject } from 'node:crypt
 import { KEY_ID_PATTERN, PublicKeysJson } from '@adgate/schemas';
 
 import { loadPrivateKey, loadPublicKey, verifyWithPublicKey } from './crypto.js';
-import { AuditKeyError } from './errors.js';
+import { AuditKeyError, describeIssues } from './errors.js';
 
 /**
  * Key generation, the verification key ring and the ADGATE_PUBLIC_KEYS_JSON parser.
@@ -118,11 +118,6 @@ export const createKeyRing = (keys: Readonly<Record<string, string>>): PublicKey
     },
   };
 };
-
-const describeIssues = (issues: readonly { path: readonly PropertyKey[]; message: string }[]) =>
-  issues
-    .map((issue) => `  - ${issue.path.map(String).join('.') || '(root)'}: ${issue.message}`)
-    .join('\n');
 
 /**
  * Parses the ADGATE_PUBLIC_KEYS_JSON value: a JSON object of key_id -> SPKI PEM, with the PEM

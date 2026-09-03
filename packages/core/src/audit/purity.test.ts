@@ -49,6 +49,7 @@ describe('audit package purity', () => {
 
   it('has the expected implementation files', () => {
     expect(files).toEqual([
+      'attest.ts',
       'chain.ts',
       'content-hash.ts',
       'crypto.ts',
@@ -57,6 +58,8 @@ describe('audit package purity', () => {
       'keys.ts',
       'privacy-hash.ts',
       'record.ts',
+      'verify-checks.ts',
+      'verify.ts',
     ]);
   });
 

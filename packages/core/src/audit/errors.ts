@@ -24,3 +24,11 @@ export class AuditKeyError extends Error {
     this.key_id = key_id;
   }
 }
+
+/** Zod issues as one bullet per line for an error message: paths and messages, never values. */
+export const describeIssues = (
+  issues: readonly { path: readonly PropertyKey[]; message: string }[],
+): string =>
+  issues
+    .map((issue) => `  - ${issue.path.map(String).join('.') || '(root)'}: ${issue.message}`)
+    .join('\n');

@@ -165,7 +165,7 @@
       ]
     },
     {
-      "id": "S15", "priority": 15, "dependsOn": ["S14"], "passes": false,
+      "id": "S15", "priority": 15, "dependsOn": ["S14"], "passes": true,
       "title": "attest() and verify()",
       "description": "attest(record, model_output_hash, now) returns a new signed record with separation_attestation true and supersedes_hash set. verify(record, publicKeys, { prevRecord, storedCreativeHash, supersededRecord }) returns { valid, checks[] } in the documented order.",
       "acceptanceCriteria": [

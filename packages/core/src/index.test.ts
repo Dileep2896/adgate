@@ -62,6 +62,22 @@ describe('@adgate/core', () => {
     expect(core.CREATIVE_CONTENT_FIELDS).toHaveLength(6);
   });
 
+  it('exports attest and verify', () => {
+    expect(typeof core.attest).toBe('function');
+    expect(typeof core.verify).toBe('function');
+    expect(typeof core.isAttested).toBe('function');
+    expect(typeof core.isUnattested).toBe('function');
+    expect(typeof core.AuditAttestError).toBe('function');
+    expect(core.VERIFY_CHECK_ORDER).toEqual(schemas.VerifyCheckName.options);
+    expect(core.VERIFY_DETAIL.pruned).toBe('pruned');
+    expect(core.VERIFY_DETAIL.not_applicable).toBe('not applicable');
+    const pair = core.generateKeypair({ keyId: 'k_index' });
+    const ring = core.createKeyRing({ k_index: pair.public_pem });
+    const result = core.verify(null, ring, {});
+    expect(result.valid).toBe(false);
+    expect(result.checks.map((check) => check.name)).toEqual(core.VERIFY_CHECK_ORDER);
+  });
+
   it('exports the policy engine and the region helpers', () => {
     expect(typeof core.evaluatePolicy).toBe('function');
     expect(typeof core.isRegionAllowed).toBe('function');
