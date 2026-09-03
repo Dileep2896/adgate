@@ -62,6 +62,13 @@ export interface ClassifyOutcome {
    * could quote input), so the gateway can log what broke without logging content.
    */
   error_name?: string;
+  /**
+   * The commercial dictionary terms the rules stage matched, normalized and de-duplicated
+   * (keywordsFromRulesMatches): what the gateway hands demand adapters as DemandRequest.keywords.
+   * Dictionary terms only, never message text. Present on every path, a cache hit included, so
+   * a warm cache ranks creatives exactly like a cold one; empty when the rules could not run.
+   */
+  keywords: string[];
   /** classifyCacheKey() of the prepared text; empty only when the input could not be prepared. */
   cache_key: string;
   latency_ms: number;

@@ -4,6 +4,7 @@ import { createApp } from './app.js';
 import { ConfigError, type GatewayConfig, loadConfig } from './config.js';
 import { createDb } from './db/client.js';
 import { loadRootEnvFile } from './env-file.js';
+import { createEvaluateDeps } from './evaluate/deps.js';
 import { createLogger } from './logger.js';
 import { type GatewaySigningKeys, loadSigningKeys } from './signing.js';
 
@@ -52,6 +53,7 @@ const main = (): void => {
     logger,
     corsAllowedOrigins: config.corsAllowedOrigins,
     db: database.db,
+    evaluate: createEvaluateDeps(config, database.db, { signing: keys.signing }),
   });
   const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
     logger.info({ port: info.port, address: info.address }, 'gateway listening');

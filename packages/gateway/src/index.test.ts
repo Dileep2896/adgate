@@ -10,6 +10,8 @@ describe('@adgate/gateway', () => {
     expect(typeof gateway.createDb).toBe('function');
     expect(typeof gateway.loadSigningKeys).toBe('function');
     expect(gateway.TABLE_NAMES).toContain('audit_records');
+    expect(typeof gateway.createEvaluateDeps).toBe('function');
+    expect(typeof gateway.evaluateRoute).toBe('function');
   });
 
   it('names every table exactly once', () => {

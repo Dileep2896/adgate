@@ -1,5 +1,6 @@
 import type { Classification } from '@adgate/schemas';
 
+import { keywordsFromRulesMatches } from '../demand/keywords.js';
 import { classifyCacheKey } from './cache.js';
 import { DEFAULT_LLM_TIMEOUT_MS, type LlmClassifyResult } from './llm/types.js';
 import { mergeClassifications, strongSensitiveFlags } from './merge.js';
@@ -16,8 +17,9 @@ import type {
 } from './types.js';
 
 /**
- * The two-stage classifier (docs/BUILD_GUIDE.md Phase 2). Flow: prepare the text, look it up in
- * the cache, run the rules, short-circuit on a strong sensitive hit, otherwise ask the LLM
+ * The two-stage classifier (docs/BUILD_GUIDE.md Phase 2). Flow: prepare the text, run the rules
+ * (always: they are cheap and their matched dictionary terms become the demand keywords), look
+ * the text up in the cache, short-circuit on a strong sensitive hit, otherwise ask the LLM
  * (under the orchestrator's own deadline) and merge. Any LLM failure, a missing LLM, or
  * anything thrown inside (a broken cache included) degrades to a rules-only classification; if
  * not even the rules can run, the result is the zeroed fail-closed classification. classify()
@@ -50,6 +52,15 @@ const rulesClassification = (rules: RulesResult): Classification => ({
   method: 'rules',
   prompt_version: rules.prompt_version,
 });
+
+/** Demand keywords from the rules matches: dictionary terms only, none when rules did not run. */
+const keywordsOf = (rules: RulesResult | undefined): string[] => {
+  try {
+    return rules === undefined ? [] : keywordsFromRulesMatches(rules.matches);
+  } catch {
+    return [];
+  }
+};
 
 /** The name of a thrown value and nothing else: a message could quote the conversation. */
 const errorName = (error: unknown): string =>
@@ -115,6 +126,7 @@ const classifyOrThrow = async (
     source,
     ...(llmFailure === undefined ? {} : { llm_failure: llmFailure }),
     ...(llmFailure === 'thrown' ? { error_name: errorName(thrown) } : {}),
+    keywords: keywordsOf(run.rules),
     cache_key: run.cacheKey,
     latency_ms: Math.max(0, Math.round(now() - started)),
   });
@@ -122,13 +134,13 @@ const classifyOrThrow = async (
   try {
     run.prepared = prepareText(input);
     run.cacheKey = classifyCacheKey(run.prepared.text, deps.policy);
+    run.rules = classifyByRules(run.prepared.rulesText);
 
     const hit = deps.cache?.get(run.cacheKey);
     if (hit !== undefined) {
       return finish({ ...cloneClassification(hit), method: 'cached' }, 'cache');
     }
 
-    run.rules = classifyByRules(run.prepared.rulesText);
     if (strongSensitiveFlags(run.rules).length > 0) {
       const classification = rulesClassification(run.rules);
       deps.cache?.set(run.cacheKey, cloneClassification(classification));
@@ -174,6 +186,7 @@ export const classify = async (
       source: 'rules_fallback',
       llm_failure: 'thrown',
       error_name: errorName(error),
+      keywords: [],
       cache_key: '',
       latency_ms: 0,
     };

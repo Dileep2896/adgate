@@ -1,19 +1,26 @@
-import type { ErrorResponse, HealthResponse } from '@adgate/schemas';
-import { type Context, Hono } from 'hono';
+import type { HealthResponse } from '@adgate/schemas';
+import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { HTTPException } from 'hono/http-exception';
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { Logger } from 'pino';
 
 import type { AppEnv } from './app-env.js';
+import { bearerAuth } from './auth/middleware.js';
+import { createApiKeyStore } from './auth/repository.js';
 import type { Db } from './db/client.js';
+import type { EvaluateDeps } from './evaluate/deps.js';
+import { evaluateRoute } from './evaluate/route.js';
+import { errorCode, errorResponse } from './http-error.js';
 import { REQUEST_ID_HEADER, requestContext } from './request-id.js';
+
+export { errorCode, errorResponse } from './http-error.js';
 
 /**
  * The Hono application. createApp wires middleware and routes around injected dependencies
  * and returns the app without binding a port, so tests drive it with app.request() and
- * server.ts serves it. Routes arrive story by story; this skeleton has GET /healthz and the
- * docs/api.md error behaviour: every non-2xx body is { error: { code, message } }.
+ * server.ts serves it. Routes arrive story by story: GET /healthz, POST /v1/evaluate (behind
+ * bearerAuth, when evaluate deps are given), and the docs/api.md error behaviour: every
+ * non-2xx body is { error: { code, message } }.
  */
 
 export interface AppDeps {
@@ -22,42 +29,11 @@ export interface AppDeps {
   corsAllowedOrigins: readonly string[];
   /** The Drizzle database. Optional until a route needs it, so unit tests run without Postgres. */
   db?: Db | undefined;
+  /** Mounts POST /v1/evaluate (createEvaluateDeps). Absent = the route does not exist. */
+  evaluate?: EvaluateDeps | undefined;
 }
 
 export type App = Hono<AppEnv>;
-
-const ERROR_CODES: Readonly<Partial<Record<number, string>>> = {
-  400: 'bad_request',
-  401: 'unauthorized',
-  403: 'forbidden',
-  404: 'not_found',
-  405: 'method_not_allowed',
-  409: 'conflict',
-  413: 'payload_too_large',
-  415: 'unsupported_media_type',
-  422: 'unprocessable',
-  429: 'rate_limited',
-  500: 'internal_error',
-  503: 'unavailable',
-};
-
-/** The stable error code for a status: a named one, or http_<status>. */
-export const errorCode = (status: number): string => ERROR_CODES[status] ?? `http_${status}`;
-
-export const errorResponse = (
-  c: Context<AppEnv>,
-  status: ContentfulStatusCode,
-  code: string,
-  message: string,
-  headers?: Headers,
-): Response => {
-  const body: ErrorResponse = { error: { code, message } };
-  const res = c.json(body, status);
-  headers?.forEach((value, name) => {
-    res.headers.set(name, value);
-  });
-  return res;
-};
 
 export const createApp = (deps: AppDeps): App => {
   const app = new Hono<AppEnv>();
@@ -77,6 +53,11 @@ export const createApp = (deps: AppDeps): App => {
     const body: HealthResponse = { ok: true };
     return c.json(body);
   });
+
+  if (deps.evaluate !== undefined) {
+    const store = createApiKeyStore(deps.evaluate.db);
+    app.post('/v1/evaluate', bearerAuth({ store, roles: ['app'] }), evaluateRoute(deps.evaluate));
+  }
 
   app.notFound((c) =>
     errorResponse(c, 404, 'not_found', `No route for ${c.req.method} ${c.req.path}`),

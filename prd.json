@@ -198,7 +198,7 @@
       ]
     },
     {
-      "id": "S18", "priority": 18, "dependsOn": ["S17", "S08", "S15"], "passes": false,
+      "id": "S18", "priority": 18, "dependsOn": ["S17", "S08", "S15"], "passes": true,
       "title": "POST /v1/evaluate end to end",
       "description": "Wire policy load + validated overrides, cap_state read, classify with Postgres cache in front of the LRU, evaluatePolicy, mediate with DirectAdapter (creatives from DB) and AffiliateAdapter, buildAuditRecord chained to the app's last record, persist, cap_state upsert, respond. Whole handler wrapped so any error returns HTTP 200 with decision suppress and reason error, logged with request id. Messages truncated to last 4 and 4,000 chars before classification.",
       "acceptanceCriteria": [

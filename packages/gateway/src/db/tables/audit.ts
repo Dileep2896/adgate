@@ -1,6 +1,15 @@
 import type { AuditRecord, Decision, EventType } from '@adgate/schemas';
 import { sql } from 'drizzle-orm';
-import { boolean, check, index, jsonb, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  check,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 import { apps } from './apps.js';
 import { createdAt, sqlList, timestamptz } from './columns.js';
@@ -9,7 +18,10 @@ import { createdAt, sqlList, timestamptz } from './columns.js';
  * The signed audit log (docs/audit.md). The signed JSON is the source of truth in `record`;
  * the other columns are copies for lookups and reports and must never be edited on their
  * own. Attestation writes a SECOND row with the same `id` and a new record_hash (S15), so the
- * primary key is record_hash and `is_latest` marks the version the API serves.
+ * primary key is record_hash and `is_latest` marks the version the API serves. `seq` is the
+ * record's position in its app's chain (1, 2, 3...; attested rows take the next one too): the
+ * positional predecessor verify() needs is the row at seq - 1, and the latest record is the
+ * highest seq. Appends are serialised per app by locking the apps row (evaluate/audit-store.ts).
  *
  * Table modules import @adgate/schemas as types only: drizzle-kit loads them through a CJS
  * hook that cannot resolve the ESM-only workspace packages. The value lists below mirror the
@@ -33,6 +45,8 @@ export const auditRecords = pgTable(
     appId: text('app_id')
       .notNull()
       .references(() => apps.id),
+    /** 1-based position in the app's chain; unique per app. The predecessor is seq - 1. */
+    seq: integer('seq').notNull(),
     /** record_hash of the previous record for the app, or the literal genesis. */
     prevHash: text('prev_hash').notNull(),
     supersedesHash: text('supersedes_hash'),
@@ -53,6 +67,7 @@ export const auditRecords = pgTable(
     uniqueIndex('audit_records_one_latest_per_id_uidx')
       .on(table.id)
       .where(sql`is_latest = true`),
+    uniqueIndex('audit_records_app_id_seq_uidx').on(table.appId, table.seq),
     check('audit_records_decision_check', sql`${table.decision} in (${sqlList(AUDIT_DECISIONS)})`),
   ],
 );

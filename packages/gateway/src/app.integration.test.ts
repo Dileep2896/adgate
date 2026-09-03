@@ -73,6 +73,7 @@ describe('migrations', () => {
     expect(definition('user_day_caps_pkey')).toContain('(app_id, user_hash, day)');
     expect(definition('audit_records_one_latest_per_id_uidx')).toMatch(/UNIQUE.*WHERE/s);
     expect(definition('events_one_impression_per_audit_uidx')).toMatch(/UNIQUE.*WHERE/s);
+    expect(definition('audit_records_app_id_seq_uidx')).toMatch(/UNIQUE.*\(app_id, seq\)/s);
   });
 
   it('are idempotent', async () => {
