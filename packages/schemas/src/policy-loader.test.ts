@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
+import { PolicyConfig } from './policy.js';
 import { POLICY_DOC_EXAMPLE } from './policy.fixture.js';
 import { parsePolicy, parsePolicyYaml, PolicyValidationError } from './policy-loader.js';
 
@@ -10,15 +11,8 @@ const exampleYaml = readFileSync(
   'utf8',
 );
 
-/** examples/policy.example.yaml, fully defaulted: the doc example with its own app_id and demand. */
-export const POLICY_EXAMPLE_FILE_EXPECTED = {
-  ...POLICY_DOC_EXAMPLE,
-  app_id: 'example-chat',
-  demand: [
-    { source: 'direct', enabled: true },
-    { source: 'affiliate', network: 'partnerstack', enabled: true },
-  ],
-};
+/** examples/policy.example.yaml spells out every documented default, so it equals a defaulted parse. */
+const POLICY_EXAMPLE_FILE_EXPECTED = PolicyConfig.parse({ app_id: 'example-chat' });
 
 const failure = (fn: () => unknown): PolicyValidationError => {
   try {

@@ -16,7 +16,7 @@ import {
  * gateway tests drive the classifier with this instead of OpenAiCompatibleClassifier. It records
  * every text it was asked about so tests can assert the LLM was, or was not, consulted.
  */
-export type FakeLlmMode = 'timeout' | 'parse' | 'throw';
+export type FakeLlmMode = 'timeout' | 'parse' | 'throw' | 'hang';
 
 export type FakeLlmScript = LlmClassifyResult | ((text: string) => LlmClassifyResult) | FakeLlmMode;
 
@@ -68,7 +68,8 @@ export class FakeLlmClassifier implements LlmClassifier {
   /**
    * 'timeout' and 'parse' return the matching typed failure. 'throw' rejects on purpose, which
    * a real LlmClassifier never does, so callers can prove they convert a throw into a
-   * rules-only result. A function script is called with the text; a result is returned as is.
+   * rules-only result; 'hang' never settles, so callers can prove their own deadline fires.
+   * A function script is called with the text; a result is returned as is.
    */
   async classify(text: string, opts?: LlmClassifyOptions): Promise<LlmClassifyResult> {
     this.calls.push(text);
@@ -78,6 +79,9 @@ export class FakeLlmClassifier implements LlmClassifier {
     const script = this.script;
     if (script === 'throw') {
       throw new Error('FakeLlmClassifier: throw mode');
+    }
+    if (script === 'hang') {
+      return new Promise<LlmClassifyResult>(() => undefined);
     }
     if (script === 'timeout') {
       return fakeLlmFailure(

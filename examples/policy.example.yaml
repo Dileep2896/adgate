@@ -20,6 +20,10 @@ demand:
   - source: affiliate
     network: partnerstack
     enabled: true
+  - source: koah
+    enabled: false
+  - source: gravity
+    enabled: false
 privacy:
   store_raw_text: false
   retain_days: 90

@@ -1,6 +1,9 @@
 import type { SensitiveRuleSet } from '../../types.js';
 
-/** Health: conditions, drugs, symptoms, treatment. Normalized phrases (see aliases.ts). */
+/**
+ * Health: conditions, drugs, symptoms, treatment. Normalized phrases (see aliases.ts). "dental"
+ * is weak: dental hygiene products are shopping, a dental problem needs a second term.
+ */
 export const HEALTH: SensitiveRuleSet = {
   category: 'health',
   strong: [
@@ -18,7 +21,7 @@ export const HEALTH: SensitiveRuleSet = {
     'hiv', 'eating disorder', 'anorexia', 'bulimia', 'therapist', 'psychiatrist',
     'psychologist', 'prescription', 'prescriptions', 'prescribed', 'medication', 'medications',
     'meds', 'diagnosed', 'health insurance', 'medical', 'dosage', 'overdose', 'concussion',
-    'surgery', 'weight loss', 'diet pills', 'dentist', 'dental', 'hospital', 'urgent care',
+    'surgery', 'weight loss', 'diet pills', 'dentist', 'hospital', 'urgent care',
     'painkiller', 'painkillers', 'opioid', 'opioids', 'insomnia', 'sleep apnea', 'menopause',
     'testosterone', 'hormone', 'hormones', 'thyroid', 'eczema', 'psoriasis', 'acne', 'celiac',
     'ibs', 'crohns', 'ulcer', 'hernia', 'fracture', 'sprain', 'physical therapy',
@@ -32,7 +35,7 @@ export const HEALTH: SensitiveRuleSet = {
     'swollen', 'swelling', 'cough', 'sneezing', 'fatigue', 'dizzy', 'dizziness', 'nauseous',
     'bleeding', 'injury', 'injured', 'bruise', 'itchy', 'cramps', 'symptom', 'symptoms',
     'infection', 'infections', 'side effects', 'diagnosis', 'treatment', 'cure', 'remedy',
-    'remedies', 'rash',
+    'remedies', 'rash', 'dental',
   ],
   patterns: [
     String.raw`\b(chronic|back|neck|knee|joint|chest|stomach|abdominal|pelvic|shoulder|hip) pain\b`,

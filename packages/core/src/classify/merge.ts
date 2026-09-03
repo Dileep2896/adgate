@@ -6,11 +6,13 @@ import type { ClassifyPolicy } from './types.js';
 
 /**
  * Merge of the rules and LLM stages (docs/BUILD_GUIDE.md Phase 2, design step 4). The LLM wins
- * on categories and commercial_intent. Sensitive flags depend on policy.sensitive_detection:
- * - strict: the union of rules and LLM flags (any signal from either stage suppresses);
- * - balanced: strong rule flags (a strong phrase or pattern hit) plus the LLM's flags only when
- *   the LLM's confidence reaches policy.min_confidence, so weak-pair rule hits and unsure model
- *   flags do not suppress on their own.
+ * on categories and commercial_intent. Sensitive flags (policy.sensitive_detection):
+ * - every category the rules stage flagged (a strong phrase or pattern hit, or a pair of weak
+ *   phrases) is kept in both modes: the rules are the deterministic floor;
+ * - strict adds every LLM flag at any confidence (any signal from either stage suppresses);
+ * - balanced adds the LLM's flags only when the LLM's confidence reaches policy.min_confidence,
+ *   so an unsure model does not suppress on its own;
+ * - self_harm from either stage is never dropped in either mode.
  * Confidence is the LLM's unless rules fired (any sensitive flag or any commercial category
  * match), then min(rules, llm). A non-empty sensitive list caps commercial_intent at the rules
  * stage's cap (0.2) and self_harm forces 0, mirroring classifyByRules. The result carries no
@@ -40,11 +42,12 @@ const inTaxonomyOrder = (values: Iterable<SensitiveCategory>): SensitiveCategory
 };
 
 const mergeSensitive = ({ rules, llm, policy }: MergeInput): SensitiveCategory[] => {
-  if (policy.sensitive_detection === 'strict') {
-    return inTaxonomyOrder([...rules.sensitive, ...llm.sensitive]);
-  }
-  const fromLlm = llm.confidence >= policy.min_confidence ? llm.sensitive : [];
-  return inTaxonomyOrder([...strongSensitiveFlags(rules), ...fromLlm]);
+  const llmCounts =
+    policy.sensitive_detection === 'strict' || llm.confidence >= policy.min_confidence;
+  const fromLlm = llmCounts
+    ? llm.sensitive
+    : llm.sensitive.filter((category) => category === 'self_harm');
+  return inTaxonomyOrder([...rules.sensitive, ...fromLlm]);
 };
 
 const cappedIntent = (intent: number, sensitive: readonly SensitiveCategory[]): number => {

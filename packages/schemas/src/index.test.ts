@@ -9,10 +9,18 @@ describe('@adgate/schemas', () => {
     }
   });
 
-  it('exports the taxonomy arrays and the JSON Schema helpers', () => {
+  it('exports the taxonomy arrays and the in-memory JSON Schema helpers only', () => {
     expect(schemas.SENSITIVE_TAXONOMY).toContain('self_harm');
     expect(schemas.CATEGORIES_TAXONOMY).toContain('general');
-    expect(typeof schemas.toJsonSchema).toBe('function');
     expect(typeof schemas.renderJsonSchemas).toBe('function');
+    expect(typeof schemas.toJsonSchemaObject).toBe('function');
+    // The node:fs writer lives in json-schema-files.ts, off the index (index-purity.test.ts).
+    expect(schemas).not.toHaveProperty('toJsonSchema');
+    expect(schemas).not.toHaveProperty('JSON_SCHEMA_DIR');
+  });
+
+  it('exports the classify fixture schema shared with core and the Python SDK', () => {
+    expect(typeof schemas.ClassifyFixture.parse).toBe('function');
+    expect(typeof schemas.ClassifyFixtureCase.parse).toBe('function');
   });
 });

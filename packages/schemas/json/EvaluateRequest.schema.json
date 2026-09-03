@@ -2,6 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "anyOf": [
     {
+      "properties": {
+        "messages": {
+          "minItems": 1
+        }
+      },
       "required": [
         "messages"
       ]
@@ -39,7 +44,7 @@
           "type": "string"
         },
         "region": {
-          "description": "ISO 3166 alpha-2 country code.",
+          "description": "ISO 3166 alpha-2 country code. Optional; when absent the regions rule fails closed and the turn is suppressed with reason region_blocked.",
           "pattern": "^[A-Z]{2}$",
           "type": "string"
         },
@@ -61,7 +66,7 @@
       "type": "object"
     },
     "messages": {
-      "description": "The last few turns, newest last. Required unless context_summary is sent.",
+      "description": "The last few turns, newest last. Required and non-empty unless context_summary is sent.",
       "items": {
         "description": "One conversation turn. Servers truncate to the last 4 messages and 4,000 characters before classification.",
         "properties": {
@@ -86,7 +91,6 @@
         "title": "Message",
         "type": "object"
       },
-      "minItems": 1,
       "type": "array"
     },
     "context_summary": {

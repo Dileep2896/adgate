@@ -6,10 +6,10 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * CLAUDE.md: pure logic lives in packages/core with no HTTP, DB, env or network access. The LLM
- * stage is the one place in core that can reach the network, and only through an injected
- * fetch (default globalThis.fetch, referenced in openai.ts alone). Its import graph may reach
- * @adgate/schemas and node:crypto (through ../../canonical/sha256, for PROMPT_VERSION) and
- * nothing else outside src/. Same approach as ../rules/purity.test.ts.
+ * stage is the one place in core that can reach the network, and only through the fetch the
+ * gateway injects (LlmClassifierConfig.fetch is required; there is no platform default). Its
+ * import graph may reach @adgate/schemas and node:crypto (through ../../canonical/sha256, for
+ * PROMPT_VERSION) and nothing else outside src/. Same approach as ../rules/purity.test.ts.
  */
 const llmDir = dirname(fileURLToPath(import.meta.url));
 const srcDir = resolve(llmDir, '../..');
@@ -80,14 +80,10 @@ describe('llm classifier purity', () => {
     }
   });
 
-  it('references fetch only in openai.ts, and only as the injectable default', () => {
+  it('never reaches for the platform fetch: the transport is always injected', () => {
     for (const file of files) {
       const source = readFileSync(file, 'utf8');
-      if (basename(file) === 'openai.ts') {
-        expect(source).toMatch(/globalThis\.fetch/);
-        continue;
-      }
-      expect(source, `${file} mentions fetch`).not.toMatch(/\bfetch\s*\(/);
+      expect(source, `${file} reaches for fetch`).not.toMatch(/globalThis\.fetch|\bfetch\s*\(/);
     }
   });
 

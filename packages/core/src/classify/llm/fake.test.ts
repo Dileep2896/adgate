@@ -1,17 +1,21 @@
 import { readFileSync } from 'node:fs';
 
-import { Classification } from '@adgate/schemas';
-import { describe, expect, it } from 'vitest';
+import { Classification, ClassifyFixture, type ClassifyFixtureCase } from '@adgate/schemas';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { FakeLlmClassifier, fakeLlmFailure, fakeLlmSuccess } from './fake.js';
-import { fakeLlmFromFixtures, type ClassifyFixtureCase } from './fixtures.js';
+import { fakeLlmFromFixtures } from './fixtures.js';
 import { PROMPT_VERSION } from './prompt.js';
 import type { LlmClassifier } from './types.js';
 
-const fixture = JSON.parse(
-  readFileSync(new URL('../../../../../fixtures/classify-fixtures.json', import.meta.url), 'utf8'),
-) as { cases: ClassifyFixtureCase[] };
-const cases = fixture.cases;
+const { cases } = ClassifyFixture.parse(
+  JSON.parse(
+    readFileSync(
+      new URL('../../../../../fixtures/classify-fixtures.json', import.meta.url),
+      'utf8',
+    ),
+  ),
+);
 const byId = (id: string): ClassifyFixtureCase => {
   const found = cases.find((c) => c.id === id);
   if (!found) {
@@ -47,6 +51,10 @@ describe('fakeLlmSuccess and fakeLlmFailure', () => {
 });
 
 describe('FakeLlmClassifier', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('is an LlmClassifier that returns a fixed result and records every call', async () => {
     const fixed = fakeLlmSuccess({ commercial_intent: 0.3 });
     const fake: LlmClassifier = new FakeLlmClassifier(fixed);
@@ -82,6 +90,18 @@ describe('FakeLlmClassifier', () => {
       ok: false,
       reason: 'parse',
     });
+  });
+
+  it('hang mode never settles, so callers can prove their own deadline fires', async () => {
+    vi.useFakeTimers();
+    const fake = new FakeLlmClassifier('hang');
+    let settled = false;
+    void fake.classify('x').then(() => {
+      settled = true;
+    });
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(settled).toBe(false);
+    expect(fake.calls).toEqual(['x']);
   });
 
   it('throw mode rejects, so callers can prove they convert throws to rules-only', async () => {
@@ -170,7 +190,7 @@ describe('fakeLlmFromFixtures', () => {
     });
     const custom = fakeLlmFromFixtures([
       { id: 'x1', text: 'buy me a robot', expect: { sensitive: [] } },
-      { id: 'x2', text: 'weapons talk', expect: { sensitive: ['weapons', 'nonsense'] } },
+      { id: 'x2', text: 'weapons talk', expect: { sensitive: ['weapons'] } },
     ]);
     expect(custom('buy me a robot')).toMatchObject({
       classification: { commercial_intent: 0.9, categories: ['general'] },

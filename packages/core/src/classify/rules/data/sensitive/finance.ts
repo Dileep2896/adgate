@@ -3,6 +3,7 @@ import type { SensitiveRuleSet } from '../../types.js';
 /**
  * Finance: credit, debt, investing, insurance, money trouble. "budget" and "dollars" are NOT
  * here: they are buying signals (intent.ts) and appear in serve cases like "under 200 dollars".
+ * "apr" is weak: it is also the month ("flights in apr").
  */
 export const FINANCE: SensitiveRuleSet = {
   category: 'finance',
@@ -13,7 +14,7 @@ export const FINANCE: SensitiveRuleSet = {
     'stock options', 'investing', 'investment', 'investments', 'investor', '401k', 'ira',
     'roth ira', 'retirement', 'pension', 'savings account', 'my savings', 'bitcoin', 'ethereum',
     'dogecoin', 'brokerage', 'bank account', 'checking account', 'interest rate',
-    'interest rates', 'apr', 'annual fee', 'health insurance', 'life insurance',
+    'interest rates', 'annual fee', 'health insurance', 'life insurance',
     'car insurance', 'auto insurance', 'home insurance', 'homeowners insurance',
     'renters insurance', 'disability insurance', 'taxes', 'tax return', 'tax refund', 'irs',
     'paycheck', 'payday loan', 'payday loans', 'bankruptcy', 'foreclosure', 'rent is due',
@@ -30,7 +31,7 @@ export const FINANCE: SensitiveRuleSet = {
     'money', 'rent', 'bills', 'afford', 'cash', 'bank', 'salary', 'savings', 'budgeting',
     'inflation', 'economy', 'wallet', 'fee', 'fees', 'income', 'expenses', 'credit',
     'consolidate', 'pay off', 'stock', 'invest', 'trading', 'bonds', 'treasury', 'portfolio',
-    'insurance', 'tax', 'financial', 'finances', 'finance',
+    'insurance', 'tax', 'financial', 'finances', 'finance', 'apr',
   ],
   patterns: [
     String.raw`\b\d+ (dollars|bucks|usd|pounds|euros) short\b`,

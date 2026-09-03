@@ -2,6 +2,7 @@ import { CATEGORIES_TAXONOMY, SENSITIVE_TAXONOMY } from '@adgate/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { RULES_DATA } from './data/index.js';
+import { containsPhrase } from './match.js';
 import { normalizeText } from './normalize.js';
 
 /**
@@ -49,6 +50,21 @@ describe('sensitive keyword data', () => {
     expectDisjoint(rules.strong, rules.weak, category);
     expectPatternsCompile(rules.patterns, category);
     expect(rules.strong.length, `${category} needs strong phrases`).toBeGreaterThan(0);
+  });
+
+  it.each(SENSITIVE_TAXONOMY)('%s exclusions are normalized and each masks a term', (category) => {
+    const rules = RULES_DATA.sensitive[category];
+    const exclusions = rules.exclusions ?? [];
+    expectNormalized(exclusions, `${category}.exclusions`);
+    expectUnique(exclusions, `${category}.exclusions`);
+    const terms = [...rules.strong, ...rules.weak];
+    for (const phrase of exclusions) {
+      expect(
+        terms.some((term) => containsPhrase(phrase, term)),
+        `${category}.exclusions: "${phrase}" contains no strong or weak term`,
+      ).toBe(true);
+      expect(terms, `${category}.exclusions: "${phrase}" is itself a term`).not.toContain(phrase);
+    }
   });
 });
 

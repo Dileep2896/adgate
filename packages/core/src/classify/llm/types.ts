@@ -46,7 +46,7 @@ export interface LlmClassifier {
   classify(text: string, opts?: LlmClassifyOptions): Promise<LlmClassifyResult>;
 }
 
-/** The slice of the fetch API the client uses; globalThis.fetch satisfies it, so do test fakes. */
+/** The slice of the fetch API the client uses; the platform fetch satisfies it, so do test fakes. */
 export interface LlmFetchInit {
   method: 'POST';
   headers: Record<string, string>;
@@ -73,6 +73,9 @@ export interface LlmClassifierConfig {
   model: string;
   /** Hard deadline for one classification. Default DEFAULT_LLM_TIMEOUT_MS (docs/api.md). */
   timeoutMs?: number | undefined;
-  /** Defaults to globalThis.fetch. Tests inject a fake; unit tests never touch the network. */
-  fetch?: LlmFetch | undefined;
+  /**
+   * The transport. Required: the gateway passes its platform fetch, tests pass a fake, and core
+   * never reaches for a global one (CLAUDE.md: no network access in core on its own).
+   */
+  fetch: LlmFetch;
 }

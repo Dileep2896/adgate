@@ -16,6 +16,12 @@ export interface SensitiveRuleSet {
   weak: readonly string[];
   /** Regex sources matched against the normalized text; a hit counts as strong. */
   patterns: readonly string[];
+  /**
+   * Normalized phrases masked out of the text before this category's lists and patterns are
+   * matched: compounds that contain a term but are not the topic (a glue gun is a tool, not a
+   * weapon). A term elsewhere in the same text still matches.
+   */
+  exclusions?: readonly string[];
 }
 
 export interface CommercialRuleSet {

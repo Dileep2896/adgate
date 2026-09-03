@@ -135,7 +135,7 @@ describe('mergeClassifications', () => {
     expect(rulesFired(hint)).toBe(false);
   });
 
-  it('balanced: keeps strong rule flags and drops weak-pair flags', () => {
+  it('balanced: keeps every flagged rule category, weak pairs included', () => {
     const merged = mergeClassifications({
       rules: rules({
         sensitive: [sensitiveMatch('health', 'weak'), sensitiveMatch('weapons', 'strong')],
@@ -144,8 +144,32 @@ describe('mergeClassifications', () => {
       llm: llm({ sensitive: [], confidence: 0.9, commercial_intent: 0.8 }),
       policy: balanced,
     });
-    expect(merged.sensitive).toEqual(['weapons']);
+    expect(merged.sensitive).toEqual(['health', 'weapons']);
     expect(merged.commercial_intent).toBe(0.2);
+  });
+
+  it('balanced: an LLM-only health flag below min_confidence is dropped; strict keeps it', () => {
+    const answer = llm({ sensitive: ['health'], confidence: 0.65, commercial_intent: 0.9 });
+    const relaxed = mergeClassifications({ rules: rules(), llm: answer, policy: balanced });
+    expect(relaxed.sensitive).toEqual([]);
+    expect(relaxed.commercial_intent).toBe(0.9);
+    const tight = mergeClassifications({ rules: rules(), llm: answer, policy: strict });
+    expect(tight.sensitive).toEqual(['health']);
+    expect(tight.commercial_intent).toBe(0.2);
+  });
+
+  it('never drops self_harm: an LLM-only flag at confidence 0.65 survives balanced detection', () => {
+    const answer = llm({
+      sensitive: ['self_harm', 'health'],
+      confidence: 0.65,
+      commercial_intent: 0.9,
+    });
+    const relaxed = mergeClassifications({ rules: rules(), llm: answer, policy: balanced });
+    expect(relaxed.sensitive).toEqual(['self_harm']);
+    expect(relaxed.commercial_intent).toBe(0);
+    const tight = mergeClassifications({ rules: rules(), llm: answer, policy: strict });
+    expect(tight.sensitive).toEqual(['health', 'self_harm']);
+    expect(tight.commercial_intent).toBe(0);
   });
 
   it('balanced: LLM flags count only when the LLM confidence reaches min_confidence', () => {

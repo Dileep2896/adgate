@@ -1,7 +1,7 @@
 import type { ContentCategory, SensitiveCategory } from '@adgate/schemas';
 
 import { SCORING } from './data/scoring.js';
-import { findPatterns, findPhrases, padText } from './match.js';
+import { findPatterns, findPhrases, maskPhrases, padText } from './match.js';
 import { normalizeText } from './normalize.js';
 import {
   COMMERCIAL_REGISTRY,
@@ -18,17 +18,20 @@ import { RULES_VERSION } from './version.js';
  * The rules stage of the classifier (docs/BUILD_GUIDE.md Phase 2, design step 1). Pure and
  * synchronous: normalize the already joined conversation text, match the keyword registry, and
  * score. Any sensitive hit caps commercial_intent at SCORING.sensitive.max_intent; self_harm
- * forces it to 0. Never throws on a string input; an empty or content-free text yields intent
- * 0, categories ['general'] and the base confidence.
+ * forces it to 0. A category's exclusions (compounds such as glue gun) are masked out before
+ * that category is matched. Never throws on a string input; an empty or content-free text
+ * yields intent 0, categories ['general'] and the base confidence.
  */
-const matchSensitive = (normalized: string, padded: string): SensitiveMatch[] => {
+const matchSensitive = (padded: string): SensitiveMatch[] => {
   const matches: SensitiveMatch[] = [];
   for (const rules of SENSITIVE_REGISTRY) {
+    // Excluded compounds (glue gun) are blanked out for this category only.
+    const text = maskPhrases(padded, rules.exclusions);
     const strong = [
-      ...findPhrases(padded, rules.strong),
-      ...findPatterns(normalized, rules.patterns),
+      ...findPhrases(text, rules.strong),
+      ...findPatterns(text.trim(), rules.patterns),
     ];
-    const weak = findPhrases(padded, rules.weak);
+    const weak = findPhrases(text, rules.weak);
     if (strong.length === 0 && weak.length === 0) {
       continue;
     }
@@ -99,7 +102,7 @@ export const classifyByRules = (text: string): RulesResult => {
   const normalized = normalizeText(text);
   const padded = padText(normalized);
 
-  const sensitive = matchSensitive(normalized, padded);
+  const sensitive = matchSensitive(padded);
   const commercial = matchCommercial(normalized, padded);
   const intent = matchIntent(normalized, padded);
   const informational = findPhrases(padded, INFORMATIONAL_PHRASES);

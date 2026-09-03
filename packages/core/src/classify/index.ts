@@ -13,8 +13,8 @@ export type { LruCache, LruCacheOptions } from './cache.js';
 export { classify, failClosedClassification } from './classify.js';
 export { mergeClassifications, rulesFired, strongSensitiveFlags } from './merge.js';
 export type { MergeInput } from './merge.js';
-export { DEFAULT_PREPARE_OPTIONS, prepareText } from './prepare.js';
-export type { PrepareTextInput, PrepareTextOptions } from './prepare.js';
+export { CLASSIFIED_ROLES, DEFAULT_PREPARE_OPTIONS, prepareText } from './prepare.js';
+export type { PrepareTextInput, PrepareTextOptions, PreparedText } from './prepare.js';
 export type {
   ClassifyCache,
   ClassifyDeps,

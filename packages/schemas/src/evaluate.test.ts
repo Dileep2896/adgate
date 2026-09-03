@@ -42,6 +42,20 @@ describe('EvaluateRequest', () => {
     expect(EvaluateRequest.safeParse({ ...requestWithoutText, messages: [] }).success).toBe(false);
   });
 
+  it('accepts an empty messages array alongside a context_summary', () => {
+    const parsed = EvaluateRequest.parse({
+      ...requestWithoutText,
+      messages: [],
+      context_summary: 'x',
+    });
+    expect(parsed.messages).toEqual([]);
+    expect(parsed.context_summary).toBe('x');
+    expect(
+      EvaluateRequest.safeParse({ ...requestWithoutText, messages: [], context_summary: '' })
+        .success,
+    ).toBe(false);
+  });
+
   it('rejects placements other than after_answer', () => {
     expect(
       EvaluateRequest.safeParse({

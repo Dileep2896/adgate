@@ -34,7 +34,7 @@ describe('classify: LLM failure falls back to rules', () => {
       expect(outcome.classification).toEqual(rulesOnly(DEVTOOLS));
       expect(outcome.classification.method).toBe('rules');
       expect(outcome.classification.confidence).toBe(
-        classifyByRules(prepareText(DEVTOOLS)).confidence,
+        classifyByRules(prepareText(DEVTOOLS).rulesText).confidence,
       );
       expect(outcome.classification.prompt_version).toBe(RULES_VERSION);
       expect(cache.size).toBe(0);
@@ -58,10 +58,23 @@ describe('classify: LLM failure falls back to rules', () => {
   it('skips the LLM when there is nothing to classify', async () => {
     const llm = new FakeLlmClassifier(LLM_ANSWER);
     const cache = createLruCache();
-    for (const input of [{}, { context_summary: '   ' }, { messages: [] }]) {
-      const outcome = await classify(input as ClassifyInput, deps({ llm, cache }));
-      expect(outcome.source).toBe('rules_fallback');
-      expect(outcome.llm_failure).toBe('empty_input');
+    const blank: ClassifyInput[] = [
+      {},
+      { context_summary: '   ' },
+      { messages: [] },
+      { messages: [{ role: 'user', content: '   ' }] },
+      {
+        messages: [
+          { role: 'user', content: '' },
+          { role: 'assistant', content: ' \n ' },
+        ],
+      },
+      { messages: [{ role: 'system', content: 'You are helpful.' }] },
+    ];
+    for (const input of blank) {
+      const outcome = await classify(input, deps({ llm, cache }));
+      expect(outcome.source, JSON.stringify(input)).toBe('rules_fallback');
+      expect(outcome.llm_failure, JSON.stringify(input)).toBe('empty_input');
       expect(outcome.classification.method).toBe('rules');
       expect(outcome.classification.confidence).toBeLessThan(0.7);
       expect(outcome.classification.commercial_intent).toBe(0);
@@ -101,8 +114,9 @@ describe('classify: never throws', () => {
     const outcome = await classify(DEVTOOLS, deps({ llm, cache: broken('get') }));
     expect(outcome.source).toBe('rules_fallback');
     expect(outcome.llm_failure).toBe('thrown');
+    expect(outcome.error_name).toBe('Error');
     expect(outcome.classification).toEqual(rulesOnly(DEVTOOLS));
-    expect(outcome.cache_key).toBe(classifyCacheKey(prepareText(DEVTOOLS), STRICT));
+    expect(outcome.cache_key).toBe(classifyCacheKey(prepareText(DEVTOOLS).text, STRICT));
     expect(llm.callCount).toBe(0);
   });
 
@@ -125,6 +139,27 @@ describe('classify: never throws', () => {
     expect(outcome.source).toBe('rules_fallback');
     expect(outcome.llm_failure).toBe('thrown');
     expect(outcome.classification).toEqual(rulesOnly(GENERAL));
+    expect(outcome.error_name).toBe('TypeError');
+    expect(JSON.stringify(outcome)).not.toContain('boom');
+  });
+
+  it('reports only the name of a thrown value, never its message, and only when thrown', async () => {
+    const rejected = await classify(DEVTOOLS, deps({ llm: new FakeLlmClassifier('throw') }));
+    expect(rejected.error_name).toBe('Error');
+    expect(JSON.stringify(rejected)).not.toContain('throw mode');
+
+    const nonError = await classify(
+      DEVTOOLS,
+      deps({ llm: { classify: () => Promise.reject('nope') } }),
+    );
+    expect(nonError.llm_failure).toBe('thrown');
+    expect(nonError.error_name).toBe('NonError');
+
+    const timedOut = await classify(DEVTOOLS, deps({ llm: new FakeLlmClassifier('timeout') }));
+    expect(timedOut.llm_failure).toBe('timeout');
+    expect(timedOut).not.toHaveProperty('error_name');
+    const merged = await classify(DEVTOOLS, deps());
+    expect(merged).not.toHaveProperty('error_name');
   });
 
   it('fails closed when the input cannot even be prepared', async () => {
@@ -135,6 +170,7 @@ describe('classify: never throws', () => {
       expect(outcome.llm_failure).toBe('thrown');
       expect(outcome.classification).toEqual(failClosedClassification());
       expect(outcome.cache_key).toBe('');
+      expect(outcome.error_name).toBe('TypeError');
     }
   });
 
@@ -146,6 +182,7 @@ describe('classify: never throws', () => {
     expect(outcome.classification).toEqual(failClosedClassification());
     expect(outcome.source).toBe('rules_fallback');
     expect(outcome.llm_failure).toBe('thrown');
+    expect(outcome.error_name).toBe('Error');
   });
 
   it('failClosedClassification is a fresh zeroed rules classification', () => {

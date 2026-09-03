@@ -30,6 +30,12 @@ export interface ClassifyDeps {
   llm: LlmClassifier | null;
   cache?: ClassifyCache | undefined;
   policy: ClassifyPolicy;
+  /**
+   * The orchestrator's own deadline on the LLM stage, in ms; an LlmClassifier that has not
+   * settled by then is abandoned for a rules-only result (llm_failure 'timeout'). Defaults to
+   * DEFAULT_LLM_TIMEOUT_MS. The OpenAI client has a timeout of its own; this one does not trust it.
+   */
+  timeoutMs?: number | undefined;
   /** Clock for latency_ms. Defaults to Date.now. */
   now?: (() => number) | undefined;
   /** Caller-side cancellation forwarded to the LLM stage. */
@@ -51,6 +57,11 @@ export interface ClassifyOutcome {
   source: ClassifySource;
   /** Present only when source is 'rules_fallback'. */
   llm_failure?: ClassifyLlmFailure;
+  /**
+   * Present only with llm_failure 'thrown': the thrown Error's `name` (never its message, which
+   * could quote input), so the gateway can log what broke without logging content.
+   */
+  error_name?: string;
   /** classifyCacheKey() of the prepared text; empty only when the input could not be prepared. */
   cache_key: string;
   latency_ms: number;

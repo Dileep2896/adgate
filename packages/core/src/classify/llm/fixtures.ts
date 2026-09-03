@@ -1,3 +1,5 @@
+import type { ClassifyFixtureCase } from '@adgate/schemas';
+
 import { normalizeText } from '../rules/normalize.js';
 import { fakeLlmSuccess } from './fake.js';
 import { normalizeCategories, normalizeSensitive } from './output.js';
@@ -6,23 +8,9 @@ import type { LlmClassifyResult } from './types.js';
 /**
  * Builds a FakeLlmClassifier script from fixtures/classify-fixtures.json cases so the full
  * two-stage classifier (S08) can be tested against the golden set with an "ideal" model: the
- * fake answers exactly what the fixture expects. The caller reads and parses the file (core
- * never touches the filesystem); the shapes below mirror the fixture, `note` and unknown keys
- * are ignored.
+ * fake answers exactly what the fixture expects. The caller reads the file and parses it with
+ * ClassifyFixture from @adgate/schemas (core never touches the filesystem).
  */
-export interface ClassifyFixtureExpect {
-  sensitive: string[];
-  categories_any?: string[];
-  intent_min?: number;
-  intent_max?: number;
-}
-
-export interface ClassifyFixtureCase {
-  id: string;
-  text: string;
-  expect: ClassifyFixtureExpect;
-  note?: string;
-}
 
 export const FIXTURE_LLM_CONFIDENCE = 0.9;
 

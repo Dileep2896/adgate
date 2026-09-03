@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 
+import { ClassifyFixture, type ClassifyFixtureCase } from '@adgate/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { classifyByRules } from './classify.js';
@@ -10,35 +11,26 @@ import { classifyByRules } from './classify.js';
  * two-stage classifier unions rule and LLM flags), and the software.devtools.* serve cases
  * must be servable by rules alone so the quickstart works without an LLM key.
  */
-interface FixtureCase {
-  id: string;
-  text: string;
-  expect: {
-    sensitive: string[];
-    categories_any?: string[];
-    intent_min?: number;
-    intent_max?: number;
-  };
-  note?: string;
-}
-
-const fixture = JSON.parse(
-  readFileSync(new URL('../../../../../fixtures/classify-fixtures.json', import.meta.url), 'utf8'),
-) as { cases: FixtureCase[] };
-
-const cases = fixture.cases;
+const { cases } = ClassifyFixture.parse(
+  JSON.parse(
+    readFileSync(
+      new URL('../../../../../fixtures/classify-fixtures.json', import.meta.url),
+      'utf8',
+    ),
+  ),
+);
 const sensitiveCases = cases.filter((c) => c.id.startsWith('s'));
 const serveCases = cases.filter((c) => c.id.startsWith('c'));
 const lowCases = cases.filter((c) => c.id.startsWith('l'));
 
-const isDevtools = (c: FixtureCase) =>
+const isDevtools = (c: ClassifyFixtureCase) =>
   (c.expect.categories_any ?? []).some((category) => category.startsWith('software.devtools.'));
 const quickstartCases = serveCases.filter((c) => c.id === 'c001' || isDevtools(c));
 const remainingCases = [...serveCases.filter((c) => !quickstartCases.includes(c)), ...lowCases];
 
-const withinBounds = (c: FixtureCase, intent: number) =>
+const withinBounds = (c: ClassifyFixtureCase, intent: number) =>
   intent >= (c.expect.intent_min ?? 0) && intent <= (c.expect.intent_max ?? 1);
-const hasListedCategory = (c: FixtureCase, categories: string[]) =>
+const hasListedCategory = (c: ClassifyFixtureCase, categories: string[]) =>
   c.expect.categories_any === undefined ||
   c.expect.categories_any.some((category) => categories.includes(category));
 

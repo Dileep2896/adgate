@@ -1,6 +1,10 @@
 import type { SensitiveRuleSet } from '../../types.js';
 
-/** Weapons: firearms, ammunition, other weapons. "knife" and "blade" alone are weak. */
+/**
+ * Weapons: firearms, ammunition, other weapons. "knife" and "blade" alone are weak. Tools and
+ * toys that end in "gun" are masked out before matching (exclusions) so "gun" itself can stay
+ * strong; a bare "gun" elsewhere in the same text still matches.
+ */
 export const WEAPONS: SensitiveRuleSet = {
   category: 'weapons',
   strong: [
@@ -23,5 +27,13 @@ export const WEAPONS: SensitiveRuleSet = {
     String.raw`\b(buy|purchase|order|find|get) (a |an |some )?(gun|handgun|pistol|rifle|shotgun|firearm|ammo|ammunition|silencer|suppressor)s?\b`,
     String.raw`\b(22|45|380|357|9) (acp|lr|magnum|caliber|cal)\b`,
     String.raw`\b(12|20|410) gauge\b`,
+  ],
+  exclusions: [
+    'glue gun', 'glue guns', 'nail gun', 'nail guns', 'heat gun', 'heat guns', 'staple gun',
+    'staple guns', 'spray gun', 'spray guns', 'water gun', 'water guns', 'paint gun',
+    'paint guns', 'caulk gun', 'caulk guns', 'grease gun', 'grease guns', 'nerf gun',
+    'nerf guns', 'squirt gun', 'squirt guns', 'massage gun', 'massage guns', 'rivet gun',
+    'rivet guns', 'radar gun', 'radar guns', 'tattoo gun', 'tattoo guns', 'soldering gun',
+    'soldering guns',
   ],
 };

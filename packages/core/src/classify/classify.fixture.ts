@@ -33,7 +33,7 @@ export const LLM_ANSWER = fakeLlmSuccess({
 
 /** The rules classification without its match detail (Classification.parse strips `matches`). */
 export const rulesOnly = (input: ClassifyInput): Classification =>
-  Classification.parse(classifyByRules(prepareText(input)));
+  Classification.parse(classifyByRules(prepareText(input).rulesText));
 
 export const deps = (over: Partial<ClassifyDeps> = {}): ClassifyDeps => ({
   llm: new FakeLlmClassifier(LLM_ANSWER),

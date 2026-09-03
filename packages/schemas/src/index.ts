@@ -2,6 +2,7 @@
  * @adgate/schemas: the Zod implementation of docs/api.md. Every TS type is z.infer of a schema.
  */
 export * from './classification.js';
+export * from './classify-fixture.js';
 export * from './common.js';
 export * from './creative.js';
 export * from './demand.js';

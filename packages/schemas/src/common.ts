@@ -61,7 +61,9 @@ export const User = z
       .string()
       .regex(/^[A-Z]{2}$/)
       .optional()
-      .describe('ISO 3166 alpha-2 country code.'),
+      .describe(
+        'ISO 3166 alpha-2 country code. Optional; when absent the regions rule fails closed and the turn is suppressed with reason region_blocked.',
+      ),
     locale: z.string().min(1).optional().describe('BCP 47 locale, e.g. en-US.'),
     user_hash: z
       .string()

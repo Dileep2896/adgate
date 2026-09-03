@@ -7,12 +7,11 @@ import { describe, expect, it } from 'vitest';
 import {
   CONTRACT_SCHEMAS,
   type ContractSchemaName,
-  JSON_SCHEMA_DIR,
   jsonSchemaFileName,
   renderJsonSchemas,
-  toJsonSchema,
   toJsonSchemaObject,
 } from './json-schema.js';
+import { JSON_SCHEMA_DIR, toJsonSchema } from './json-schema-files.js';
 
 const names = Object.keys(CONTRACT_SCHEMAS) as ContractSchemaName[];
 
@@ -60,7 +59,7 @@ describe('json/*.schema.json', () => {
 
   it('carries the refinements JSON Schema cannot infer from zod', () => {
     expect(toJsonSchemaObject('EvaluateRequest')['anyOf']).toEqual([
-      { required: ['messages'] },
+      { required: ['messages'], properties: { messages: { minItems: 1 } } },
       { required: ['context_summary'] },
     ]);
     expect(toJsonSchemaObject('EvaluateResponse')['allOf']).toHaveLength(2);

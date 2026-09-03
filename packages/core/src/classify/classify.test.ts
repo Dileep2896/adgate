@@ -36,9 +36,9 @@ describe('classify: merged path', () => {
       method: 'llm',
       prompt_version: PROMPT_VERSION,
     });
-    expect(llm.calls).toEqual([prepareText(DEVTOOLS)]);
+    expect(llm.calls).toEqual([prepareText(DEVTOOLS).text]);
     expect(llm.calls[0]).toMatch(/^user: which postgres hosting/);
-    expect(outcome.cache_key).toBe(classifyCacheKey(prepareText(DEVTOOLS), STRICT));
+    expect(outcome.cache_key).toBe(classifyCacheKey(prepareText(DEVTOOLS).text, STRICT));
     expect(cache.get(outcome.cache_key)).toEqual(outcome.classification);
     expect(Classification.parse(outcome.classification)).toEqual(outcome.classification);
     expect(outcome.latency_ms).toBeGreaterThanOrEqual(0);
@@ -80,13 +80,15 @@ describe('classify: merged path', () => {
     expect(llm.calls).toEqual([input.context_summary, input.context_summary]);
   });
 
-  it('accepts the EvaluateRequest message shape', async () => {
+  it('accepts the EvaluateRequest message shape and never shows the LLM a system prompt', async () => {
     const messages: Message[] = [
       { role: 'system', content: 'You are helpful.' },
       { role: 'user', content: 'which postgres hosting should I use for a side project' },
     ];
-    const outcome = await classify({ messages }, deps());
+    const llm = new FakeLlmClassifier(LLM_ANSWER);
+    const outcome = await classify({ messages }, deps({ llm }));
     expect(outcome.source).toBe('merged');
+    expect(llm.calls).toEqual(['user: which postgres hosting should I use for a side project']);
   });
 
   it('applies sensitive_detection at merge time and keys the cache by policy', async () => {

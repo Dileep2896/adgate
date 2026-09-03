@@ -4,8 +4,9 @@ import { OpenAiCompatibleClassifier } from './openai.js';
 import type { LlmClassifierConfig, LlmFetch, LlmFetchResponse } from './types.js';
 
 /**
- * Failure paths of the OpenAI compatible client. Every test injects a fake fetch; globalThis.fetch
- * is stubbed to reject so an accidental real request fails loudly instead of touching the network.
+ * Failure paths of the OpenAI compatible client. Every test injects a fake fetch (the config
+ * requires one; core never falls back to the platform fetch). globalThis.fetch is still stubbed
+ * to reject so an accidental real request fails loudly instead of touching the network.
  */
 const config = (
   fetch: LlmFetch,
@@ -175,17 +176,31 @@ describe('OpenAiCompatibleClassifier http and network', () => {
     expect(await classifier.classify('x')).toMatchObject({ ok: false, reason: 'network' });
   });
 
-  it('uses globalThis.fetch when none is injected (stubbed here, so no network)', async () => {
-    const classifier = new OpenAiCompatibleClassifier({
-      baseUrl: 'https://llm.example/v1',
-      apiKey: 'sk-test',
-      model: 'tiny-classifier',
-    });
-    expect(await classifier.classify('x')).toMatchObject({
-      ok: false,
-      reason: 'network',
-      detail: 'Error: unit tests must not touch the network',
-    });
+  it('only ever calls the injected fetch, never the platform one', async () => {
+    const fetchFake = vi.fn<LlmFetch>(async () => completion(validContent));
+    const platformFetch = vi.fn(() => Promise.reject(new Error('platform fetch called')));
+    vi.stubGlobal('fetch', platformFetch);
+    const classifier = new OpenAiCompatibleClassifier(config(fetchFake));
+    expect(await classifier.classify('x')).toMatchObject({ ok: true });
+    expect(fetchFake).toHaveBeenCalledTimes(1);
+    expect(platformFetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('OpenAiCompatibleClassifier timer hygiene', () => {
+  it('leaves no timer behind after a successful response', async () => {
+    vi.useFakeTimers();
+    const classifier = new OpenAiCompatibleClassifier(config(async () => completion(validContent)));
+    const result = await classifier.classify('x');
+    expect(result).toMatchObject({ ok: true });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('leaves no timer behind after a failed response', async () => {
+    vi.useFakeTimers();
+    const classifier = new OpenAiCompatibleClassifier(config(async () => completion('', 500)));
+    expect(await classifier.classify('x')).toMatchObject({ ok: false, reason: 'http' });
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 

@@ -6,14 +6,20 @@ import type {
   PolicyOverrides,
 } from '@adgate/schemas';
 
+import { expandRegions } from './regions.js';
+
 /**
  * docs/policy.md "Overrides": policy_overrides may only make the stored policy stricter. Every
  * value that would loosen it is ignored and reported in `rejected` (the audit record later notes
  * each as override_rejected). Values equal to the stored policy are silent no-ops.
  *
  * Tightening, per field family:
- * - serve_to_tiers and regions.allow: the override is intersected with the stored list; tiers or
- *   regions it would add are rejected.
+ * - serve_to_tiers: the override is intersected with the stored list; tiers it would add are
+ *   rejected while its removals still apply.
+ * - regions.allow: compared on expanded countries (EU is its 27 member states), so an entry is
+ *   kept when the stored list already covers every country it names (DE on a stored EU) and
+ *   rejected only when it would add a country. An override rejected in full is ignored like any
+ *   other loosening value; an explicit empty list is a deliberate "serve nowhere" and applies.
  * - allow_paid_tiers: true -> false applies (and drops non-free tiers); false -> true is rejected.
  * - blocked_categories and competitor_exclusions: unioned, never rejected.
  * - sensitive_detection: balanced -> strict applies; strict -> balanced is rejected.
@@ -233,9 +239,17 @@ const mergeRegions = (merged: PolicyConfig, overrides: PolicyOverrides, reject: 
   if (allow === undefined) {
     return;
   }
-  const { kept, added } = intersect(merged.regions.allow, allow);
-  merged.regions.allow = kept;
+  const stored = expandRegions(merged.regions.allow);
+  const kept: string[] = [];
+  const added: string[] = [];
+  for (const entry of new Set(allow)) {
+    const covered = [...expandRegions([entry])].every((country) => stored.has(country));
+    (covered ? kept : added).push(entry);
+  }
   if (added.length > 0) {
     reject('regions.allow', `cannot add regions: ${added.join(', ')}`);
+  }
+  if (kept.length > 0 || added.length === 0) {
+    merged.regions.allow = kept;
   }
 };

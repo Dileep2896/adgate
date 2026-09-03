@@ -20,9 +20,10 @@ export const EvaluateRequest = z
     user: User,
     messages: z
       .array(Message)
-      .min(1)
       .optional()
-      .describe('The last few turns, newest last. Required unless context_summary is sent.'),
+      .describe(
+        'The last few turns, newest last. Required and non-empty unless context_summary is sent.',
+      ),
     context_summary: z
       .string()
       .min(1)
@@ -33,15 +34,24 @@ export const EvaluateRequest = z
       'Partial PolicyConfig merged over the stored policy. May only make policy stricter.',
     ),
   })
-  .refine((request) => request.messages !== undefined || request.context_summary !== undefined, {
-    message: 'At least one of messages or context_summary is required',
-    path: ['messages'],
-  })
+  .refine(
+    (request) =>
+      (request.messages?.length ?? 0) > 0 ||
+      (typeof request.context_summary === 'string' && request.context_summary.length > 0),
+    {
+      message: 'At least one of messages or context_summary is required',
+      path: ['messages'],
+    },
+  )
   .meta({
     title: 'EvaluateRequest',
     description: 'Body of POST /v1/evaluate.',
-    // The refinement above, expressed for JSON Schema consumers.
-    anyOf: [{ required: ['messages'] }, { required: ['context_summary'] }],
+    // The refinement above, expressed for JSON Schema consumers: a non-empty messages list or
+    // a context_summary (an empty list next to a summary is fine).
+    anyOf: [
+      { required: ['messages'], properties: { messages: { minItems: 1 } } },
+      { required: ['context_summary'] },
+    ],
   });
 export type EvaluateRequest = z.infer<typeof EvaluateRequest>;
 

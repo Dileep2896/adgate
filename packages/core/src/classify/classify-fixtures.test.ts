@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 
-import { Classification } from '@adgate/schemas';
+import { Classification, ClassifyFixture, type ClassifyFixtureCase } from '@adgate/schemas';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { createLruCache } from './cache.js';
 import { classify } from './classify.js';
 import { FakeLlmClassifier } from './llm/fake.js';
-import { fakeLlmFromFixtures, type ClassifyFixtureCase } from './llm/fixtures.js';
+import { fakeLlmFromFixtures } from './llm/fixtures.js';
 import type { ClassifyOutcome, ClassifyPolicy } from './types.js';
 
 /**
@@ -15,11 +15,11 @@ import type { ClassifyOutcome, ClassifyPolicy } from './types.js';
  * cases must land inside their intent bounds with a listed category, and low-intent cases must
  * stay under intent_max. A second pass must be served entirely from the cache.
  */
-const fixture = JSON.parse(
-  readFileSync(new URL('../../../../fixtures/classify-fixtures.json', import.meta.url), 'utf8'),
-) as { cases: ClassifyFixtureCase[] };
-
-const cases = fixture.cases;
+const { cases } = ClassifyFixture.parse(
+  JSON.parse(
+    readFileSync(new URL('../../../../fixtures/classify-fixtures.json', import.meta.url), 'utf8'),
+  ),
+);
 const sensitiveCases = cases.filter((c) => c.id.startsWith('s'));
 const serveCases = cases.filter((c) => c.id.startsWith('c'));
 const lowCases = cases.filter((c) => c.id.startsWith('l'));

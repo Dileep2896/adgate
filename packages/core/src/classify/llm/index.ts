@@ -10,7 +10,6 @@ export {
   fixtureLlmResult,
   unknownTextLlmResult,
 } from './fixtures.js';
-export type { ClassifyFixtureCase, ClassifyFixtureExpect } from './fixtures.js';
 export {
   CHAT_COMPLETIONS_PATH,
   OpenAiCompatibleClassifier,

@@ -1,6 +1,3 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 import { Classification, ClassificationMethod } from './classification.js';
@@ -80,9 +77,7 @@ export const CONTRACT_SCHEMAS = {
 } as const;
 export type ContractSchemaName = keyof typeof CONTRACT_SCHEMAS;
 
-/** Default output directory: packages/schemas/json (one level above src/ and dist/). */
-export const JSON_SCHEMA_DIR = fileURLToPath(new URL('../json/', import.meta.url));
-
+/** The JSON Schema files are written by toJsonSchema in json-schema-files.ts (node:fs). */
 export const jsonSchemaFileName = (name: ContractSchemaName): string => `${name}.schema.json`;
 
 /**
@@ -127,17 +122,4 @@ export const renderJsonSchemas = (): Record<ContractSchemaName, string> => {
     ContractSchemaName,
     string
   >;
-};
-
-/**
- * Writes `<outDir>/<Name>.schema.json` for every contract schema and returns the paths written.
- * json-schema.test.ts asserts the committed files match renderJsonSchemas() byte for byte.
- */
-export const toJsonSchema = (outDir: string = JSON_SCHEMA_DIR): string[] => {
-  mkdirSync(outDir, { recursive: true });
-  return Object.entries(renderJsonSchemas()).map(([name, content]) => {
-    const path = join(outDir, jsonSchemaFileName(name as ContractSchemaName));
-    writeFileSync(path, content, 'utf8');
-    return path;
-  });
 };

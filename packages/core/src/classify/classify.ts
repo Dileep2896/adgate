@@ -1,8 +1,9 @@
 import type { Classification } from '@adgate/schemas';
 
 import { classifyCacheKey } from './cache.js';
+import { DEFAULT_LLM_TIMEOUT_MS, type LlmClassifyResult } from './llm/types.js';
 import { mergeClassifications, strongSensitiveFlags } from './merge.js';
-import { prepareText } from './prepare.js';
+import { prepareText, type PreparedText } from './prepare.js';
 import { classifyByRules } from './rules/classify.js';
 import type { RulesResult } from './rules/types.js';
 import { RULES_VERSION } from './rules/version.js';
@@ -16,13 +17,14 @@ import type {
 
 /**
  * The two-stage classifier (docs/BUILD_GUIDE.md Phase 2). Flow: prepare the text, look it up in
- * the cache, run the rules, short-circuit on a strong sensitive hit, otherwise ask the LLM and
- * merge. Any LLM failure, a missing LLM, or anything thrown inside (a broken cache included)
- * degrades to a rules-only classification; if not even the rules can run, the result is the
- * zeroed fail-closed classification. classify() itself never throws and never rejects.
- * Blank input never reaches the LLM (nothing to classify; rules give the base confidence, which
- * the policy engine suppresses). Rules-only fallbacks are not cached so a transient LLM failure
- * cannot pin a weaker answer for the whole TTL; short-circuit and merged results are.
+ * the cache, run the rules, short-circuit on a strong sensitive hit, otherwise ask the LLM
+ * (under the orchestrator's own deadline) and merge. Any LLM failure, a missing LLM, or
+ * anything thrown inside (a broken cache included) degrades to a rules-only classification; if
+ * not even the rules can run, the result is the zeroed fail-closed classification. classify()
+ * itself never throws and never rejects. Blank input never reaches the LLM (nothing to
+ * classify; rules give the base confidence, which the policy engine suppresses). Rules-only
+ * fallbacks are not cached so a transient LLM failure cannot pin a weaker answer for the whole
+ * TTL; short-circuit and merged results are.
  */
 export const failClosedClassification = (): Classification => ({
   commercial_intent: 0,
@@ -49,8 +51,36 @@ const rulesClassification = (rules: RulesResult): Classification => ({
   prompt_version: rules.prompt_version,
 });
 
+/** The name of a thrown value and nothing else: a message could quote the conversation. */
+const errorName = (error: unknown): string =>
+  error instanceof Error && error.name !== '' ? error.name : 'NonError';
+
+/**
+ * Settles with a timeout failure when the classifier has not answered within timeoutMs. The
+ * timer is cleared whichever side wins, so nothing keeps the event loop alive afterwards.
+ */
+const withDeadline = (
+  pending: Promise<LlmClassifyResult>,
+  timeoutMs: number,
+): Promise<LlmClassifyResult> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expired = new Promise<LlmClassifyResult>((resolve) => {
+    timer = setTimeout(() => {
+      resolve({
+        ok: false,
+        reason: 'timeout',
+        latency_ms: timeoutMs,
+        detail: `no answer within ${timeoutMs} ms`,
+      });
+    }, timeoutMs);
+  });
+  return Promise.race([pending, expired]).finally(() => {
+    clearTimeout(timer);
+  });
+};
+
 interface Run {
-  text: string | undefined;
+  prepared: PreparedText | undefined;
   cacheKey: string;
   rules: RulesResult | undefined;
 }
@@ -58,10 +88,10 @@ interface Run {
 /** Rules-only result for the catch path: the rules already computed, else computed now. */
 const recoverRules = (run: Run): Classification => {
   try {
-    if (run.text === undefined) {
+    if (run.prepared === undefined) {
       return failClosedClassification();
     }
-    return rulesClassification(run.rules ?? classifyByRules(run.text));
+    return rulesClassification(run.rules ?? classifyByRules(run.prepared.rulesText));
   } catch {
     return failClosedClassification();
   }
@@ -73,43 +103,48 @@ const classifyOrThrow = async (
 ): Promise<ClassifyOutcome> => {
   const now = deps.now ?? Date.now;
   const started = now();
-  const run: Run = { text: undefined, cacheKey: '', rules: undefined };
+  const run: Run = { prepared: undefined, cacheKey: '', rules: undefined };
 
   const finish = (
     classification: Classification,
     source: ClassifySource,
     llmFailure?: ClassifyLlmFailure,
+    thrown?: unknown,
   ): ClassifyOutcome => ({
     classification,
     source,
     ...(llmFailure === undefined ? {} : { llm_failure: llmFailure }),
+    ...(llmFailure === 'thrown' ? { error_name: errorName(thrown) } : {}),
     cache_key: run.cacheKey,
     latency_ms: Math.max(0, Math.round(now() - started)),
   });
 
   try {
-    run.text = prepareText(input);
-    run.cacheKey = classifyCacheKey(run.text, deps.policy);
+    run.prepared = prepareText(input);
+    run.cacheKey = classifyCacheKey(run.prepared.text, deps.policy);
 
     const hit = deps.cache?.get(run.cacheKey);
     if (hit !== undefined) {
       return finish({ ...cloneClassification(hit), method: 'cached' }, 'cache');
     }
 
-    run.rules = classifyByRules(run.text);
+    run.rules = classifyByRules(run.prepared.rulesText);
     if (strongSensitiveFlags(run.rules).length > 0) {
       const classification = rulesClassification(run.rules);
       deps.cache?.set(run.cacheKey, cloneClassification(classification));
       return finish(classification, 'rules_short_circuit');
     }
 
-    if (run.text.trim() === '') {
+    if (run.prepared.rulesText.trim() === '') {
       return finish(rulesClassification(run.rules), 'rules_fallback', 'empty_input');
     }
     if (deps.llm === null) {
       return finish(rulesClassification(run.rules), 'rules_fallback', 'unavailable');
     }
-    const result = await deps.llm.classify(run.text, { signal: deps.signal });
+    const result = await withDeadline(
+      deps.llm.classify(run.prepared.text, { signal: deps.signal }),
+      deps.timeoutMs ?? DEFAULT_LLM_TIMEOUT_MS,
+    );
     if (!result.ok) {
       return finish(rulesClassification(run.rules), 'rules_fallback', result.reason);
     }
@@ -121,8 +156,8 @@ const classifyOrThrow = async (
     });
     deps.cache?.set(run.cacheKey, cloneClassification(merged));
     return finish(merged, 'merged');
-  } catch {
-    return finish(recoverRules(run), 'rules_fallback', 'thrown');
+  } catch (error) {
+    return finish(recoverRules(run), 'rules_fallback', 'thrown', error);
   }
 };
 
@@ -132,12 +167,13 @@ export const classify = async (
 ): Promise<ClassifyOutcome> => {
   try {
     return await classifyOrThrow(input, deps);
-  } catch {
+  } catch (error) {
     // Last resort (a throwing clock, a deps object that is not an object): fail closed.
     return {
       classification: failClosedClassification(),
       source: 'rules_fallback',
       llm_failure: 'thrown',
+      error_name: errorName(error),
       cache_key: '',
       latency_ms: 0,
     };

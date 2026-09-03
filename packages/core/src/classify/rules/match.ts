@@ -22,6 +22,24 @@ export const findPhrases = (padded: string, phrases: readonly string[]): string[
 export const findPatterns = (normalized: string, patterns: readonly CompiledPattern[]): string[] =>
   patterns.filter(({ regex }) => regex.test(normalized)).map(({ source }) => source);
 
+/**
+ * The padded text with every whole-token occurrence of each phrase blanked out. The tokens
+ * around a masked phrase keep their spaces, so they still match; repeated or adjacent
+ * occurrences are all removed.
+ */
+export const maskPhrases = (padded: string, phrases: readonly string[]): string => {
+  let masked = padded;
+  for (const phrase of phrases) {
+    const needle = ` ${phrase} `;
+    let at = masked.indexOf(needle);
+    while (at !== -1) {
+      masked = `${masked.slice(0, at)}  ${masked.slice(at + needle.length)}`;
+      at = masked.indexOf(needle, at + 1);
+    }
+  }
+  return masked;
+};
+
 /** True when `phrase` (normalized) occurs as whole tokens in `normalized`. */
 export const containsPhrase = (normalized: string, phrase: string): boolean =>
   phrase !== '' && padText(normalized).includes(` ${phrase} `);

@@ -23,6 +23,8 @@ export interface CompiledSensitiveRules {
   strong: readonly string[];
   weak: readonly string[];
   patterns: readonly CompiledPattern[];
+  /** Masked out of the text before this category is matched (see SensitiveRuleSet). */
+  exclusions: readonly string[];
 }
 
 export interface CompiledCommercialRules {
@@ -49,6 +51,7 @@ export const SENSITIVE_REGISTRY: readonly CompiledSensitiveRules[] = SENSITIVE_T
       strong: phrases(rules.strong),
       weak: phrases(rules.weak),
       patterns: compilePatterns(rules.patterns),
+      exclusions: phrases(rules.exclusions ?? []),
     };
   },
 );

@@ -13,9 +13,10 @@ import {
 
 /**
  * LlmClassifier over any OpenAI compatible chat completions endpoint (OpenAI, Azure, Groq,
- * Ollama, vLLM...). One POST per call with temperature 0 and JSON mode; a hard timeout races the
- * request so the call settles within timeoutMs even when the transport ignores the abort signal.
- * Never throws: every outcome is a typed LlmClassifyResult (docs/api.md: fail closed).
+ * Ollama, vLLM...). One POST per call with temperature 0 and JSON mode through the injected
+ * fetch; a hard timeout races the request so the call settles within timeoutMs even when the
+ * transport ignores the abort signal. Never throws: every outcome is a typed LlmClassifyResult
+ * (docs/api.md: fail closed).
  */
 export const CHAT_COMPLETIONS_PATH = '/chat/completions';
 
@@ -31,9 +32,6 @@ export const buildChatCompletionsBody = (model: string, text: string) => ({
     { role: 'user' as const, content: text },
   ],
 });
-
-// A wrapper rather than a captured reference so a fetch stubbed after construction is honoured.
-const defaultFetch: LlmFetch = (url, init) => globalThis.fetch(url, init);
 
 const failure = (
   reason: LlmFailureReason,
@@ -84,7 +82,7 @@ export class OpenAiCompatibleClassifier implements LlmClassifier {
         : { Authorization: `Bearer ${config.apiKey}`, 'Content-Type': 'application/json' };
     this.model = config.model;
     this.timeoutMs = config.timeoutMs ?? DEFAULT_LLM_TIMEOUT_MS;
-    this.fetchImpl = config.fetch ?? defaultFetch;
+    this.fetchImpl = config.fetch;
   }
 
   async classify(text: string, opts?: LlmClassifyOptions): Promise<LlmClassifyResult> {

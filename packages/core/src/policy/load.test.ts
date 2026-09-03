@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   parsePolicyYaml,
+  PolicyConfig,
   PolicyValidationError as SchemasPolicyValidationError,
 } from '@adgate/schemas';
 import { describe, expect, it } from 'vitest';
@@ -28,6 +29,9 @@ demand:
     - enabled: true
       source: direct
     - { enabled: true, network: partnerstack, source: affiliate }
+    - { source: koah, enabled: false }
+    - enabled: false
+      source: gravity
 disclosure:
     style: separate_block
     position: after_answer
@@ -55,16 +59,14 @@ version: 1.0
 
 /** The same policy again, relying on the defaults for everything the example spells out. */
 const MINIMAL_YAML = `app_id: example-chat
-demand:
-  - source: direct
-  - source: affiliate
-    network: partnerstack
 `;
 
 describe('loadPolicyFromYaml', () => {
   it('returns the validated policy and its hash for examples/policy.example.yaml', () => {
     const { policy, policy_hash } = loadPolicyFromYaml(exampleYaml);
     expect(policy).toEqual(parsePolicyYaml(exampleYaml));
+    // The example spells out every documented default, so it equals a defaulted parse.
+    expect(policy).toEqual(PolicyConfig.parse({ app_id: 'example-chat' }));
     expect(policy.app_id).toBe('example-chat');
     expect(policy_hash).toBe(policyHash(policy));
     expect(policy_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
