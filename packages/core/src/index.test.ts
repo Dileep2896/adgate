@@ -43,6 +43,25 @@ describe('@adgate/core', () => {
     });
   });
 
+  it('exports the audit record builder and the hash chain', () => {
+    expect(typeof core.buildAuditRecord).toBe('function');
+    expect(typeof core.buildAuditBody).toBe('function');
+    expect(typeof core.computeRecordHash).toBe('function');
+    expect(typeof core.recordHashInput).toBe('function');
+    expect(typeof core.signRecord).toBe('function');
+    expect(typeof core.unsignedOf).toBe('function');
+    expect(typeof core.nextPrevHash).toBe('function');
+    expect(typeof core.emptyDemandTrace).toBe('function');
+    expect(typeof core.creativeContentHash).toBe('function');
+    expect(typeof core.creativeContent).toBe('function');
+    expect(typeof core.conversationIdHash).toBe('function');
+    expect(typeof core.userHash).toBe('function');
+    expect(typeof core.normalizeSha256Hash).toBe('function');
+    expect(core.GENESIS).toBe('genesis');
+    expect(core.nextPrevHash(null)).toBe('genesis');
+    expect(core.CREATIVE_CONTENT_FIELDS).toHaveLength(6);
+  });
+
   it('exports the policy engine and the region helpers', () => {
     expect(typeof core.evaluatePolicy).toBe('function');
     expect(typeof core.isRegionAllowed).toBe('function');

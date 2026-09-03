@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { AffiliateConfig } from './affiliate.js';
+import { AuditRecord } from './audit-record.js';
 import { Classification, ClassificationMethod } from './classification.js';
 import {
   AppId,
@@ -42,6 +43,7 @@ import { VerifyCheck, VerifyCheckName, VerifyResponse } from './verify.js';
 export const CONTRACT_SCHEMAS = {
   EvaluateRequest,
   EvaluateResponse,
+  AuditRecord,
   PolicyConfig,
   PolicyOverrides,
   AffiliateConfig,

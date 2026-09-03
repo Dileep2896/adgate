@@ -6,9 +6,10 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * CLAUDE.md: pure logic lives in packages/core with no HTTP, DB, env or network access. The
- * audit directory may reach @adgate/schemas (the key shapes) and node:crypto (hashing and
- * Ed25519) and nothing else outside src/. Keys are always passed in as PEM strings; nothing
- * here reads the environment. Same approach as ../demand/purity.test.ts.
+ * audit directory may reach @adgate/schemas (the record and key shapes), node:crypto (hashing
+ * and Ed25519) and ../canonical (canonical JSON), and nothing else outside src/. Keys are always
+ * passed in as PEM strings; nothing here reads the environment. Same approach as
+ * ../demand/purity.test.ts.
  */
 const auditDir = dirname(fileURLToPath(import.meta.url));
 const srcDir = resolve(auditDir, '..');
@@ -47,7 +48,16 @@ describe('audit package purity', () => {
   const files = readdirSync(auditDir).filter(isImplementation).sort();
 
   it('has the expected implementation files', () => {
-    expect(files).toEqual(['crypto.ts', 'errors.ts', 'index.ts', 'keys.ts']);
+    expect(files).toEqual([
+      'chain.ts',
+      'content-hash.ts',
+      'crypto.ts',
+      'errors.ts',
+      'index.ts',
+      'keys.ts',
+      'privacy-hash.ts',
+      'record.ts',
+    ]);
   });
 
   it('imports nothing from the gateway, node built-ins beyond crypto, or any I/O library', () => {

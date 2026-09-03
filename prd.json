@@ -154,7 +154,7 @@
       ]
     },
     {
-      "id": "S14", "priority": 14, "dependsOn": ["S13", "S05", "S11"], "passes": false,
+      "id": "S14", "priority": 14, "dependsOn": ["S13", "S05", "S11"], "passes": true,
       "title": "buildAuditRecord and hash chain",
       "description": "buildAuditRecord(input) assembles an AuditRecord per docs/audit.md from classification, policy result, mediation trace, selected creative, disclosure, app metadata, prev_hash. Computes record_hash over canonical JSON without record_hash and signature, plus prev_hash; signs it.",
       "acceptanceCriteria": [

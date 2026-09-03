@@ -1,0 +1,656 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "serve"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "creative": {
+            "type": "object"
+          },
+          "reason": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "suppress"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "creative": {
+            "type": "null"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ],
+  "description": "A signed audit record (docs/audit.md): one per /v1/evaluate call, chained per app through prev_hash. Body of GET /v1/audit/:id.",
+  "properties": {
+    "id": {
+      "description": "Identifier with the \"aud_\" prefix.",
+      "minLength": 5,
+      "pattern": "^aud_.*",
+      "title": "AuditId",
+      "type": "string"
+    },
+    "app_id": {
+      "description": "Identifier with the \"app_\" prefix.",
+      "minLength": 5,
+      "pattern": "^app_.*",
+      "title": "AppId",
+      "type": "string"
+    },
+    "conversation_id_hash": {
+      "description": "sha256(app_salt + conversation_id). Raw conversation ids are never stored.",
+      "minLength": 8,
+      "pattern": "^sha256:.*",
+      "title": "Sha256Hash",
+      "type": "string"
+    },
+    "user_hash": {
+      "anyOf": [
+        {
+          "description": "A SHA-256 digest written as sha256:<hex>.",
+          "minLength": 8,
+          "pattern": "^sha256:.*",
+          "title": "Sha256Hash",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The app-supplied user hash normalised to sha256:<hex>, or null when the request carried none."
+    },
+    "turn_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "ts": {
+      "description": "When the evaluation happened.",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+      "title": "IsoTimestamp",
+      "type": "string"
+    },
+    "surface": {
+      "description": "Where the slot would have rendered: the request surface without max_creatives.",
+      "properties": {
+        "type": {
+          "enum": [
+            "chat",
+            "agent",
+            "cli"
+          ],
+          "title": "SurfaceType",
+          "type": "string"
+        },
+        "placement": {
+          "const": "after_answer",
+          "description": "Always after_answer in v1.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "placement"
+      ],
+      "title": "AuditSurface",
+      "type": "object"
+    },
+    "classification": {
+      "description": "What the classifier concluded about the conversation turn. Never contains message text.",
+      "properties": {
+        "commercial_intent": {
+          "description": "0..1 likelihood the user is in a buying context.",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "categories": {
+          "description": "Commercial categories detected, most relevant first.",
+          "items": {
+            "description": "A commercial content category. Matches fixtures/classify-fixtures.json.",
+            "enum": [
+              "software.devtools.database",
+              "software.devtools.hosting",
+              "software.devtools.ci",
+              "software.devtools.observability",
+              "software.devtools.ai",
+              "software.security",
+              "software.productivity",
+              "shopping.electronics",
+              "shopping.home",
+              "shopping.sportswear",
+              "shopping.pets",
+              "travel.flights",
+              "travel.hotels",
+              "travel.connectivity",
+              "education.language",
+              "education.courses",
+              "entertainment.streaming",
+              "food.delivery",
+              "general"
+            ],
+            "title": "ContentCategory",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "sensitive": {
+          "description": "Sensitive topics detected. Any entry blocks ads under strict detection.",
+          "items": {
+            "description": "A sensitive topic that blocks ads. Matches fixtures/classify-fixtures.json.",
+            "enum": [
+              "health",
+              "finance",
+              "politics",
+              "legal",
+              "adult",
+              "gambling",
+              "weapons",
+              "religion",
+              "self_harm"
+            ],
+            "title": "SensitiveCategory",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "confidence": {
+          "description": "0..1 classifier confidence in this result.",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "method": {
+          "description": "llm when the LLM classifier answered in time, rules when only the rule stage ran, cached when a recent classification of the same text was reused.",
+          "enum": [
+            "llm",
+            "rules",
+            "cached"
+          ],
+          "title": "ClassificationMethod",
+          "type": "string"
+        },
+        "prompt_version": {
+          "description": "Version of the classifier prompt or rule set, e.g. sha256:<hex>.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "commercial_intent",
+        "categories",
+        "sensitive",
+        "confidence",
+        "method",
+        "prompt_version"
+      ],
+      "title": "Classification",
+      "type": "object"
+    },
+    "policy_version": {
+      "description": "The version field of the policy applied.",
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "policy_hash": {
+      "description": "policy_hash of the policy applied (docs/policy.md).",
+      "minLength": 8,
+      "pattern": "^sha256:.*",
+      "title": "Sha256Hash",
+      "type": "string"
+    },
+    "policy_decisions": {
+      "description": "One entry per rule in docs/policy.md rule order, pass or fail.",
+      "items": {
+        "description": "One entry of an audit record policy_decisions list: the outcome of one rule. Every rule records an entry, pass or fail.",
+        "properties": {
+          "rule": {
+            "description": "A docs/policy.md rule name, listed in the order the rules run.",
+            "enum": [
+              "serve_to_tiers",
+              "regions",
+              "blocked_categories",
+              "min_confidence",
+              "min_commercial_intent",
+              "frequency_caps",
+              "competitor_exclusions"
+            ],
+            "title": "PolicyRule",
+            "type": "string"
+          },
+          "result": {
+            "description": "pass or fail for rules resolved by the policy engine; pending for competitor_exclusions, which is resolved during creative selection.",
+            "enum": [
+              "pass",
+              "fail",
+              "pending"
+            ],
+            "title": "PolicyDecisionResult",
+            "type": "string"
+          },
+          "detail": {
+            "description": "Human-readable context, e.g. session=0/1 day=1/3 turns_since=9. Never contains message text.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "result"
+        ],
+        "title": "PolicyDecision",
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "override_rejected": {
+      "default": [],
+      "description": "policy_overrides values that would have loosened the policy and were ignored (docs/policy.md Overrides). Empty when none.",
+      "items": {
+        "additionalProperties": false,
+        "description": "A policy_overrides value that would have loosened the stored policy and was ignored.",
+        "properties": {
+          "path": {
+            "description": "Dotted path of the ignored override, e.g. frequency_caps.per_session or demand[1].",
+            "minLength": 1,
+            "type": "string"
+          },
+          "reason": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "reason"
+        ],
+        "title": "OverrideRejection",
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "decision": {
+      "enum": [
+        "serve",
+        "suppress"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "description": "Why no ad was served: paid_user, region_blocked, sensitive_category:<name> (name from the sensitive taxonomy), low_confidence, low_commercial_intent, frequency_cap, no_fill, or error.",
+          "enum": [
+            "paid_user",
+            "region_blocked",
+            "low_confidence",
+            "low_commercial_intent",
+            "frequency_cap",
+            "no_fill",
+            "error",
+            "sensitive_category:health",
+            "sensitive_category:finance",
+            "sensitive_category:politics",
+            "sensitive_category:legal",
+            "sensitive_category:adult",
+            "sensitive_category:gambling",
+            "sensitive_category:weapons",
+            "sensitive_category:religion",
+            "sensitive_category:self_harm"
+          ],
+          "title": "SuppressReason",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "null when decision is serve."
+    },
+    "demand": {
+      "description": "The demand block of an audit record: the mediation trace for one evaluation (docs/audit.md).",
+      "properties": {
+        "requested": {
+          "description": "The sources queried, in policy demand order (enabled entries only).",
+          "items": {
+            "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+            "enum": [
+              "direct",
+              "affiliate",
+              "koah",
+              "gravity"
+            ],
+            "title": "DemandSource",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "responses": {
+          "description": "One entry per requested source, in the same order.",
+          "items": {
+            "description": "One entry of an audit record demand.responses list: a demand adapter answer with the candidates reduced to a count. error is set when the adapter failed, timed out or was aborted.",
+            "properties": {
+              "source": {
+                "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+                "enum": [
+                  "direct",
+                  "affiliate",
+                  "koah",
+                  "gravity"
+                ],
+                "title": "DemandSource",
+                "type": "string"
+              },
+              "candidates": {
+                "description": "How many candidates the source returned (0 on failure or timeout).",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "latency_ms": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "error": {
+                "description": "Set when the adapter failed, timed out or was aborted. Never message text.",
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "source",
+              "candidates",
+              "latency_ms"
+            ],
+            "title": "DemandResponseSummary",
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "excluded": {
+          "description": "Candidates dropped by competitor_exclusions, in the order they were seen.",
+          "items": {
+            "description": "One entry of an audit record demand.excluded list: a candidate mediation dropped before ranking. This resolves the pending competitor_exclusions policy decision.",
+            "properties": {
+              "source": {
+                "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+                "enum": [
+                  "direct",
+                  "affiliate",
+                  "koah",
+                  "gravity"
+                ],
+                "title": "DemandSource",
+                "type": "string"
+              },
+              "creative_id": {
+                "description": "Identifier with the \"cr_\" prefix.",
+                "minLength": 4,
+                "pattern": "^cr_.*",
+                "title": "CreativeId",
+                "type": "string"
+              },
+              "advertiser_domain": {
+                "description": "The candidate advertiser domain that matched a competitor exclusion.",
+                "minLength": 1,
+                "title": "AdvertiserDomain",
+                "type": "string"
+              },
+              "reason": {
+                "const": "competitor_exclusion",
+                "description": "Why the candidate was dropped. Only competitor_exclusion exists in v1.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source",
+              "creative_id",
+              "advertiser_domain",
+              "reason"
+            ],
+            "title": "ExcludedCandidate",
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "selected": {
+          "anyOf": [
+            {
+              "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+              "enum": [
+                "direct",
+                "affiliate",
+                "koah",
+                "gravity"
+              ],
+              "title": "DemandSource",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The source of the winning candidate, or null when nothing was selected (no_fill)."
+        }
+      },
+      "required": [
+        "requested",
+        "responses",
+        "excluded",
+        "selected"
+      ],
+      "title": "DemandTrace",
+      "type": "object"
+    },
+    "creative": {
+      "anyOf": [
+        {
+          "description": "The served creative as recorded: identity plus a content hash, never the copy.",
+          "properties": {
+            "id": {
+              "description": "Identifier with the \"cr_\" prefix.",
+              "minLength": 4,
+              "pattern": "^cr_.*",
+              "title": "CreativeId",
+              "type": "string"
+            },
+            "advertiser": {
+              "description": "Advertiser display name.",
+              "minLength": 1,
+              "type": "string"
+            },
+            "advertiser_domain": {
+              "description": "Advertiser domain, e.g. example.com.",
+              "minLength": 1,
+              "title": "AdvertiserDomain",
+              "type": "string"
+            },
+            "content_hash": {
+              "description": "sha256 over the canonical JSON of the creative content (advertiser, advertiser_domain, headline, body, cta, url_template). Verification compares it with the stored creative.",
+              "minLength": 8,
+              "pattern": "^sha256:.*",
+              "title": "Sha256Hash",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "advertiser",
+            "advertiser_domain",
+            "content_hash"
+          ],
+          "title": "AuditCreative",
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "null when decision is suppress."
+    },
+    "disclosure": {
+      "description": "The disclosure the policy required for this turn. No defaults: signed as written.",
+      "properties": {
+        "label": {
+          "description": "Label rendered on the sponsored block. Must be non-empty.",
+          "minLength": 1,
+          "title": "DisclosureLabel",
+          "type": "string"
+        },
+        "position": {
+          "const": "after_answer",
+          "description": "Only after_answer exists in v1.",
+          "title": "DisclosurePosition",
+          "type": "string"
+        },
+        "style": {
+          "const": "separate_block",
+          "description": "Only separate_block exists in v1.",
+          "title": "DisclosureStyle",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "position",
+        "style"
+      ],
+      "title": "AuditDisclosure",
+      "type": "object"
+    },
+    "model_output_hash": {
+      "anyOf": [
+        {
+          "description": "A SHA-256 digest written as sha256:<hex>.",
+          "minLength": 8,
+          "pattern": "^sha256:.*",
+          "title": "Sha256Hash",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Set by attestation: the hash of the model output the SDK rendered the slot after."
+    },
+    "separation_attestation": {
+      "description": "true only on a record produced by attestation (POST /v1/attest).",
+      "type": "boolean"
+    },
+    "attested_at": {
+      "anyOf": [
+        {
+          "description": "ISO 8601 timestamp in UTC, e.g. 2026-09-02T18:04:11Z.",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "title": "IsoTimestamp",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "supersedes_hash": {
+      "anyOf": [
+        {
+          "description": "A SHA-256 digest written as sha256:<hex>.",
+          "minLength": 8,
+          "pattern": "^sha256:.*",
+          "title": "Sha256Hash",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On an attestation record: the record_hash of the record it supersedes. Both stay in the chain."
+    },
+    "prev_hash": {
+      "anyOf": [
+        {
+          "description": "A SHA-256 digest written as sha256:<hex>.",
+          "minLength": 8,
+          "pattern": "^sha256:.*",
+          "title": "Sha256Hash",
+          "type": "string"
+        },
+        {
+          "const": "genesis",
+          "type": "string"
+        }
+      ],
+      "description": "The record_hash of the previous record for the same app_id, or the literal genesis for the first record.",
+      "title": "PrevHash"
+    },
+    "record_hash": {
+      "description": "sha256 over the canonical JSON of the record without record_hash and signature, concatenated with prev_hash.",
+      "minLength": 8,
+      "pattern": "^sha256:.*",
+      "title": "Sha256Hash",
+      "type": "string"
+    },
+    "signature": {
+      "description": "Ed25519 over the record_hash string, by key_id.",
+      "pattern": "^ed25519:[A-Za-z0-9+/]+={0,2}$",
+      "title": "Ed25519Signature",
+      "type": "string"
+    },
+    "key_id": {
+      "description": "Identifier of the Ed25519 key pair that signed a record, e.g. k_2026_09.",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+      "title": "KeyId",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "app_id",
+    "conversation_id_hash",
+    "user_hash",
+    "turn_id",
+    "ts",
+    "surface",
+    "classification",
+    "policy_version",
+    "policy_hash",
+    "policy_decisions",
+    "decision",
+    "reason",
+    "demand",
+    "creative",
+    "disclosure",
+    "model_output_hash",
+    "separation_attestation",
+    "attested_at",
+    "supersedes_hash",
+    "prev_hash",
+    "record_hash",
+    "signature",
+    "key_id"
+  ],
+  "title": "AuditRecord",
+  "type": "object"
+}
