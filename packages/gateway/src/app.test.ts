@@ -1,8 +1,10 @@
 import { ErrorResponse, HealthResponse } from '@adgate/schemas';
 import { HTTPException } from 'hono/http-exception';
-import { describe, expect, it } from 'vitest';
+import type { Context } from 'hono';
+import { describe, expect, it, vi } from 'vitest';
 
-import { createApp } from './app.js';
+import { BODY_LIMIT_BYTES, createApp } from './app.js';
+import type { AppEnv } from './app-env.js';
 import { createLogger } from './logger.js';
 import { collectLogs } from './test-support/logs.js';
 
@@ -65,6 +67,32 @@ describe('createApp', () => {
     const unauthorized = await app.request('/unauthorized');
     expect(unauthorized.status).toBe(401);
     expect(ErrorResponse.parse(await unauthorized.json()).error.code).toBe('unauthorized');
+  });
+
+  it('rejects a body over BODY_LIMIT_BYTES with 413 payload_too_large before the route runs', async () => {
+    const { app } = build();
+    const handler = vi.fn(async (c: Context<AppEnv>) =>
+      c.json({ bytes: (await c.req.text()).length }),
+    );
+    app.post('/echo', handler);
+    const post = (body: string) =>
+      app.request('/echo', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body,
+      });
+    expect(BODY_LIMIT_BYTES).toBe(256 * 1024);
+    const big = await post(JSON.stringify({ pad: 'x'.repeat(300 * 1024) }));
+    expect(big.status).toBe(413);
+    expect(big.headers.get('content-type')).toContain('application/json');
+    const body = ErrorResponse.parse(await big.json());
+    expect(body.error.code).toBe('payload_too_large');
+    expect(body.error.message).toContain(String(BODY_LIMIT_BYTES));
+    expect(handler).not.toHaveBeenCalled();
+
+    const small = await post(JSON.stringify({ pad: 'x'.repeat(1024) }));
+    expect(small.status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it('allows only the configured CORS origins', async () => {

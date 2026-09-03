@@ -4,6 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import type { DbOrTx } from '../db/client.js';
 import { type ApiKeyRole, type ApiKeyRow, apiKeys, type AppRow, apps } from '../db/tables/apps.js';
 import { type GeneratedApiKey, generateApiKey, hashApiSecret } from './keys.js';
+import type { VerifiedKeyCache } from './verified-cache.js';
 
 /**
  * Everything the gateway reads or writes in api_keys. The middleware talks to the
@@ -78,16 +79,27 @@ export const issueApiKey = async (db: DbOrTx, input: IssueApiKeyInput): Promise<
   };
 };
 
-/** Marks a key revoked. Returns false when it did not exist or was already revoked. */
+export interface RevokeApiKeyOptions {
+  now?: Date | undefined;
+  /** The verified-key cache of this process, so the key stops working before its TTL. */
+  cache?: VerifiedKeyCache | undefined;
+}
+
+/**
+ * Marks a key revoked and drops it from the in-process verified-key cache. Returns false when
+ * it did not exist or was already revoked. Other processes see the revocation on their next
+ * request too: the middleware reloads the row every time and only skips the argon2 step.
+ */
 export const revokeApiKey = async (
   db: DbOrTx,
   keyId: string,
-  now: Date = new Date(),
+  options: RevokeApiKeyOptions = {},
 ): Promise<boolean> => {
   const rows = await db
     .update(apiKeys)
-    .set({ revokedAt: now })
+    .set({ revokedAt: options.now ?? new Date() })
     .where(and(eq(apiKeys.id, keyId), isNull(apiKeys.revokedAt)))
     .returning({ id: apiKeys.id });
+  options.cache?.invalidate(keyId);
   return rows.length > 0;
 };

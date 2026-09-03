@@ -43,7 +43,7 @@ const distinctAdvertisers = (seeds: readonly SeedCreative[]): Map<string, string
   const names = new Map<string, string>();
   for (const seed of seeds) {
     const known = names.get(seed.advertiser_domain);
-    if (known !== undefined && known !== seed.advertiser_domain && known !== seed.advertiser) {
+    if (known !== undefined && known !== seed.advertiser) {
       throw new Error(
         `seedCreatives: advertiser domain ${seed.advertiser_domain} is named both "${known}" and "${seed.advertiser}"`,
       );

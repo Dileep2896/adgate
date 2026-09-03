@@ -9,6 +9,7 @@ export * from './classify/llm/index.js';
 export * from './classify/rules/index.js';
 export * from './demand/index.js';
 export * from './ids/ulid.js';
+export * from './policy/caps.js';
 export * from './policy/eu-members.js';
 export * from './policy/evaluate.js';
 export * from './policy/hash.js';

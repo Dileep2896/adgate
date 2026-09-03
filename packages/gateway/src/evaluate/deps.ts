@@ -89,7 +89,7 @@ export const createEvaluateDeps = (
     policies: overrides.policies ?? createPolicyLoader(),
     classifyCache:
       overrides.classifyCache ??
-      createLayeredClassifyCache(lru, createPgClassifyCache(db, { now })),
+      createLayeredClassifyCache(lru, createPgClassifyCache(db, { now }), { now }),
     caps: overrides.caps ?? createCapReader(db),
     adapters:
       overrides.adapters ??

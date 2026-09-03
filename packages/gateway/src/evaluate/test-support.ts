@@ -18,7 +18,7 @@ import { type App, createApp } from '../app.js';
 import { type RegisteredApp, registerApp } from '../apps/register-app.js';
 import { seedCreatives } from '../catalog/seed.js';
 import { type GatewayConfig, loadConfig } from '../config.js';
-import { createDb, type DbHandle } from '../db/client.js';
+import { createDb, type DbHandle, type DbOptions } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import { advertisers, auditRecords, creatives, TABLE_NAMES } from '../db/schema.js';
 import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
@@ -91,6 +91,8 @@ export interface HarnessOptions {
   seed?: boolean | undefined;
   overrides?: EvaluateDepsOverrides | undefined;
   logLevel?: LogLevel | undefined;
+  /** Pool options for the harness handle (default max 4 and the client's timeout defaults). */
+  db?: DbOptions | undefined;
 }
 
 export interface PostOptions {
@@ -130,7 +132,7 @@ const PER_EVALUATION_TABLES = [
 export const createHarness = async (options: HarnessOptions = {}): Promise<Harness> => {
   const url = requireTestDatabaseUrl();
   await runMigrations(url);
-  const handle = createDb(url, { max: 4 });
+  const handle = createDb(url, { max: 4, ...options.db });
   await truncateAllTables(handle.sql);
 
   const registered = await registerApp(handle.db, {
@@ -197,6 +199,19 @@ export const createHarness = async (options: HarnessOptions = {}): Promise<Harne
     },
     close: () => handle.close(),
   };
+};
+
+/** Creates a harness for `fn` and closes it afterwards whatever happens. */
+export const withHarness = async <T>(
+  options: HarnessOptions,
+  fn: (harness: Harness) => Promise<T>,
+): Promise<T> => {
+  const harness = await createHarness(options);
+  try {
+    return await fn(harness);
+  } finally {
+    await harness.close();
+  }
 };
 
 export type AuditRow = typeof auditRecords.$inferSelect;

@@ -15,6 +15,7 @@ import { collectLogs } from '../test-support/logs.js';
 import { generateApiKey } from './keys.js';
 import { bearerAuth, UNAUTHORIZED_MESSAGE } from './middleware.js';
 import { createApiKeyStore, type IssuedApiKey, issueApiKey, revokeApiKey } from './repository.js';
+import { createVerifiedKeyCache } from './verified-cache.js';
 
 /**
  * bearerAuth against the real api_keys table. The protected routes exist only in this file:
@@ -161,10 +162,35 @@ describe('bearerAuth accepts a valid key and enforces roles', () => {
   });
 });
 
+describe('bearerAuth and revocation', () => {
+  it('rejects a key that was accepted moments ago once the store marks it revoked', async () => {
+    const temp = await issueApiKey(handle.db, { appId, role: 'app' });
+    expect((await request('/_test/app-only', `Bearer ${temp.api_key}`)).status).toBe(200);
+    expect(await revokeApiKey(handle.db, temp.key_id)).toBe(true);
+    const res = await request('/_test/app-only', `Bearer ${temp.api_key}`);
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual(UNAUTHORIZED_BODY);
+  });
+
+  it('revokeApiKey drops the key from the verified-key cache it is given', async () => {
+    const temp = await issueApiKey(handle.db, { appId, role: 'app' });
+    const cache = createVerifiedKeyCache();
+    cache.set(temp.key_prefix, temp.secret, {
+      key_id: temp.key_id,
+      app_id: appId,
+      role: 'app',
+      advertiser_id: null,
+    });
+    expect(await revokeApiKey(handle.db, temp.key_id, { cache })).toBe(true);
+    expect(cache.size).toBe(0);
+    expect(await revokeApiKey(handle.db, temp.key_id, { cache })).toBe(false);
+  });
+});
+
 describe('bearerAuth never logs key material', () => {
   it('no log line carries a secret, a presented key or a stored hash', async () => {
     const rows = await handle.db.select({ hashedKey: apiKeys.hashedKey }).from(apiKeys);
-    expect(rows.length).toBe(3);
+    expect(rows.length).toBe(5);
     expect(lines.length).toBeGreaterThan(5);
     const forbidden = [
       appKey.secret,

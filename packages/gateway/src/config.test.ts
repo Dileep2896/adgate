@@ -52,6 +52,16 @@ describe('loadConfig', () => {
     expect(error.message.split('\n').length).toBeGreaterThanOrEqual(3);
   });
 
+  it('defaults the database timeouts and accepts 0 to disable one', () => {
+    expect(loadConfig(MINIMAL).db).toEqual({ statementTimeoutMs: 2000, lockTimeoutMs: 1000 });
+    expect(
+      loadConfig({ ...MINIMAL, DB_STATEMENT_TIMEOUT_MS: '0', DB_LOCK_TIMEOUT_MS: '250' }).db,
+    ).toEqual({ statementTimeoutMs: 0, lockTimeoutMs: 250 });
+    expect(failure({ ...MINIMAL, DB_LOCK_TIMEOUT_MS: '-1' }).message).toContain(
+      'DB_LOCK_TIMEOUT_MS',
+    );
+  });
+
   it('names an invalid PORT', () => {
     expect(failure({ ...MINIMAL, PORT: 'abc' }).message).toContain('PORT');
     expect(failure({ ...MINIMAL, PORT: '70000' }).message).toContain('PORT');

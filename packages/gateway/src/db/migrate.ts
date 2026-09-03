@@ -6,7 +6,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 import { isMainModule, redactDatabaseUrl } from '../cli.js';
 import { loadRootEnvFile } from '../env-file.js';
-import { createDb } from './client.js';
+import { createDb, MIGRATION_DB_OPTIONS } from './client.js';
 
 /**
  * Applies the SQL migrations drizzle-kit generated into packages/gateway/drizzle. Drizzle
@@ -34,7 +34,7 @@ export const runMigrations = async (
   url: string,
   migrationsFolder: string = findMigrationsDir(),
 ): Promise<void> => {
-  const handle = createDb(url, { max: 1 });
+  const handle = createDb(url, MIGRATION_DB_OPTIONS);
   try {
     await migrate(handle.db, { migrationsFolder });
   } finally {

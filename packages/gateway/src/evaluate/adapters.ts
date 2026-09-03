@@ -114,9 +114,26 @@ export const loadCatalog = async (
   return { creatives: catalog, advertiserIds };
 };
 
-/** apps.affiliate_config validated; an app without one gets an empty config (no networks). */
-export const affiliateConfigOf = (app: Pick<AppRow, 'affiliateConfig'>): AffiliateConfig =>
-  app.affiliateConfig === null ? {} : AffiliateConfig.parse(app.affiliateConfig);
+/**
+ * apps.affiliate_config validated; an app without one gets an empty config (no networks). A
+ * stored value the schema rejects is treated the same way with a warning naming the app (never
+ * the value): every affiliate entry then answers affiliate_not_configured while direct demand
+ * still serves, rather than the whole turn failing closed over one column.
+ */
+export const affiliateConfigOf = (
+  app: Pick<AppRow, 'id' | 'affiliateConfig'>,
+  log: Logger,
+): AffiliateConfig => {
+  if (app.affiliateConfig === null) {
+    return {};
+  }
+  const parsed = AffiliateConfig.safeParse(app.affiliateConfig);
+  if (!parsed.success) {
+    log.warn({ app_id: app.id }, 'apps.affiliate_config is not an AffiliateConfig; ignored');
+    return {};
+  }
+  return parsed.data;
+};
 
 /** One adapter per enabled demand entry, in policy order. */
 export const createAdapters = (
@@ -157,7 +174,12 @@ export const createAdapterFactory = (
 ): AdapterFactory => ({
   async build({ app, policy, log }) {
     const catalog = await loadCatalog(db, app.id, log);
-    const adapters = createAdapters(policy, catalog.creatives, affiliateConfigOf(app), options);
+    const adapters = createAdapters(
+      policy,
+      catalog.creatives,
+      affiliateConfigOf(app, log),
+      options,
+    );
     return { adapters, advertiserIds: catalog.advertiserIds };
   },
 });

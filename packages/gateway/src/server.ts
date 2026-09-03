@@ -48,7 +48,7 @@ const main = (): void => {
     'configuration loaded',
   );
 
-  const database = createDb(config.databaseUrl);
+  const database = createDb(config.databaseUrl, config.db);
   const app = createApp({
     logger,
     corsAllowedOrigins: config.corsAllowedOrigins,

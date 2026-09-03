@@ -156,6 +156,20 @@ describe('seedCreatives', () => {
     expect(rows.filter((row) => row.appId === null)).toHaveLength(3);
   });
 
+  it('rejects two names for one advertiser domain and writes nothing', async () => {
+    const [first] = seeds;
+    if (first === undefined) {
+      throw new Error('seed file is empty');
+    }
+    const renamed = { ...first, headline: 'Another headline', advertiser: 'Renamed Corp' };
+    await expect(seedCreatives(handle.db, [first, renamed])).rejects.toThrow(
+      `advertiser domain ${first.advertiser_domain} is named both "${first.advertiser}" and "Renamed Corp"`,
+    );
+    const { advertisers: advRows, creatives: crRows } = await snapshot();
+    expect(advRows).toHaveLength(0);
+    expect(crRows).toHaveLength(0);
+  });
+
   it('rejects an unknown app id and an invalid entry without inserting anything', async () => {
     await expect(seedCreatives(handle.db, seeds, { appId: 'app_missing' })).rejects.toThrow(
       /app_missing/,

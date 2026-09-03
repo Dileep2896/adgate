@@ -31,7 +31,7 @@ export interface ClickDeps {
 /** The app's policy for the affiliate network; a policy that no longer parses is null (landing page). */
 const policyOf = (policies: PolicyLoader, app: PolicySource, log: Logger): PolicyConfig | null => {
   try {
-    return policies.load(app);
+    return policies.load(app, log);
   } catch (error) {
     log.warn(
       { app_id: app.id, error_name: error instanceof Error ? error.name : 'NonError' },

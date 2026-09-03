@@ -1,5 +1,6 @@
 import type { HealthResponse } from '@adgate/schemas';
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
 import { HTTPException } from 'hono/http-exception';
 import type { Logger } from 'pino';
@@ -27,7 +28,8 @@ export { errorCode, errorResponse } from './http-error.js';
  * server.ts serves it. Routes arrive story by story: GET /healthz; when evaluate deps are given,
  * POST /v1/evaluate, /v1/attest and /v1/events behind bearerAuth (app keys) and the public
  * click redirect GET /c/:audit_id, all sharing the evaluate deps' database, signing key and
- * clock; and the docs/api.md error behaviour: every non-2xx body is { error: { code, message } }.
+ * clock; a body size limit ahead of every route; and the docs/api.md error behaviour: every
+ * non-2xx body is { error: { code, message } }.
  */
 
 export interface AppDeps {
@@ -45,6 +47,19 @@ export interface AppDeps {
 
 export type App = Hono<AppEnv>;
 
+/**
+ * The largest request body any route reads (256 KiB; an EvaluateRequest with four 4,000 code
+ * point messages is under 20 KiB). Larger bodies are 413 payload_too_large before a route runs.
+ * S36 (load and abuse) confirms or tunes the figure.
+ */
+export const BODY_LIMIT_BYTES = 256 * 1024;
+
+const payloadTooLarge = (): never => {
+  throw new HTTPException(413, {
+    message: `request body exceeds ${BODY_LIMIT_BYTES} bytes`,
+  });
+};
+
 export const createApp = (deps: AppDeps): App => {
   const app = new Hono<AppEnv>();
 
@@ -58,6 +73,7 @@ export const createApp = (deps: AppDeps): App => {
       maxAge: 600,
     }),
   );
+  app.use('*', bodyLimit({ maxSize: BODY_LIMIT_BYTES, onError: payloadTooLarge }));
 
   app.get('/healthz', (c) => {
     const body: HealthResponse = { ok: true };

@@ -43,6 +43,11 @@ export interface LruCacheOptions {
 
 export interface LruCache extends ClassifyCache {
   readonly size: number;
+  /**
+   * As ClassifyCache.set, with an optional lifetime for this one entry (a copy seeded from a
+   * shared tier keeps that tier's remaining TTL). A non-positive or NaN lifetime stores nothing.
+   */
+  set(key: string, value: Classification, ttlMs?: number): void;
   delete(key: string): boolean;
   clear(): void;
 }
@@ -86,9 +91,13 @@ export const createLruCache = (options: LruCacheOptions = {}): LruCache => {
       entries.set(key, entry);
       return entry.value;
     },
-    set(key, value) {
+    set(key, value, entryTtlMs) {
       entries.delete(key);
-      entries.set(key, { value, expiresAt: now() + ttlMs });
+      const lifetime = entryTtlMs ?? ttlMs;
+      if (!(lifetime > 0)) {
+        return;
+      }
+      entries.set(key, { value, expiresAt: now() + lifetime });
       while (entries.size > maxEntries) {
         const oldest = entries.keys().next();
         if (oldest.done === true) {

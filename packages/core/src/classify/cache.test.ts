@@ -94,6 +94,20 @@ describe('createLruCache', () => {
     expect(cache.get('a')).toEqual(entry(0.6));
   });
 
+  it('takes a per-entry ttl on set and skips a non-positive one', () => {
+    const { now, tick } = clock();
+    const cache = createLruCache({ ttlMs: 600_000, now });
+    cache.set('short', entry(0.5), 100);
+    cache.set('long', entry(0.6));
+    tick(100);
+    expect(cache.get('short')).toBeUndefined();
+    expect(cache.get('long')).toEqual(entry(0.6));
+    cache.set('long', entry(0.7), 0);
+    expect(cache.get('long')).toBeUndefined();
+    cache.set('nan', entry(0.1), Number.NaN);
+    expect(cache.size).toBe(0);
+  });
+
   it('supports delete and clear', () => {
     const cache = createLruCache();
     cache.set('a', entry(0.1));

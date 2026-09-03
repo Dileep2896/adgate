@@ -20,6 +20,7 @@ export const unescapeNewlines = (value: string): string => value.replace(/\\n/g,
 const nonEmpty = z.string().min(1);
 const port = z.coerce.number().int().min(1).max(65535);
 const positiveInt = z.coerce.number().int().positive();
+const nonNegativeInt = z.coerce.number().int().min(0);
 const envBool = z
   .enum(['true', 'false', '1', '0', 'yes', 'no'])
   .transform((value) => value === 'true' || value === '1' || value === 'yes');
@@ -37,6 +38,8 @@ export const GatewayEnv = z.object({
   LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
   DATABASE_URL: nonEmpty,
   DATABASE_URL_TEST: nonEmpty.optional(),
+  DB_STATEMENT_TIMEOUT_MS: nonNegativeInt.default(2000),
+  DB_LOCK_TIMEOUT_MS: nonNegativeInt.default(1000),
   CORS_ALLOWED_ORIGINS: commaList.default([]),
   PUBLIC_BASE_URL: z.url().default('http://localhost:8787'),
   METRICS_TOKEN: nonEmpty.optional(),
@@ -74,6 +77,11 @@ export const GatewayConfig = GatewayEnv.transform((env) => ({
   logLevel: env.LOG_LEVEL,
   databaseUrl: env.DATABASE_URL,
   databaseUrlTest: env.DATABASE_URL_TEST ?? null,
+  /** Per-session Postgres timeouts for createDb (db/client.ts); 0 disables one. */
+  db: {
+    statementTimeoutMs: env.DB_STATEMENT_TIMEOUT_MS,
+    lockTimeoutMs: env.DB_LOCK_TIMEOUT_MS,
+  },
   corsAllowedOrigins: env.CORS_ALLOWED_ORIGINS,
   publicBaseUrl: env.PUBLIC_BASE_URL,
   metricsToken: env.METRICS_TOKEN ?? null,

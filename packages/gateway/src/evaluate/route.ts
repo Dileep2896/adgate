@@ -6,7 +6,8 @@ import type { AppEnv } from '../app-env.js';
 import { errorResponse } from '../http-error.js';
 import { INVALID_REQUEST_CODE, parseJsonBody } from '../request-body.js';
 import type { EvaluateDeps } from './deps.js';
-import { AUDIT_ID_PREFIX, evaluate } from './pipeline.js';
+import { AUDIT_ID_PREFIX } from './fail-closed.js';
+import { evaluate } from './pipeline.js';
 import { errorEvaluateResponse } from './response.js';
 
 /**
