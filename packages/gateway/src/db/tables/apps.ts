@@ -65,3 +65,9 @@ export const apiKeys = pgTable(
     ),
   ],
 );
+
+/** A row of `apps` as SELECT returns it (Date objects for the timestamptz columns). */
+export type AppRow = typeof apps.$inferSelect;
+/** A row of `api_keys` as SELECT returns it. hashed_key must never leave the process. */
+export type ApiKeyRow = typeof apiKeys.$inferSelect;
+export type AdvertiserRow = typeof advertisers.$inferSelect;

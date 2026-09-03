@@ -187,7 +187,7 @@
       ]
     },
     {
-      "id": "S17", "priority": 17, "dependsOn": ["S16"], "passes": false,
+      "id": "S17", "priority": 17, "dependsOn": ["S16"], "passes": true,
       "title": "API keys, auth middleware, app and creative seeding",
       "description": "argon2 hashed API keys with roles app and advertiser_read, constant time compare, bearer auth middleware that attaches app context, and scripts: create-app (prints the key once), seed-creatives (loads examples/creatives.seed.json).",
       "acceptanceCriteria": [
