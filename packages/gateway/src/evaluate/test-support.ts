@@ -152,6 +152,7 @@ export const createHarness = async (options: HarnessOptions = {}): Promise<Harne
   const keys = loadSigningKeys(config.signing);
   const deps = createEvaluateDeps(config, handle.db, {
     signing: keys.signing,
+    ring: keys.ring,
     ...options.overrides,
   });
   const logs = collectLogs();

@@ -221,7 +221,7 @@
       ]
     },
     {
-      "id": "S20", "priority": 20, "dependsOn": ["S19"], "passes": false,
+      "id": "S20", "priority": 20, "dependsOn": ["S19"], "passes": true,
       "title": "Audit read and verify endpoints",
       "description": "GET /v1/audit/:id and GET /v1/verify/:id with app and advertiser_read authorization. verify loads prev record, stored creative hash, and superseded record as needed.",
       "acceptanceCriteria": [

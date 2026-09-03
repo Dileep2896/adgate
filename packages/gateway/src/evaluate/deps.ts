@@ -6,11 +6,12 @@ import {
   type LlmClassifier,
   type LruCache,
   OpenAiCompatibleClassifier,
+  type PublicKeyRing,
 } from '@adgate/core';
 
 import type { GatewayConfig } from '../config.js';
 import type { Db } from '../db/client.js';
-import { loadSigningKeys } from '../signing.js';
+import { type GatewaySigningKeys, loadSigningKeys } from '../signing.js';
 import { type AdapterFactory, createAdapterFactory } from './adapters.js';
 import { type AuditStore, createAuditStore } from './audit-store.js';
 import { type CapReader, createCapReader } from './caps.js';
@@ -23,14 +24,17 @@ import { createPolicyLoader, type PolicyLoader } from './policy-loader.js';
 
 /**
  * Everything the evaluate route needs, assembled once per process by createEvaluateDeps from
- * the gateway config and the database. Every collaborator is an interface so tests can inject
- * a FakeLlmClassifier, a fixed clock, a scripted adapter factory or an audit store that fails.
+ * the gateway config and the database, and shared by the other /v1 routes (attest, events,
+ * click, audit read and verify). Every collaborator is an interface so tests can inject a
+ * FakeLlmClassifier, a fixed clock, a scripted adapter factory or an audit store that fails.
  */
 export interface EvaluateDeps {
   db: Db;
   /** PUBLIC_BASE_URL: creative.url is `${publicBaseUrl}/c/${audit_id}`. */
   publicBaseUrl: string;
   signing: AuditSigningKey;
+  /** The public keys GET /v1/verify checks signatures against (the signing key's included). */
+  ring: PublicKeyRing;
   /** null = no LLM configured: the classifier runs rules only. */
   llm: LlmClassifier | null;
   /** The orchestrator's deadline on the LLM stage (CLASSIFIER_TIMEOUT_MS). */
@@ -49,6 +53,7 @@ export interface EvaluateDeps {
 /** Overrides for createEvaluateDeps. `llm: null` forces rules only; undefined = from config. */
 export interface EvaluateDepsOverrides {
   signing?: AuditSigningKey | undefined;
+  ring?: PublicKeyRing | undefined;
   llm?: LlmClassifier | null | undefined;
   now?: Clock | undefined;
   /** The process-wide in-memory tier of the classifier cache. */
@@ -78,10 +83,14 @@ export const createEvaluateDeps = (
 ): EvaluateDeps => {
   const now = overrides.now ?? Date.now;
   const lru = overrides.lru ?? createLruCache({ now });
+  let keys: GatewaySigningKeys | null = null;
+  /** The configured keys, loaded once and only when an override does not supply them. */
+  const configuredKeys = (): GatewaySigningKeys => (keys ??= loadSigningKeys(config.signing));
   return {
     db,
     publicBaseUrl: config.publicBaseUrl,
-    signing: overrides.signing ?? loadSigningKeys(config.signing).signing,
+    signing: overrides.signing ?? configuredKeys().signing,
+    ring: overrides.ring ?? configuredKeys().ring,
     llm: overrides.llm === undefined ? llmFromConfig(config) : overrides.llm,
     classifierTimeoutMs: overrides.classifierTimeoutMs ?? config.classifierTimeoutMs,
     demandTimeoutMs: overrides.demandTimeoutMs ?? DEFAULT_DEMAND_TIMEOUT_MS,

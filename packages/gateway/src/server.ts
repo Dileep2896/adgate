@@ -53,7 +53,7 @@ const main = (): void => {
     logger,
     corsAllowedOrigins: config.corsAllowedOrigins,
     db: database.db,
-    evaluate: createEvaluateDeps(config, database.db, { signing: keys.signing }),
+    evaluate: createEvaluateDeps(config, database.db, { signing: keys.signing, ring: keys.ring }),
   });
   const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
     logger.info({ port: info.port, address: info.address }, 'gateway listening');

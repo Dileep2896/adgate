@@ -6,6 +6,8 @@ import { HTTPException } from 'hono/http-exception';
 import type { Logger } from 'pino';
 
 import type { AppEnv } from './app-env.js';
+import { createAuditReader } from './audit-api/loader.js';
+import { auditRecordRoute, verifyRoute } from './audit-api/route.js';
 import { attestRoute } from './attest/route.js';
 import { createAttestStore } from './attest/store.js';
 import { bearerAuth } from './auth/middleware.js';
@@ -26,10 +28,11 @@ export { errorCode, errorResponse } from './http-error.js';
  * The Hono application. createApp wires middleware and routes around injected dependencies
  * and returns the app without binding a port, so tests drive it with app.request() and
  * server.ts serves it. Routes arrive story by story: GET /healthz; when evaluate deps are given,
- * POST /v1/evaluate, /v1/attest and /v1/events behind bearerAuth (app keys) and the public
- * click redirect GET /c/:audit_id, all sharing the evaluate deps' database, signing key and
- * clock; a body size limit ahead of every route; and the docs/api.md error behaviour: every
- * non-2xx body is { error: { code, message } }.
+ * POST /v1/evaluate, /v1/attest and /v1/events behind bearerAuth (app keys), GET /v1/audit/:id
+ * and /v1/verify/:id behind bearerAuth (app or advertiser_read keys) and the public click
+ * redirect GET /c/:audit_id, all sharing the evaluate deps' database, keys and clock; a body
+ * size limit ahead of every route; and the docs/api.md error behaviour: every non-2xx body is
+ * { error: { code, message } }.
  */
 
 export interface AppDeps {
@@ -39,8 +42,9 @@ export interface AppDeps {
   /** The Drizzle database. Optional until a route needs it, so unit tests run without Postgres. */
   db?: Db | undefined;
   /**
-   * Mounts /v1/evaluate, /v1/attest, /v1/events and /c/:audit_id (createEvaluateDeps supplies
-   * the db, signing key, clock and policy loader they share). Absent = none of them exists.
+   * Mounts /v1/evaluate, /v1/attest, /v1/events, /v1/audit/:id, /v1/verify/:id and /c/:audit_id
+   * (createEvaluateDeps supplies the db, keys, clock and policy loader they share). Absent =
+   * none of them exists.
    */
   evaluate?: EvaluateDeps | undefined;
 }
@@ -81,11 +85,16 @@ export const createApp = (deps: AppDeps): App => {
   });
 
   if (deps.evaluate !== undefined) {
-    const { db, signing, now, policies } = deps.evaluate;
-    const appKey = bearerAuth({ store: createApiKeyStore(db), roles: ['app'] });
+    const { db, signing, ring, now, policies } = deps.evaluate;
+    const keyStore = createApiKeyStore(db);
+    const appKey = bearerAuth({ store: keyStore, roles: ['app'] });
+    const readKey = bearerAuth({ store: keyStore, roles: ['app', 'advertiser_read'] });
+    const auditApi = { ring, reader: createAuditReader(db) };
     app.post('/v1/evaluate', appKey, evaluateRoute(deps.evaluate));
     app.post('/v1/attest', appKey, attestRoute({ signing, now, store: createAttestStore(db) }));
     app.post('/v1/events', appKey, eventsRoute({ store: createEventStore(db, { now }) }));
+    app.get('/v1/audit/:id', readKey, auditRecordRoute(auditApi));
+    app.get('/v1/verify/:id', readKey, verifyRoute(auditApi));
     app.get('/c/:audit_id', clickRoute({ now, policies, store: createClickStore(db, { now }) }));
   }
 
