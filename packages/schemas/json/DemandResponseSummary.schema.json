@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "One entry of an audit record demand.responses list: a demand adapter answer with the candidates reduced to a count. error is set when the adapter failed, timed out or was aborted.",
+  "properties": {
+    "source": {
+      "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+      "enum": [
+        "direct",
+        "affiliate",
+        "koah",
+        "gravity"
+      ],
+      "title": "DemandSource",
+      "type": "string"
+    },
+    "candidates": {
+      "description": "How many candidates the source returned (0 on failure or timeout).",
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "latency_ms": {
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "error": {
+      "description": "Set when the adapter failed, timed out or was aborted. Never message text.",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "source",
+    "candidates",
+    "latency_ms"
+  ],
+  "title": "DemandResponseSummary",
+  "type": "object"
+}

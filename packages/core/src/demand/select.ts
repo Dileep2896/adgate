@@ -13,7 +13,8 @@ import { creativeServesRegion } from './regions.js';
 /** Candidates an adapter returns at most (BUILD_GUIDE Phase 3: "return top 3 with scores"). */
 export const MAX_CANDIDATES = 3;
 
-const compareIds = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+/** Code-unit order on creative ids: the last tie-breaker of every ranking in this package. */
+export const compareIds = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** targeting_match desc, ecpm_estimate desc, id asc: total and deterministic. */
 export const compareCandidates = (a: Candidate, b: Candidate): number =>

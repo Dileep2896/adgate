@@ -77,6 +77,18 @@ describe('@adgate/core', () => {
     expect(core.ULID_PATTERN.test(core.ulid())).toBe(true);
   });
 
+  it('exports mediation and the competitor exclusion helpers', () => {
+    expect(typeof core.mediate).toBe('function');
+    expect(typeof core.mediationScore).toBe('function');
+    expect(typeof core.compareByRevenue).toBe('function');
+    expect(typeof core.isExcludedDomain).toBe('function');
+    expect(typeof core.domainMatches).toBe('function');
+    expect(typeof core.normalizeDomain).toBe('function');
+    expect(core.MEDIATION_TIMEOUT_ERROR).toBe('timeout');
+    expect(core.MEDIATION_ABORTED_ERROR).toBe('aborted');
+    expect(core.ADAPTER_ERROR_PREFIX).toBe('adapter_error:');
+  });
+
   it('re-exports PolicyValidationError from @adgate/schemas', () => {
     expect(core.PolicyValidationError).toBe(schemas.PolicyValidationError);
   });

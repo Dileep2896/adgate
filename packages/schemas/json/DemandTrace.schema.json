@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The demand block of an audit record: the mediation trace for one evaluation (docs/audit.md).",
+  "properties": {
+    "requested": {
+      "description": "The sources queried, in policy demand order (enabled entries only).",
+      "items": {
+        "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+        "enum": [
+          "direct",
+          "affiliate",
+          "koah",
+          "gravity"
+        ],
+        "title": "DemandSource",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "responses": {
+      "description": "One entry per requested source, in the same order.",
+      "items": {
+        "description": "One entry of an audit record demand.responses list: a demand adapter answer with the candidates reduced to a count. error is set when the adapter failed, timed out or was aborted.",
+        "properties": {
+          "source": {
+            "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+            "enum": [
+              "direct",
+              "affiliate",
+              "koah",
+              "gravity"
+            ],
+            "title": "DemandSource",
+            "type": "string"
+          },
+          "candidates": {
+            "description": "How many candidates the source returned (0 on failure or timeout).",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "latency_ms": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "error": {
+            "description": "Set when the adapter failed, timed out or was aborted. Never message text.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "candidates",
+          "latency_ms"
+        ],
+        "title": "DemandResponseSummary",
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "excluded": {
+      "description": "Candidates dropped by competitor_exclusions, in the order they were seen.",
+      "items": {
+        "description": "One entry of an audit record demand.excluded list: a candidate mediation dropped before ranking. This resolves the pending competitor_exclusions policy decision.",
+        "properties": {
+          "source": {
+            "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+            "enum": [
+              "direct",
+              "affiliate",
+              "koah",
+              "gravity"
+            ],
+            "title": "DemandSource",
+            "type": "string"
+          },
+          "creative_id": {
+            "description": "Identifier with the \"cr_\" prefix.",
+            "minLength": 4,
+            "pattern": "^cr_.*",
+            "title": "CreativeId",
+            "type": "string"
+          },
+          "advertiser_domain": {
+            "description": "The candidate advertiser domain that matched a competitor exclusion.",
+            "minLength": 1,
+            "title": "AdvertiserDomain",
+            "type": "string"
+          },
+          "reason": {
+            "const": "competitor_exclusion",
+            "description": "Why the candidate was dropped. Only competitor_exclusion exists in v1.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "creative_id",
+          "advertiser_domain",
+          "reason"
+        ],
+        "title": "ExcludedCandidate",
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "selected": {
+      "anyOf": [
+        {
+          "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+          "enum": [
+            "direct",
+            "affiliate",
+            "koah",
+            "gravity"
+          ],
+          "title": "DemandSource",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The source of the winning candidate, or null when nothing was selected (no_fill)."
+    }
+  },
+  "required": [
+    "requested",
+    "responses",
+    "excluded",
+    "selected"
+  ],
+  "title": "DemandTrace",
+  "type": "object"
+}

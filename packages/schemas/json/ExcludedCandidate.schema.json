@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "One entry of an audit record demand.excluded list: a candidate mediation dropped before ranking. This resolves the pending competitor_exclusions policy decision.",
+  "properties": {
+    "source": {
+      "description": "Demand source that supplied a creative (see docs/policy.md demand list).",
+      "enum": [
+        "direct",
+        "affiliate",
+        "koah",
+        "gravity"
+      ],
+      "title": "DemandSource",
+      "type": "string"
+    },
+    "creative_id": {
+      "description": "Identifier with the \"cr_\" prefix.",
+      "minLength": 4,
+      "pattern": "^cr_.*",
+      "title": "CreativeId",
+      "type": "string"
+    },
+    "advertiser_domain": {
+      "description": "The candidate advertiser domain that matched a competitor exclusion.",
+      "minLength": 1,
+      "title": "AdvertiserDomain",
+      "type": "string"
+    },
+    "reason": {
+      "const": "competitor_exclusion",
+      "description": "Why the candidate was dropped. Only competitor_exclusion exists in v1.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source",
+    "creative_id",
+    "advertiser_domain",
+    "reason"
+  ],
+  "title": "ExcludedCandidate",
+  "type": "object"
+}

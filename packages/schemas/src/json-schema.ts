@@ -25,6 +25,7 @@ import {
   SeedCreative,
   TargetCategory,
 } from './demand.js';
+import { DemandResponseSummary, DemandTrace, ExcludedCandidate } from './demand-trace.js';
 import { Decision, EvaluateRequest, EvaluateResponse } from './evaluate.js';
 import { AttestRequest, EventRequest, EventType } from './events.js';
 import { PolicyConfig } from './policy.js';
@@ -54,6 +55,9 @@ export const CONTRACT_SCHEMAS = {
   DemandRequest,
   DemandResponse,
   Candidate,
+  DemandTrace,
+  DemandResponseSummary,
+  ExcludedCandidate,
   SuppressReason,
   AttestRequest,
   EventRequest,

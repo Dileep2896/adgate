@@ -123,7 +123,7 @@
       ]
     },
     {
-      "id": "S11", "priority": 11, "dependsOn": ["S09", "S10"], "passes": false,
+      "id": "S11", "priority": 11, "dependsOn": ["S09", "S10"], "passes": true,
       "title": "mediate() across adapters",
       "description": "mediate(adapters, req, policy, { timeoutMs }) runs enabled adapters in parallel with Promise.allSettled and per-adapter timeout, filters competitor_exclusions by advertiser_domain, ranks by ecpm_estimate * targeting_match, returns { selected, trace } matching the demand block in docs/audit.md.",
       "acceptanceCriteria": [
