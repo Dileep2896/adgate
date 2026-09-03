@@ -125,7 +125,7 @@ describe.each(partners)('$source adapter stub', ({ source, create, Adapter, Conf
     const adapter = create({ enabled: true, ...CREDENTIALS }, frozen);
     const response = await adapter.fetch(request(), null as unknown as typeof opts);
     expect(response.candidates).toEqual([]);
-    expect(response.error).toMatch(/^TypeError: /);
+    expect(response.error).toBe('TypeError');
     expect(DemandResponse.parse(response)).toEqual(response);
   });
 

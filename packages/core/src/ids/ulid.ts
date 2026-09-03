@@ -13,7 +13,12 @@ const RANDOM_LENGTH = 16;
 export const ULID_LENGTH = TIME_LENGTH + RANDOM_LENGTH;
 /** Largest timestamp a ULID can carry: 2^48 - 1 milliseconds since the epoch. */
 export const ULID_TIME_MAX = 281474976710655;
-export const ULID_PATTERN = /^[0-9A-HJKMNP-TV-Z]{26}$/;
+/**
+ * 26 Crockford base32 characters (no I, L, O, U). The first character carries the top 2 bits of
+ * the 48-bit timestamp inside a 5-bit digit, so it is at most '7' (ULID_TIME_MAX encodes as
+ * 7ZZZZZZZZZ): anything above would overflow the timestamp and is not a ULID.
+ */
+export const ULID_PATTERN = /^[0-7][0-9A-HJKMNP-TV-Z]{25}$/;
 
 export interface UlidOptions {
   /** Clock in milliseconds since the epoch. Defaults to Date.now. */

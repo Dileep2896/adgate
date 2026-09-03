@@ -82,4 +82,15 @@ describe('ulid', () => {
     expect(isUlid('01arYZ6S41TSV4RRFFQ69G5FAV')).toBe(false);
     expect(() => ulidTime('nope')).toThrow(RangeError);
   });
+
+  it('rejects a first character above 7: the timestamp would overflow 48 bits', () => {
+    const rest = 'ZZZZZZZZZZZZZZZZZZZZZZZZZ';
+    expect(isUlid(`7${rest}`)).toBe(true);
+    expect(ulidTime(`7${rest}`)).toBe(ULID_TIME_MAX);
+    for (const first of ['8', '9', 'A', 'Z']) {
+      expect(isUlid(`${first}${rest}`), first).toBe(false);
+      expect(() => ulidTime(`${first}${rest}`), first).toThrow(RangeError);
+    }
+    expect(ULID_PATTERN.test(`8${rest}`)).toBe(false);
+  });
 });

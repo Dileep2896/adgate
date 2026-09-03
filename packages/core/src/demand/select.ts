@@ -7,7 +7,9 @@ import { creativeServesRegion } from './regions.js';
  * Selection rules every catalog-backed adapter shares (direct, affiliate): who is eligible and
  * how candidates are ordered. Each adapter still filters on its own source (and, for affiliate,
  * its network) and decides what resolved_url is. docs/decisions.md item 5: no auction, rank by
- * score; ties break deterministically so the same catalog always yields the same order.
+ * expected revenue; the adapters cut their top MAX_CANDIDATES with exactly the ordering
+ * mediation ranks across sources with, so an adapter never drops a creative mediation would
+ * have picked. Ties break deterministically so the same catalog always yields the same order.
  */
 
 /** Candidates an adapter returns at most (BUILD_GUIDE Phase 3: "return top 3 with scores"). */
@@ -16,17 +18,21 @@ export const MAX_CANDIDATES = 3;
 /** Code-unit order on creative ids: the last tie-breaker of every ranking in this package. */
 export const compareIds = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
-/** targeting_match desc, ecpm_estimate desc, id asc: total and deterministic. */
-export const compareCandidates = (a: Candidate, b: Candidate): number =>
-  b.targeting_match - a.targeting_match ||
+/** docs/decisions.md item 5: the only ranking signal, for adapters and mediation alike. */
+export const mediationScore = (candidate: Candidate): number =>
+  candidate.ecpm_estimate * candidate.targeting_match;
+
+/** mediationScore desc, ecpm_estimate desc, id asc: total and deterministic. */
+export const compareByRevenue = (a: Candidate, b: Candidate): number =>
+  mediationScore(b) - mediationScore(a) ||
   b.ecpm_estimate - a.ecpm_estimate ||
   compareIds(a.id, b.id);
 
-/** A copy of `candidates` in compareCandidates order, cut to `max`. The input is untouched. */
+/** A copy of `candidates` in compareByRevenue order, cut to `max`. The input is untouched. */
 export const rankCandidates = (
   candidates: readonly Candidate[],
   max: number = MAX_CANDIDATES,
-): Candidate[] => [...candidates].sort(compareCandidates).slice(0, max);
+): Candidate[] => [...candidates].sort(compareByRevenue).slice(0, max);
 
 /**
  * The targeting_match of one creative for one request, or 0 when the creative is not eligible:

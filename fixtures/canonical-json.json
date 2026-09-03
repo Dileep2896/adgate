@@ -1,5 +1,11 @@
 {
   "description": "Canonical JSON vectors (docs/audit.md). Every value in `inputs` must canonicalize to exactly `expected`. Shared with other language SDKs.",
+  "notes": [
+    "Key order is UTF-16 code unit order (JavaScript's default string sort, RFC 8785 JCS), NOT Unicode code point order: a supplementary-plane key such as an emoji (a surrogate pair, 0xD800-0xDFFF) sorts before a BMP key above U+D7FF such as U+FB01, although its code point is larger. Sort keys as UTF-16 code unit sequences in every language (Python: sorted(keys, key=lambda k: k.encode('utf-16-be'))).",
+    "Integer-like keys are compared as strings, never numerically.",
+    "Numbers are serialized in JavaScript's shortest round-trip form (JSON.stringify); -0 is 0.",
+    "Non-ASCII characters are emitted as UTF-8, not \\u escapes; only quotes, backslashes and control characters are escaped."
+  ],
   "cases": [
     {
       "name": "nested objects and arrays: keys sorted at every depth, array order kept",
@@ -36,6 +42,11 @@
       "name": "keys compare by UTF-16 code unit: uppercase, then underscore, then lowercase",
       "inputs": [{ "b": 1, "B": 2, "_": 3, "a": 4 }],
       "expected": "{\"B\":2,\"_\":3,\"a\":4,\"b\":1}"
+    },
+    {
+      "name": "keys compare by UTF-16 code unit, not code point: an emoji key (surrogate pair) sorts before a BMP key above U+D7FF",
+      "inputs": [{ "\ufb01": 2, "\ud83d\ude00": 1, "z": 0 }, { "z": 0, "😀": 1, "ﬁ": 2 }],
+      "expected": "{\"z\":0,\"😀\":1,\"ﬁ\":2}"
     },
     {
       "name": "empty containers and every scalar type",

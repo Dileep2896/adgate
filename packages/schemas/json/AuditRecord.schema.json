@@ -58,17 +58,15 @@
     },
     "conversation_id_hash": {
       "description": "sha256(app_salt + conversation_id). Raw conversation ids are never stored.",
-      "minLength": 8,
-      "pattern": "^sha256:.*",
+      "pattern": "^sha256:[0-9a-f]{64}$",
       "title": "Sha256Hash",
       "type": "string"
     },
     "user_hash": {
       "anyOf": [
         {
-          "description": "A SHA-256 digest written as sha256:<hex>.",
-          "minLength": 8,
-          "pattern": "^sha256:.*",
+          "description": "A SHA-256 digest written as sha256:<64 lowercase hex digits>.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
           "title": "Sha256Hash",
           "type": "string"
         },
@@ -214,8 +212,7 @@
     },
     "policy_hash": {
       "description": "policy_hash of the policy applied (docs/policy.md).",
-      "minLength": 8,
-      "pattern": "^sha256:.*",
+      "pattern": "^sha256:[0-9a-f]{64}$",
       "title": "Sha256Hash",
       "type": "string"
     },
@@ -489,8 +486,7 @@
             },
             "content_hash": {
               "description": "sha256 over the canonical JSON of the creative content (advertiser, advertiser_domain, headline, body, cta, url_template). Verification compares it with the stored creative.",
-              "minLength": 8,
-              "pattern": "^sha256:.*",
+              "pattern": "^sha256:[0-9a-f]{64}$",
               "title": "Sha256Hash",
               "type": "string"
             }
@@ -543,9 +539,8 @@
     "model_output_hash": {
       "anyOf": [
         {
-          "description": "A SHA-256 digest written as sha256:<hex>.",
-          "minLength": 8,
-          "pattern": "^sha256:.*",
+          "description": "A SHA-256 digest written as sha256:<64 lowercase hex digits>.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
           "title": "Sha256Hash",
           "type": "string"
         },
@@ -576,9 +571,8 @@
     "supersedes_hash": {
       "anyOf": [
         {
-          "description": "A SHA-256 digest written as sha256:<hex>.",
-          "minLength": 8,
-          "pattern": "^sha256:.*",
+          "description": "A SHA-256 digest written as sha256:<64 lowercase hex digits>.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
           "title": "Sha256Hash",
           "type": "string"
         },
@@ -591,9 +585,8 @@
     "prev_hash": {
       "anyOf": [
         {
-          "description": "A SHA-256 digest written as sha256:<hex>.",
-          "minLength": 8,
-          "pattern": "^sha256:.*",
+          "description": "A SHA-256 digest written as sha256:<64 lowercase hex digits>.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
           "title": "Sha256Hash",
           "type": "string"
         },
@@ -607,8 +600,7 @@
     },
     "record_hash": {
       "description": "sha256 over the canonical JSON of the record without record_hash and signature, concatenated with prev_hash.",
-      "minLength": 8,
-      "pattern": "^sha256:.*",
+      "pattern": "^sha256:[0-9a-f]{64}$",
       "title": "Sha256Hash",
       "type": "string"
     },

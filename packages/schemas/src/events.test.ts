@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { EXAMPLE_SHA256 } from './doc-examples.fixture.js';
 import { AttestRequest, EventRequest, EventType } from './events.js';
 
 describe('AttestRequest', () => {
   it('requires a sha256 model_output_hash and a boolean rendered', () => {
-    const valid = { audit_id: 'aud_01J', model_output_hash: 'sha256:abc', rendered: false };
+    const valid = { audit_id: 'aud_01J', model_output_hash: EXAMPLE_SHA256, rendered: false };
     expect(AttestRequest.parse(valid)).toEqual(valid);
     expect(AttestRequest.safeParse({ ...valid, model_output_hash: 'abc' }).success).toBe(false);
     expect(AttestRequest.safeParse({ ...valid, rendered: 'yes' }).success).toBe(false);

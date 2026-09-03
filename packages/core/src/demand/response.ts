@@ -23,9 +23,13 @@ export const latencySince = (now: Clock, start: number): number => {
   return Number.isFinite(elapsed) && elapsed > 0 ? elapsed : 0;
 };
 
-/** `<Name>: <message>` cut at 200 chars. Adapter inputs hold no message text, so nor does this. */
+/**
+ * The thrown value's class name and nothing else, 'NonError' for anything that is not an Error
+ * (or has an empty name). Never the message: an adapter's error string is copied by mediate()
+ * into the demand trace of the signed audit record, and a message could quote anything.
+ */
 export const describeError = (error: unknown): string =>
-  error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 200) : 'unknown error';
+  error instanceof Error && error.name !== '' ? error.name : 'NonError';
 
 /** A DemandResponse without an `error` key unless there is one (exactOptionalPropertyTypes). */
 export const demandResponse = (

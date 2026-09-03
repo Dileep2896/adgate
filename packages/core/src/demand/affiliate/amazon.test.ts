@@ -52,6 +52,22 @@ describe('buildAmazonUrl', () => {
     );
   });
 
+  it('drops every spelling of an existing tag parameter: case and percent-encoding included', () => {
+    expect(
+      setTagParam('https://www.amazon.com/dp/X?TAG=a&Tag=b&%74ag=c&%54%41%47=d&th=1&tag=e', 't'),
+    ).toBe('https://www.amazon.com/dp/X?th=1&tag=t');
+    expect(setTagParam('https://www.amazon.com/dp/X?tag&tagx=1&xtag=2', 't')).toBe(
+      'https://www.amazon.com/dp/X?tagx=1&xtag=2&tag=t',
+    );
+    // A parameter name that cannot be percent-decoded is kept: it is not `tag`.
+    expect(setTagParam('https://www.amazon.com/dp/X?%E0=1', 't')).toBe(
+      'https://www.amazon.com/dp/X?%E0=1&tag=t',
+    );
+    expect(
+      buildAmazonUrl({ template: 'https://www.amazon.com/dp/X?TAG=someone-else-21', config }),
+    ).toEqual({ ok: true, url: 'https://www.amazon.com/dp/X?tag=mysite-20' });
+  });
+
   it('rejects hosts that are not an Amazon storefront, including short links', () => {
     for (const template of [
       'https://amzn.to/3abc',

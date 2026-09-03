@@ -31,8 +31,22 @@ export const isAmazonHost = (host: string, marketplace?: string | undefined): bo
 };
 
 /**
- * `url` with tag=<tag> as its last query parameter: any existing tag parameter is dropped, the
- * rest of the query is kept verbatim and the fragment stays at the end.
+ * True when the query pair's name is `tag` once percent-decoded and lower-cased, so `TAG=`,
+ * `%74ag=` and `Tag=` spellings count too. A name that cannot be decoded is not `tag`.
+ */
+const isTagParam = (pair: string): boolean => {
+  const name = pair.split('=', 1)[0] ?? '';
+  try {
+    return decodeURIComponent(name).toLowerCase() === 'tag';
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * `url` with tag=<tag> as its last query parameter: every existing tag parameter, in any
+ * spelling isTagParam recognises, is dropped; the rest of the query is kept verbatim and the
+ * fragment stays at the end.
  */
 export const setTagParam = (url: string, tag: string): string => {
   const hashIndex = url.indexOf('#');
@@ -41,7 +55,7 @@ export const setTagParam = (url: string, tag: string): string => {
   const queryIndex = base.indexOf('?');
   const path = queryIndex === -1 ? base : base.slice(0, queryIndex);
   const query = queryIndex === -1 ? '' : base.slice(queryIndex + 1);
-  const kept = query.split('&').filter((pair) => pair !== '' && !pair.startsWith('tag='));
+  const kept = query.split('&').filter((pair) => pair !== '' && !isTagParam(pair));
   kept.push(`tag=${encodeURIComponent(tag)}`);
   return `${path}?${kept.join('&')}${fragment}`;
 };

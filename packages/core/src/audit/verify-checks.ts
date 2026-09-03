@@ -1,39 +1,59 @@
-import type { AuditRecord, VerifyCheck, VerifyCheckName, VerifyResponse } from '@adgate/schemas';
+import type { AuditRecord, IsoTimestamp, VerifyCheck, VerifyCheckName } from '@adgate/schemas';
 
 import { isAttested, isUnattested } from './attest.js';
 import { computeRecordHash, GENESIS } from './chain.js';
 import type { PublicKeyRing } from './keys.js';
 
 /**
- * The individual checks of docs/audit.md "Verification checks (in order)", one function each.
- * verify.ts runs them in order after the schema check, so every function here receives a
- * record that already parsed as AuditRecord; the raw object is passed separately where the
- * check must see the record exactly as loaded (record_hash). Every function is pure and is
- * wrapped in guardedCheck by the caller, so a throw becomes a failed check, never an exception.
+ * The individual checks of docs/audit.md "Verification checks (in order)", one function each;
+ * the supersedes check, which recurses, lives in verify-supersedes.ts. verify.ts runs them in
+ * order after the schema check, so every function here receives a record that already parsed as
+ * AuditRecord; the raw object is passed separately where the check must see the record exactly
+ * as loaded (record_hash). Every function is pure and is wrapped in guardedCheck by the caller,
+ * so a throw becomes a failed check, never an exception.
  */
 
+/** Retention (S37) deleted the positional predecessor: the record must post-date the cutoff. */
+export interface PrunedPredecessor {
+  pruned: true;
+  /** The cutoff the retention job applied: every record with ts before it was deleted. */
+  retain_cutoff: IsoTimestamp;
+}
+
 /** What verify knows about the record before this one in the app's chain. */
-export type PreviousRecord = AuditRecord | null | undefined | 'pruned';
+export type PreviousRecord = AuditRecord | PrunedPredecessor | null | undefined;
 
 export interface VerifyContext {
   /**
-   * The record whose record_hash equals record.prev_hash, null or undefined when prev_hash is
-   * genesis, or the literal 'pruned' when retention deleted the predecessor (reported as ok
-   * with detail 'pruned').
+   * The POSITIONAL predecessor: the app's latest record immediately before this one in chain
+   * order (the gateway's audit_records.seq - 1 for the same app_id), never "the record whose
+   * record_hash equals prev_hash". A record whose prev_hash points at an older record is a fork
+   * and must fail. null or undefined when this is the app's first record; a PrunedPredecessor
+   * when retention deleted it (ok with detail 'pruned' only if the record post-dates the cutoff).
    */
   prevRecord?: PreviousRecord;
   /** creativeContentHash over the stored creatives row of record.creative.id, if it exists. */
   storedCreativeHash?: string | null | undefined;
+  /**
+   * The attestation that superseded this record (its supersedes_hash === record.record_hash,
+   * same id and app_id, fully attested), when the record under verification is the
+   * pre-attestation version. It proves the separation of an unattested record.
+   * verify-supersedes.ts sets it automatically for the nested verification of supersededRecord;
+   * the gateway passes it when it verifies an older version of an id directly.
+   */
+  supersededBy?: AuditRecord | null | undefined;
   /** The record whose record_hash equals record.supersedes_hash, when set. */
   supersededRecord?: AuditRecord | null | undefined;
-  /** false skips the recursive verification of supersededRecord (presence and identity only). */
+  /** false skips the recursive verification of supersededRecord (presence, identity, body). */
   verifySuperseded?: boolean | undefined;
-  /** The context of the recursive verification of supersededRecord (its own prev record etc.). */
+  /**
+   * The context of the recursive verification of supersededRecord: ITS OWN positional
+   * prevRecord (required unless the original is the app's genesis record) and its
+   * storedCreativeHash, which is inherited from this context when absent (undefined) here: the
+   * body check guarantees both versions name the same creative. supersededBy is set by verify.
+   */
   superseded?: VerifyContext | undefined;
 }
-
-/** How the record under verification was reached: the newest version, or via supersedes_hash. */
-export type VerifyRole = 'latest' | 'superseded';
 
 /** Every detail string verify writes, so later stories and tests share one vocabulary. */
 export const VERIFY_DETAIL = {
@@ -42,6 +62,7 @@ export const VERIFY_DETAIL = {
   hash_mismatch: 'record_hash does not recompute from the record',
   genesis: 'genesis',
   pruned: 'pruned',
+  pruned_before_cutoff: 'record predates the retention cutoff of its pruned predecessor',
   genesis_with_previous: 'genesis record given a previous record',
   previous_missing: 'previous record missing',
   previous_mismatch: 'prev_hash does not match the previous record',
@@ -51,12 +72,13 @@ export const VERIFY_DETAIL = {
   label_empty: 'label empty',
   not_attested: 'not attested',
   attestation_incomplete: 'attestation incomplete',
-  superseded: 'superseded',
+  attested_by_superseding: 'attested by superseding record',
   superseded_missing: 'superseded record missing',
   superseded_mismatch: 'supersedes_hash does not match the superseded record',
   superseded_other_id: 'superseded record has another id',
   superseded_other_app: 'superseded record belongs to another app',
   superseded_is_attestation: 'superseded record is itself an attestation',
+  body_mismatch: 'body_mismatch',
   superseded_not_verified: 'superseded record present, not verified',
   superseded_verified: 'superseded record verified',
   superseded_invalid: 'superseded record invalid',
@@ -78,22 +100,41 @@ export const guardedCheck = (name: VerifyCheckName, run: () => VerifyCheck): Ver
   }
 };
 
+export const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+/** A context as given, or an empty one for anything that is not a plain object. */
+export const contextOf = (ctx: unknown): VerifyContext =>
+  isPlainObject(ctx) ? (ctx as VerifyContext) : {};
+
 /** record_hash recomputed over the record exactly as loaded, extra keys included. */
 export const checkRecordHash = (raw: unknown, record: AuditRecord): VerifyCheck =>
   computeRecordHash(raw as AuditRecord) === record.record_hash
     ? verifyCheck('record_hash', true)
     : verifyCheck('record_hash', false, VERIFY_DETAIL.hash_mismatch);
 
+const isPruned = (previous: unknown): previous is PrunedPredecessor =>
+  isPlainObject(previous) && previous['pruned'] === true;
+
+/**
+ * prev_hash against the POSITIONAL predecessor (see VerifyContext.prevRecord): genesis is ok
+ * only when there is none; a pruned predecessor is ok only for a record the retention cutoff
+ * kept; otherwise the predecessor must exist, carry prev_hash as its record_hash and belong to
+ * the same app.
+ */
 export const checkChain = (record: AuditRecord, previous: unknown): VerifyCheck => {
   if (record.prev_hash === GENESIS) {
     return previous === null || previous === undefined
       ? verifyCheck('chain', true, VERIFY_DETAIL.genesis)
       : verifyCheck('chain', false, VERIFY_DETAIL.genesis_with_previous);
   }
-  if (previous === 'pruned') {
-    return verifyCheck('chain', true, VERIFY_DETAIL.pruned);
+  if (isPruned(previous)) {
+    const cutoff = Date.parse(String(previous.retain_cutoff));
+    return Number.isFinite(cutoff) && Date.parse(record.ts) >= cutoff
+      ? verifyCheck('chain', true, VERIFY_DETAIL.pruned)
+      : verifyCheck('chain', false, VERIFY_DETAIL.pruned_before_cutoff);
   }
-  if (previous === null || typeof previous !== 'object') {
+  if (!isPlainObject(previous)) {
     return verifyCheck('chain', false, VERIFY_DETAIL.previous_missing);
   }
   const prev = previous as Partial<AuditRecord>;
@@ -140,70 +181,43 @@ export const checkDisclosure = (record: AuditRecord): VerifyCheck => {
 };
 
 /**
- * True only if attested. An unattested suppress record has nothing to attest (not applicable);
- * an unattested record reached through supersedes_hash is the pre-attestation version whose
- * separation the superseding record proves (superseded); an unattested serve record at the head
- * of its history is simply not attested. Any partial attestation fails.
+ * True when `by` is the attestation of `record`: it supersedes exactly this record (same id and
+ * app_id) and carries a complete attestation. Anything else, a partial attestation included,
+ * proves nothing.
  */
-export const checkSeparation = (record: AuditRecord, role: VerifyRole): VerifyCheck => {
+export const attestsRecord = (record: AuditRecord, by: unknown): boolean => {
+  if (!isPlainObject(by)) {
+    return false;
+  }
+  const next = by as Partial<AuditRecord>;
+  return (
+    next.supersedes_hash === record.record_hash &&
+    next.id === record.id &&
+    next.app_id === record.app_id &&
+    next.separation_attestation === true &&
+    typeof next.model_output_hash === 'string' &&
+    typeof next.attested_at === 'string'
+  );
+};
+
+/**
+ * True only if attested. An unattested record whose superseding attestation is handed in
+ * (ctx.supersededBy) is proven by that record; an unattested suppress record has nothing to
+ * attest (not applicable); an unattested serve record is simply not attested. Any partial
+ * attestation fails.
+ */
+export const checkSeparation = (record: AuditRecord, supersededBy: unknown): VerifyCheck => {
   if (isAttested(record)) {
     return verifyCheck('separation_attested', true);
   }
   if (!isUnattested(record)) {
     return verifyCheck('separation_attested', false, VERIFY_DETAIL.attestation_incomplete);
   }
+  if (attestsRecord(record, supersededBy)) {
+    return verifyCheck('separation_attested', true, VERIFY_DETAIL.attested_by_superseding);
+  }
   if (record.decision === 'suppress') {
     return verifyCheck('separation_attested', true, VERIFY_DETAIL.not_applicable);
   }
-  if (role === 'superseded') {
-    return verifyCheck('separation_attested', true, VERIFY_DETAIL.superseded);
-  }
   return verifyCheck('separation_attested', false, VERIFY_DETAIL.not_attested);
-};
-
-export type NestedVerify = (record: unknown, ctx: VerifyContext | undefined) => VerifyResponse;
-
-/**
- * If supersedes_hash is set, the superseded record must be present, carry that hash, share the
- * id and app, not be an attestation itself (attest never re-attests, so a chain of attestations
- * is forged) and, unless ctx.verifySuperseded is false, verify in full under ctx.superseded.
- */
-export const checkSupersedes = (
-  record: AuditRecord,
-  ctx: VerifyContext,
-  nested: NestedVerify,
-): VerifyCheck => {
-  if (record.supersedes_hash === null) {
-    return verifyCheck('supersedes', true, VERIFY_DETAIL.not_applicable);
-  }
-  const superseded: unknown = ctx.supersededRecord;
-  if (superseded === null || superseded === undefined || typeof superseded !== 'object') {
-    return verifyCheck('supersedes', false, VERIFY_DETAIL.superseded_missing);
-  }
-  const prior = superseded as Partial<AuditRecord>;
-  if (prior.record_hash !== record.supersedes_hash) {
-    return verifyCheck('supersedes', false, VERIFY_DETAIL.superseded_mismatch);
-  }
-  if (prior.id !== record.id) {
-    return verifyCheck('supersedes', false, VERIFY_DETAIL.superseded_other_id);
-  }
-  if (prior.app_id !== record.app_id) {
-    return verifyCheck('supersedes', false, VERIFY_DETAIL.superseded_other_app);
-  }
-  if (typeof prior.supersedes_hash === 'string') {
-    return verifyCheck('supersedes', false, VERIFY_DETAIL.superseded_is_attestation);
-  }
-  if (ctx.verifySuperseded === false) {
-    return verifyCheck('supersedes', true, VERIFY_DETAIL.superseded_not_verified);
-  }
-  const result = nested(superseded, ctx.superseded);
-  if (result.valid) {
-    return verifyCheck('supersedes', true, VERIFY_DETAIL.superseded_verified);
-  }
-  const failed = result.checks.filter((check) => !check.ok).map((check) => check.name);
-  return verifyCheck(
-    'supersedes',
-    false,
-    `${VERIFY_DETAIL.superseded_invalid}: ${failed.join(',')}`,
-  );
 };

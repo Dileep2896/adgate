@@ -8,6 +8,7 @@ import {
   HealthResponse,
   IsoTimestamp,
   Message,
+  SHA256_HASH_PATTERN,
   Sha256Hash,
   Surface,
   User,
@@ -26,10 +27,25 @@ describe('prefixed ids', () => {
 });
 
 describe('Sha256Hash', () => {
-  it('requires the sha256: prefix', () => {
-    expect(Sha256Hash.safeParse('sha256:abc').success).toBe(true);
-    expect(Sha256Hash.safeParse('sha256:').success).toBe(false);
-    expect(Sha256Hash.safeParse('abc').success).toBe(false);
+  const digest = '0123456789abcdef'.repeat(4);
+
+  it('requires the sha256: prefix followed by exactly 64 lowercase hex digits', () => {
+    expect(Sha256Hash.safeParse(`sha256:${digest}`).success).toBe(true);
+    expect(SHA256_HASH_PATTERN.test(`sha256:${digest}`)).toBe(true);
+    for (const bad of [
+      'sha256:abc',
+      'sha256:',
+      'abc',
+      digest,
+      `SHA256:${digest}`,
+      `sha256:${digest.toUpperCase()}`,
+      `sha256:${digest}0`,
+      `sha256:${digest.slice(1)}`,
+      `sha256:${digest.slice(1)}g`,
+      ` sha256:${digest}`,
+    ]) {
+      expect(Sha256Hash.safeParse(bad).success, bad).toBe(false);
+    }
   });
 });
 

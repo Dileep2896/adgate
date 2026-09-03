@@ -19,6 +19,8 @@ import type {
   UnsignedAuditRecord,
 } from '@adgate/schemas';
 
+import type { MediationResult } from '../demand/mediate.js';
+import type { PolicyEvaluation } from '../policy/evaluate.js';
 import { type AuditSigningKey, signRecord } from './chain.js';
 import { creativeContentHash } from './content-hash.js';
 import { conversationIdHash, userHash } from './privacy-hash.js';
@@ -48,18 +50,11 @@ export interface AuditPolicyContext {
   disclosure: Disclosure;
 }
 
-/** The policy engine's answer; PolicyEvaluation (policy/evaluate.ts) is assignable. */
-export interface AuditPolicyResult {
-  allowed: boolean;
-  reason: SuppressReason | null;
-  decisions: readonly PolicyDecision[];
-}
+/** The policy engine's answer: PolicyEvaluation itself, or anything carrying its fields. */
+export type AuditPolicyResult = Pick<PolicyEvaluation, 'allowed' | 'reason' | 'decisions'>;
 
-/** What mediate() returned; MediationResult (demand/mediate.ts) is assignable. */
-export interface AuditMediation {
-  selected: Candidate | null;
-  trace: DemandTrace;
-}
+/** What mediate() returned; selected_source is not needed (trace.selected names it). */
+export type AuditMediation = Pick<MediationResult, 'selected' | 'trace'>;
 
 export interface BuildAuditRecordInput {
   /** A fresh prefixedUlid('aud_'). */

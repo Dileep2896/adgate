@@ -1,11 +1,9 @@
 import type { AuditRecord } from '@adgate/schemas';
 import { describe, expect, it } from 'vitest';
 
-import { attest } from './attest.js';
 import { nextPrevHash } from './chain.js';
-import { sha256Prefixed } from './crypto.js';
 import { flipLastHexDigit } from './crypto.fixture.js';
-import { verify } from './verify.js';
+import { type PrunedPredecessor, verify } from './verify.js';
 import { VERIFY_DETAIL } from './verify-checks.js';
 import {
   ATTESTED_AT,
@@ -15,17 +13,18 @@ import {
   MODEL_OUTPUT_HASH,
   RING,
   serveRecord,
-  SIGNING,
   STORED_CREATIVE_HASH,
   suppressRecord,
 } from './verify.fixture.js';
 
+/** chain, creative_hash, disclosure_present and separation_attested; supersedes has its own file. */
 const chainOf = (record: AuditRecord, prevRecord: unknown) =>
   checkOf(verify(record, RING, { prevRecord: prevRecord as AuditRecord }), 'chain');
 
-describe('chain check', () => {
+describe('chain check (positional predecessor)', () => {
   const first = suppressRecord({ id: 'aud_01JFIRST' });
   const second = suppressRecord({ id: 'aud_01JSECOND', prev_hash: nextPrevHash(first) });
+  const third = suppressRecord({ id: 'aud_01JTHIRD', prev_hash: nextPrevHash(second) });
 
   it('genesis: ok only without a previous record', () => {
     expect(chainOf(first, null)).toEqual({ name: 'chain', ok: true, detail: 'genesis' });
@@ -35,15 +34,77 @@ describe('chain check', () => {
       ok: false,
       detail: VERIFY_DETAIL.genesis_with_previous,
     });
-    expect(chainOf(first, 'pruned').ok).toBe(false);
+    expect(chainOf(first, { pruned: true, retain_cutoff: '2026-01-01T00:00:00Z' }).detail).toBe(
+      VERIFY_DETAIL.genesis_with_previous,
+    );
   });
 
-  it('links: ok when the previous record carries prev_hash for the same app', () => {
+  it('links: ok when the positional predecessor carries prev_hash for the same app', () => {
     expect(chainOf(second, first)).toEqual({ name: 'chain', ok: true });
+    expect(chainOf(third, second)).toEqual({ name: 'chain', ok: true });
   });
 
-  it('pruned: retention removed the predecessor (S37), reported as ok with detail pruned', () => {
-    expect(chainOf(second, 'pruned')).toEqual({ name: 'chain', ok: true, detail: 'pruned' });
+  it('a fork fails: prev_hash pointing at an older record than the positional predecessor', () => {
+    // The chain is first -> second -> third. A record signed after third but chained to first
+    // has a valid hash and signature, yet it forks the chain: with third as its positional
+    // predecessor the check fails. Loading "the record whose hash equals prev_hash" would have
+    // handed it first and let the fork through, which is why the context is positional.
+    const fork = suppressRecord({ id: 'aud_01JFORK', prev_hash: nextPrevHash(first) });
+    expect(chainOf(fork, first).ok).toBe(true);
+    expect(chainOf(fork, third)).toEqual({
+      name: 'chain',
+      ok: false,
+      detail: VERIFY_DETAIL.previous_mismatch,
+    });
+    expect(failedNames(verify(fork, RING, { prevRecord: third }))).toEqual(['chain']);
+  });
+
+  it('a re-signed record claiming genesis in the middle of a chain fails', () => {
+    const resigned = suppressRecord({ id: 'aud_01JSECOND', prev_hash: 'genesis' });
+    expect(checkOf(verify(resigned, RING, { prevRecord: null }), 'record_hash').ok).toBe(true);
+    expect(chainOf(resigned, first)).toEqual({
+      name: 'chain',
+      ok: false,
+      detail: VERIFY_DETAIL.genesis_with_previous,
+    });
+    expect(failedNames(verify(resigned, RING, { prevRecord: first }))).toEqual(['chain']);
+  });
+
+  describe('pruned predecessor (S37 retention)', () => {
+    // The fixture records carry ts 2026-09-02T18:04:11Z.
+    const kept: PrunedPredecessor = { pruned: true, retain_cutoff: '2026-09-01T00:00:00Z' };
+
+    it('is ok with detail pruned when the record post-dates the retention cutoff', () => {
+      expect(chainOf(second, kept)).toEqual({ name: 'chain', ok: true, detail: 'pruned' });
+      expect(chainOf(second, { pruned: true, retain_cutoff: second.ts })).toEqual({
+        name: 'chain',
+        ok: true,
+        detail: VERIFY_DETAIL.pruned,
+      });
+      expect(verify(second, RING, { prevRecord: kept }).valid).toBe(true);
+    });
+
+    it('fails when the record itself predates the cutoff: retention cannot explain the gap', () => {
+      expect(chainOf(second, { pruned: true, retain_cutoff: '2026-09-03T00:00:00Z' })).toEqual({
+        name: 'chain',
+        ok: false,
+        detail: VERIFY_DETAIL.pruned_before_cutoff,
+      });
+      expect(chainOf(second, { pruned: true, retain_cutoff: '2026-09-02T18:04:12Z' }).ok).toBe(
+        false,
+      );
+    });
+
+    it('fails on a malformed marker and no longer accepts the bare pruned sentinel', () => {
+      expect(chainOf(second, { pruned: true }).detail).toBe(VERIFY_DETAIL.pruned_before_cutoff);
+      expect(chainOf(second, { pruned: true, retain_cutoff: 'someday' }).detail).toBe(
+        VERIFY_DETAIL.pruned_before_cutoff,
+      );
+      expect(chainOf(second, 'pruned').detail).toBe(VERIFY_DETAIL.previous_missing);
+      expect(chainOf(second, { pruned: false, retain_cutoff: kept.retain_cutoff }).detail).toBe(
+        VERIFY_DETAIL.previous_mismatch,
+      );
+    });
   });
 
   it('missing, mismatching or foreign previous records fail with a named detail', () => {
@@ -51,6 +112,7 @@ describe('chain check', () => {
     expect(chainOf(second, undefined).detail).toBe(VERIFY_DETAIL.previous_missing);
     expect(chainOf(second, 'something else').detail).toBe(VERIFY_DETAIL.previous_missing);
     expect(chainOf(second, 42).detail).toBe(VERIFY_DETAIL.previous_missing);
+    expect(chainOf(second, [first]).detail).toBe(VERIFY_DETAIL.previous_missing);
     const other = suppressRecord({ id: 'aud_01JOTHER', turn_id: 'turn_9' });
     expect(chainOf(second, other).detail).toBe(VERIFY_DETAIL.previous_mismatch);
     const foreign = { ...first, app_id: 'app_01JOTHERAPP' };
@@ -128,11 +190,13 @@ describe('separation_attested check', () => {
       ok: true,
       detail: 'not applicable',
     });
-    expect(checkOf(verify(serveRecord(), RING, {}), 'separation_attested')).toEqual({
+    const serve = verify(serveRecord(), RING, { storedCreativeHash: STORED_CREATIVE_HASH });
+    expect(checkOf(serve, 'separation_attested')).toEqual({
       name: 'separation_attested',
       ok: false,
       detail: 'not attested',
     });
+    expect(serve.valid).toBe(false);
   });
 
   it('fails a partial attestation on either decision', () => {
@@ -150,111 +214,55 @@ describe('separation_attested check', () => {
       }
     }
   });
-});
 
-describe('supersedes check', () => {
-  const { original, attested } = attestedPair();
-  const originalCtx = { prevRecord: null, storedCreativeHash: STORED_CREATIVE_HASH };
-  const base = { prevRecord: original, storedCreativeHash: STORED_CREATIVE_HASH };
-  const supersedesOf = (ctx: Parameters<typeof verify>[2]) =>
-    checkOf(verify(attested, RING, { ...base, ...ctx }), 'supersedes');
-
-  it('not applicable when supersedes_hash is null', () => {
-    expect(checkOf(verify(original, RING, originalCtx), 'supersedes')).toEqual({
-      name: 'supersedes',
-      ok: true,
-      detail: 'not applicable',
-    });
-  });
-
-  it('requires the superseded record, matching hash, id and app', () => {
-    expect(supersedesOf({}).detail).toBe(VERIFY_DETAIL.superseded_missing);
-    expect(supersedesOf({ supersededRecord: null }).detail).toBe(VERIFY_DETAIL.superseded_missing);
-    const otherHash = { ...original, record_hash: flipLastHexDigit(original.record_hash) };
-    expect(supersedesOf({ supersededRecord: otherHash }).detail).toBe(
-      VERIFY_DETAIL.superseded_mismatch,
-    );
-    const otherId = { ...original, id: 'aud_01JOTHERID' };
-    expect(supersedesOf({ supersededRecord: otherId }).detail).toBe(
-      VERIFY_DETAIL.superseded_other_id,
-    );
-    const otherApp = { ...original, app_id: 'app_01JOTHERAPP' };
-    expect(supersedesOf({ supersededRecord: otherApp }).detail).toBe(
-      VERIFY_DETAIL.superseded_other_app,
-    );
-  });
-
-  it('verifies the superseded record recursively with ctx.superseded', () => {
-    expect(supersedesOf({ supersededRecord: original, superseded: originalCtx })).toEqual({
-      name: 'supersedes',
-      ok: true,
-      detail: VERIFY_DETAIL.superseded_verified,
-    });
-    // Without its own context the original cannot prove its creative: the failure is named.
-    const missing = supersedesOf({ supersededRecord: original, superseded: { prevRecord: null } });
-    expect(missing.ok).toBe(false);
-    expect(missing.detail).toBe(`${VERIFY_DETAIL.superseded_invalid}: creative_hash`);
-    const tampered = {
-      ...original,
-      classification: { ...original.classification, confidence: 0.5 },
-    };
-    const forged = { ...attested, supersedes_hash: tampered.record_hash };
-    const result = verify(forged, RING, {
-      ...base,
-      supersededRecord: tampered,
-      superseded: originalCtx,
-    });
-    expect(checkOf(result, 'supersedes').ok).toBe(false);
-  });
-
-  it('the superseded record is not required to be attested itself', () => {
-    const nested = supersedesOf({ supersededRecord: original, superseded: originalCtx });
-    expect(nested.ok).toBe(true);
-    expect(checkOf(verify(original, RING, originalCtx), 'separation_attested').ok).toBe(false);
-  });
-
-  it('verifySuperseded false only checks presence and identity', () => {
-    const check = supersedesOf({ supersededRecord: original, verifySuperseded: false });
-    expect(check).toEqual({
-      name: 'supersedes',
-      ok: true,
-      detail: VERIFY_DETAIL.superseded_not_verified,
-    });
-    const wrongId = { ...original, id: 'aud_01JOTHERID' };
-    expect(supersedesOf({ supersededRecord: wrongId, verifySuperseded: false }).ok).toBe(false);
-  });
-
-  it('rejects a superseded record that is itself an attestation (no chains of attestations)', () => {
-    // attest() refuses to re-attest, so a second attestation is forged by hand: strip the
-    // attestation fields of the attested record but keep its record_hash and signature.
-    const stripped = {
-      ...attested,
-      model_output_hash: null,
-      separation_attestation: false,
-      attested_at: null,
-      supersedes_hash: null,
-    };
-    const second = attest(stripped, MODEL_OUTPUT_HASH, ATTESTED_AT, {
-      prev_hash: nextPrevHash(attested),
-      signing: SIGNING,
-    });
-    expect(second.supersedes_hash).toBe(attested.record_hash);
-    const result = verify(second, RING, {
-      prevRecord: attested,
+  it('is ok for an unattested record when its superseding attestation is handed in', () => {
+    const { original, attested } = attestedPair();
+    const result = verify(original, RING, {
+      prevRecord: null,
       storedCreativeHash: STORED_CREATIVE_HASH,
-      supersededRecord: attested,
-      superseded: { ...base, supersededRecord: original, superseded: originalCtx },
+      supersededBy: attested,
     });
-    expect(checkOf(result, 'supersedes')).toEqual({
-      name: 'supersedes',
-      ok: false,
-      detail: VERIFY_DETAIL.superseded_is_attestation,
+    expect(checkOf(result, 'separation_attested')).toEqual({
+      name: 'separation_attested',
+      ok: true,
+      detail: VERIFY_DETAIL.attested_by_superseding,
     });
-    expect(failedNames(result)).toEqual(['supersedes']);
-    // A cyclic context cannot recurse forever: the nested record is never an attestation.
-    const cyclic: Parameters<typeof verify>[2] = { ...base, supersededRecord: original };
-    cyclic.superseded = cyclic;
-    expect(verify(attested, RING, cyclic).checks).toHaveLength(8);
-    expect(sha256Prefixed('no depth guard needed')).toMatch(/^sha256:/);
+    expect(result.valid).toBe(true);
+    const suppressed = attestedPair(suppressRecord());
+    const check = checkOf(
+      verify(suppressed.original, RING, { prevRecord: null, supersededBy: suppressed.attested }),
+      'separation_attested',
+    );
+    expect(check.detail).toBe(VERIFY_DETAIL.attested_by_superseding);
+  });
+
+  it('ignores a supersededBy that does not attest exactly this record', () => {
+    const { original, attested } = attestedPair();
+    const other = attestedPair(serveRecord({ id: 'aud_01JOTHER' })).attested;
+    const impostors: unknown[] = [
+      other,
+      { ...attested, supersedes_hash: flipLastHexDigit(original.record_hash) },
+      { ...attested, id: 'aud_01JOTHERID' },
+      { ...attested, app_id: 'app_01JOTHERAPP' },
+      { ...attested, separation_attestation: false },
+      { ...attested, model_output_hash: null },
+      { ...attested, attested_at: null },
+      null,
+      'attested',
+      42,
+      [attested],
+    ];
+    for (const by of impostors) {
+      const check = checkOf(
+        verify(original, RING, {
+          prevRecord: null,
+          storedCreativeHash: STORED_CREATIVE_HASH,
+          supersededBy: by as AuditRecord,
+        }),
+        'separation_attested',
+      );
+      expect(check.ok, JSON.stringify(by)).toBe(false);
+      expect(check.detail).toBe(VERIFY_DETAIL.not_attested);
+    }
   });
 });

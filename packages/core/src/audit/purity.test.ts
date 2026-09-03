@@ -59,6 +59,7 @@ describe('audit package purity', () => {
       'privacy-hash.ts',
       'record.ts',
       'verify-checks.ts',
+      'verify-supersedes.ts',
       'verify.ts',
     ]);
   });

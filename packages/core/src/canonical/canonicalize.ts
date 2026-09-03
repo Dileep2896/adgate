@@ -3,11 +3,16 @@
  * insignificant whitespace, UTF-8, numbers in shortest round-trip form. Arrays keep their order.
  * Object properties whose value is undefined are dropped, as JSON.stringify does.
  *
- * Keys are compared by UTF-16 code unit (JavaScript's default sort), which is also what RFC 8785
- * (JCS) prescribes. The string is assembled by hand rather than through JSON.stringify on a
- * re-keyed object, because JavaScript enumerates integer-like keys ("10", "2") numerically first,
- * which would break lexicographic order. JSON.stringify is still used for every scalar, so numbers
- * come out in their shortest round-trip form and strings are escaped the standard way.
+ * KEY ORDER, precisely: keys are compared as sequences of UTF-16 code units, JavaScript's default
+ * Array.prototype.sort on strings and what RFC 8785 (JCS) prescribes. It is NOT code point order:
+ * a supplementary-plane character (an emoji, encoded as a surrogate pair 0xD800-0xDFFF) sorts
+ * BEFORE any BMP character above U+D7FF (for example U+FB01), although its code point is larger.
+ * Another language must sort by UTF-16 code units too (Python: key.encode('utf-16-be')); the
+ * fixtures/canonical-json.json vectors pin this. The string is assembled by hand rather than
+ * through JSON.stringify on a re-keyed object, because JavaScript enumerates integer-like keys
+ * ("10", "2") numerically first, which would break lexicographic order. JSON.stringify is still
+ * used for every scalar, so numbers come out in their shortest round-trip form and strings are
+ * escaped the standard way.
  *
  * Only JSON values are accepted: plain objects, arrays, strings, finite numbers, booleans and
  * null. Anything else (Date, Map, bigint, NaN, Infinity, functions, undefined outside an object

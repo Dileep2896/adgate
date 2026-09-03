@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultPolicy } from '../policy/evaluate.fixture.js';
 import { request } from './direct.fixture.js';
 import { FakeAdapter, NO_EXCLUSIONS, candidate, respond } from './mediate.fixture.js';
-import { type MediationResult, compareByRevenue, mediate, mediationScore } from './mediate.js';
+import { type MediationResult, mediate } from './mediate.js';
+import { compareByRevenue, mediationScore } from './select.js';
 
 /**
  * Selection, exclusions, ranking and the trace shape. Timing, timeouts, failures and

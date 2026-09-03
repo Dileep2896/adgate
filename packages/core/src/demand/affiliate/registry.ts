@@ -30,9 +30,10 @@ export interface BuildAffiliateUrlInput {
   config: AffiliateConfig;
   destination?: string | undefined;
   /**
-   * A creative-level override of the owner's id (CatalogCreative.program_id): the program id for
-   * partnerstack and impact, the Associates tag for amazon. It never stands in for a missing
-   * network entry, so an unconfigured network stays unconfigured.
+   * A creative-level override of the owner's program id (CatalogCreative.program_id) for
+   * partnerstack and impact. It never stands in for a missing network entry, so an unconfigured
+   * network stays unconfigured, and it is IGNORED for amazon: the owner's Associates tag is the
+   * only tag a link may ever credit, whatever a catalog row says.
    */
   program_id?: string | undefined;
 }
@@ -73,11 +74,8 @@ export const buildAffiliateUrl = ({
       if (entry === undefined) {
         return notConfigured;
       }
-      return AFFILIATE_BUILDERS.amazon({
-        template,
-        config: { ...entry, tag: program_id ?? entry.tag },
-        destination,
-      });
+      // program_id is deliberately not consulted: the tag is the owner's and nobody else's.
+      return AFFILIATE_BUILDERS.amazon({ template, config: entry, destination });
     }
   }
 };

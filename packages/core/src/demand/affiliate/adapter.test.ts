@@ -140,15 +140,28 @@ describe('AffiliateAdapter configuration', () => {
     );
   });
 
-  it('builds Amazon Associates links with the owner’s tag', async () => {
+  it('builds Amazon Associates links with the owner’s tag, whatever the creative says', async () => {
     const adapter = createAffiliateAdapter({
-      catalog: [affiliateCreative({ url_template: 'https://www.amazon.com/dp/B000000000?th=1' })],
+      catalog: [
+        affiliateCreative({ url_template: 'https://www.amazon.com/dp/B000000000?th=1' }),
+        affiliateCreative({
+          id: 'cr_02',
+          url_template: 'https://www.amazon.com/dp/B000000001?TAG=someone-else-21',
+          program_id: 'other-21',
+        }),
+      ],
       network: 'amazon',
       config: { amazon: { tag: 'mysite-20' } },
     });
     const response = await adapter.fetch(request(), opts);
-    expect(response.candidates[0]?.resolved_url).toBe(
+    expect(response.candidates.map((c) => c.resolved_url)).toEqual([
       'https://www.amazon.com/dp/B000000000?th=1&tag=mysite-20',
-    );
+      'https://www.amazon.com/dp/B000000001?tag=mysite-20',
+    ]);
+    // The catalog row (program_id, url_template) travels with the candidate; the link does not.
+    for (const url of response.candidates.map((c) => c.resolved_url ?? '')) {
+      expect(url).not.toContain('other-21');
+      expect(url).not.toContain('someone-else');
+    }
   });
 });

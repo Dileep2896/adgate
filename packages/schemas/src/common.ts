@@ -17,12 +17,16 @@ export type AuditId = z.infer<typeof AuditId>;
 export const CreativeId = prefixedId('cr_', 'CreativeId');
 export type CreativeId = z.infer<typeof CreativeId>;
 
-/** Hashes on the wire are written as `sha256:<hex>` (docs/audit.md). */
+/** Hashes on the wire are written as `sha256:<hex>` (docs/audit.md): the 64 lowercase hex digits of the digest. */
+export const SHA256_HASH_PATTERN = /^sha256:[0-9a-f]{64}$/;
+
 export const Sha256Hash = z
   .string()
-  .startsWith('sha256:')
-  .min('sha256:'.length + 1)
-  .meta({ title: 'Sha256Hash', description: 'A SHA-256 digest written as sha256:<hex>.' });
+  .regex(SHA256_HASH_PATTERN, 'expected sha256: followed by 64 lowercase hex digits')
+  .meta({
+    title: 'Sha256Hash',
+    description: 'A SHA-256 digest written as sha256:<64 lowercase hex digits>.',
+  });
 export type Sha256Hash = z.infer<typeof Sha256Hash>;
 
 /** ISO 8601 UTC timestamp with a trailing Z (CLAUDE.md). Offsets are rejected. */

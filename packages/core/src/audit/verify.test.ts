@@ -1,10 +1,9 @@
-import { type AuditRecord, VerifyResponse } from '@adgate/schemas';
+import { VerifyResponse } from '@adgate/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { attest } from './attest.js';
 import { nextPrevHash } from './chain.js';
-import { sha256Prefixed } from './crypto.js';
-import { flipLastHexDigit, OTHER_KEYS, tamperSignature, TEST_KEYS } from './crypto.fixture.js';
+import { OTHER_KEYS, TEST_KEYS } from './crypto.fixture.js';
 import { createKeyRing } from './keys.js';
 import { verify } from './verify.js';
 import { VERIFY_DETAIL } from './verify-checks.js';
@@ -75,6 +74,18 @@ describe('verify on intact records', () => {
     expect(result.valid).toBe(false);
   });
 
+  it('is valid on exactly { prevRecord, storedCreativeHash, supersededRecord, superseded: { prevRecord } }', () => {
+    const { original, attested } = attestedPair();
+    const result = verify(attested, RING, {
+      prevRecord: original,
+      storedCreativeHash: STORED_CREATIVE_HASH,
+      supersededRecord: original,
+      superseded: { prevRecord: null },
+    });
+    expect(result.valid).toBe(true);
+    expect(failedNames(result)).toEqual([]);
+  });
+
   it('is pure: the same inputs give the same report and the record is untouched', () => {
     const record = suppressRecord();
     const before = structuredClone(record);
@@ -82,130 +93,6 @@ describe('verify on intact records', () => {
     const second = verify(record, RING, {});
     expect(first).toEqual(second);
     expect(record).toEqual(before);
-  });
-});
-
-type Tamper = (record: AuditRecord) => void;
-
-/** Field -> mutation -> the checks that must fail (every other check must still pass). */
-const TAMPER_MATRIX: { field: string; tamper: Tamper; fails: string[] }[] = [
-  {
-    field: 'classification',
-    tamper: (r) => {
-      r.classification = { ...r.classification, sensitive: ['health'] };
-    },
-    fails: ['record_hash'],
-  },
-  {
-    field: 'creative.content_hash',
-    tamper: (r) => {
-      if (r.creative !== null) {
-        r.creative = { ...r.creative, content_hash: flipLastHexDigit(r.creative.content_hash) };
-      }
-    },
-    fails: ['record_hash', 'creative_hash'],
-  },
-  {
-    field: 'disclosure.label (blank)',
-    tamper: (r) => {
-      r.disclosure = { ...r.disclosure, label: ' ' };
-    },
-    fails: ['record_hash', 'disclosure_present'],
-  },
-  {
-    field: 'disclosure.label (renamed)',
-    tamper: (r) => {
-      r.disclosure = { ...r.disclosure, label: 'Ad' };
-    },
-    fails: ['record_hash'],
-  },
-  {
-    field: 'prev_hash',
-    tamper: (r) => {
-      r.prev_hash = sha256Prefixed('elsewhere');
-    },
-    fails: ['record_hash', 'chain'],
-  },
-  {
-    field: 'signature',
-    tamper: (r) => {
-      r.signature = tamperSignature(r.signature);
-    },
-    fails: ['signature'],
-  },
-  {
-    field: 'record_hash',
-    tamper: (r) => {
-      r.record_hash = flipLastHexDigit(r.record_hash);
-    },
-    fails: ['record_hash', 'signature'],
-  },
-  {
-    field: 'key_id (another ring key)',
-    tamper: (r) => {
-      r.key_id = OTHER_KEYS.key_id;
-    },
-    fails: ['record_hash', 'signature'],
-  },
-  {
-    field: 'key_id (unknown)',
-    tamper: (r) => {
-      r.key_id = 'k_unknown';
-    },
-    fails: ['record_hash', 'signature'],
-  },
-  {
-    field: 'decision (serve to suppress with a creative)',
-    tamper: (r) => {
-      r.decision = 'suppress';
-      r.reason = 'no_fill';
-    },
-    fails: ['schema'],
-  },
-];
-
-describe('verify tamper matrix', () => {
-  const first = suppressRecord({ id: 'aud_01JFIRST' });
-  const { original, attested } = attestedPair(
-    serveRecord({ id: 'aud_01JSECOND', prev_hash: nextPrevHash(first) }),
-  );
-  const ctx = {
-    prevRecord: original,
-    storedCreativeHash: STORED_CREATIVE_HASH,
-    supersededRecord: original,
-    superseded: { prevRecord: first, storedCreativeHash: STORED_CREATIVE_HASH },
-  };
-
-  it('starts from a fully valid attested record', () => {
-    expect(verify(attested, RING, ctx).valid).toBe(true);
-  });
-
-  it.each(TAMPER_MATRIX)('changing $field fails exactly $fails', ({ tamper, fails }) => {
-    const tampered = structuredClone(attested);
-    tamper(tampered);
-    const result = verify(tampered, RING, ctx);
-    expect(result.valid).toBe(false);
-    expect(result.checks.map((check) => check.name)).toEqual(CHECK_NAMES);
-    if (fails[0] === 'schema') {
-      expect(failedNames(result)).toEqual(CHECK_NAMES);
-    } else {
-      expect(failedNames(result)).toEqual(fails);
-    }
-  });
-
-  it('names the ring failure on the signature check', () => {
-    const wrongKey = { ...attested, key_id: OTHER_KEYS.key_id };
-    expect(checkOf(verify(wrongKey, RING, ctx), 'signature').detail).toBe('bad_signature');
-    const unknown = { ...attested, key_id: 'k_unknown' };
-    expect(checkOf(verify(unknown, RING, ctx), 'signature').detail).toBe('unknown_key_id');
-  });
-
-  it('an added field breaks record_hash: the record is hashed as loaded', () => {
-    const extra = { ...attested, note: 'edited via SQL' };
-    const result = verify(extra, RING, ctx);
-    expect(failedNames(result)).toEqual(['record_hash']);
-    expect(checkOf(result, 'schema').ok).toBe(true);
-    expect(checkOf(result, 'record_hash').detail).toBe(VERIFY_DETAIL.hash_mismatch);
   });
 });
 
@@ -246,13 +133,21 @@ describe('verify after attestation', () => {
       superseded: originalCtx,
     });
     expect(attestedResult.valid).toBe(true);
-    // The original stays intact and verifiable on its own; only its separation is not yet
-    // attested, which is exactly what the superseding record proves.
-    const originalResult = verify(original, RING, originalCtx);
-    expect(failedNames(originalResult)).toEqual(['separation_attested']);
-    expect(checkOf(originalResult, 'separation_attested').detail).toBe(VERIFY_DETAIL.not_attested);
+    // The original stays intact: handed its superseding attestation (supersededBy, which the
+    // gateway passes when it verifies an older version) it is fully valid.
+    const originalResult = verify(original, RING, { ...originalCtx, supersededBy: attested });
+    expect(originalResult.valid).toBe(true);
+    expect(checkOf(originalResult, 'separation_attested')).toEqual({
+      name: 'separation_attested',
+      ok: true,
+      detail: VERIFY_DETAIL.attested_by_superseding,
+    });
+    // Without it, only its separation is not attested; every integrity check still passes.
+    const alone = verify(original, RING, originalCtx);
+    expect(failedNames(alone)).toEqual(['separation_attested']);
+    expect(checkOf(alone, 'separation_attested').detail).toBe(VERIFY_DETAIL.not_attested);
     for (const name of ['record_hash', 'chain', 'signature', 'creative_hash'] as const) {
-      expect(checkOf(originalResult, name).ok, name).toBe(true);
+      expect(checkOf(alone, name).ok, name).toBe(true);
     }
   });
 

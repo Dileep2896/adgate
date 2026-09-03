@@ -9,8 +9,10 @@ import type { DemandAdapter, DemandFetchOptions, DirectAdapterOptions } from './
  * DirectAdapter: the app's own creatives, handed in as an in-memory catalog (the gateway loads
  * them from Postgres). Pure and synchronous, so timeoutMs is never exceeded. Selection:
  * active direct creatives only, region filter, category match required, ranked by
- * targeting_match then ecpm then id (select.ts), top DIRECT_MAX_CANDIDATES. competitor_exclusions
- * are NOT applied here: mediation drops excluded advertisers so the audit trace can record them.
+ * compareByRevenue (select.ts: ecpm * targeting_match, then ecpm, then id, the order mediation
+ * uses), top DIRECT_MAX_CANDIDATES. competitor_exclusions are NOT applied here: mediation drops
+ * excluded advertisers so the audit trace can record them. A throw inside selection becomes
+ * { candidates: [], error: <Error.name> }: the name only, never a message.
  */
 export const DIRECT_MAX_CANDIDATES = MAX_CANDIDATES;
 

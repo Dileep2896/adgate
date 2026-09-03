@@ -11,8 +11,7 @@
     },
     "model_output_hash": {
       "description": "sha256 of the complete model answer.",
-      "minLength": 8,
-      "pattern": "^sha256:.*",
+      "pattern": "^sha256:[0-9a-f]{64}$",
       "title": "Sha256Hash",
       "type": "string"
     },

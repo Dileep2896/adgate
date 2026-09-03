@@ -10,8 +10,8 @@ import type {
 } from '@adgate/schemas';
 
 import { isExcludedDomain } from './exclusions.js';
-import { type Clock, latencySince, safeNow } from './response.js';
-import { compareIds } from './select.js';
+import { type Clock, describeError, latencySince, safeNow } from './response.js';
+import { compareByRevenue } from './select.js';
 import { DEFAULT_DEMAND_TIMEOUT_MS, type DemandAdapter } from './types.js';
 
 /**
@@ -20,11 +20,13 @@ import { DEFAULT_DEMAND_TIMEOUT_MS, type DemandAdapter } from './types.js';
  * own timer and AbortController, so the slowest source can hold the answer back by at most
  * timeoutMs; a late answer is ignored. Candidates whose advertiser_domain matches a competitor
  * exclusion (policy or request) are dropped and listed in trace.excluded, the rest are ranked by
- * ecpm_estimate * targeting_match, then ecpm_estimate, then creative id, and the first wins.
- * The trace is the audit record's `demand` block (docs/audit.md): counts, latencies measured by
- * the mediator's clock, and short error codes. A failing adapter is recorded by its error NAME
- * only, never a message. mediate() never throws and never rejects; with nothing selected the
- * gateway records no_fill.
+ * compareByRevenue (select.ts: ecpm_estimate * targeting_match, then ecpm_estimate, then
+ * creative id, the same order the adapters cut their top 3 with) and the first wins. The trace
+ * is the audit record's `demand` block (docs/audit.md): counts, latencies measured by the
+ * mediator's clock, and short error codes. A failing adapter is recorded by its error NAME only
+ * (describeError), never a message. mediate() never throws and never rejects; with nothing
+ * selected the gateway records no_fill. Invariant on every path, the last-resort catch included:
+ * trace.responses has exactly one entry per requested source, in adapter order.
  */
 export const MEDIATION_TIMEOUT_ERROR = 'timeout';
 export const MEDIATION_ABORTED_ERROR = 'aborted';
@@ -54,20 +56,6 @@ interface Settled {
   summary: DemandResponseSummary;
   candidates: readonly Candidate[];
 }
-
-/** docs/decisions.md item 5: the only ranking signal. */
-export const mediationScore = (candidate: Candidate): number =>
-  candidate.ecpm_estimate * candidate.targeting_match;
-
-/** mediationScore desc, ecpm_estimate desc, id asc: total and deterministic. */
-export const compareByRevenue = (a: Candidate, b: Candidate): number =>
-  mediationScore(b) - mediationScore(a) ||
-  b.ecpm_estimate - a.ecpm_estimate ||
-  compareIds(a.id, b.id);
-
-/** The name of a thrown value and nothing else: a message could quote anything. */
-const errorName = (error: unknown): string =>
-  error instanceof Error && error.name !== '' ? error.name : 'NonError';
 
 const summarize = (
   source: DemandSource,
@@ -150,7 +138,7 @@ const fetchOne = (
         });
       },
       (error: unknown) => {
-        finish(failed(`${ADAPTER_ERROR_PREFIX}${errorName(error)}`));
+        finish(failed(`${ADAPTER_ERROR_PREFIX}${describeError(error)}`));
       },
     );
   });
@@ -163,11 +151,20 @@ const sourcesOf = (adapters: readonly DemandAdapter[]): DemandSource[] => {
   }
 };
 
-const noFill = (requested: DemandSource[]): MediationResult => ({
-  selected: null,
-  selected_source: null,
-  trace: { requested, responses: [], excluded: [], selected: null },
-});
+/** Every requested source failed the same way (the last-resort path): one entry each. */
+const failedAll = (adapters: readonly DemandAdapter[], error: string): MediationResult => {
+  const requested = sourcesOf(adapters);
+  return {
+    selected: null,
+    selected_source: null,
+    trace: {
+      requested,
+      responses: requested.map((source) => summarize(source, 0, 0, error)),
+      excluded: [],
+      selected: null,
+    },
+  };
+};
 
 const mediateOrThrow = async (
   adapters: readonly DemandAdapter[],
@@ -192,7 +189,7 @@ const mediateOrThrow = async (
   for (const [index, job] of jobs.entries()) {
     const outcome = outcomes[index];
     if (outcome === undefined || outcome.status === 'rejected') {
-      const name = errorName(outcome?.reason);
+      const name = describeError(outcome?.reason);
       responses.push(summarize(job.source, 0, 0, `${ADAPTER_ERROR_PREFIX}${name}`));
       continue;
     }
@@ -228,8 +225,9 @@ export const mediate = async (
 ): Promise<MediationResult> => {
   try {
     return await mediateOrThrow(adapters, req, policy, options);
-  } catch {
-    // Last resort (adapters or policy that are not what the types promise): fail closed.
-    return noFill(sourcesOf(adapters));
+  } catch (error) {
+    // Last resort (adapters, request or policy that are not what the types promise): fail
+    // closed, still one trace entry per requested source, still the error name only.
+    return failedAll(adapters, `${ADAPTER_ERROR_PREFIX}${describeError(error)}`);
   }
 };

@@ -40,9 +40,7 @@ export {
   ADAPTER_ERROR_PREFIX,
   MEDIATION_ABORTED_ERROR,
   MEDIATION_TIMEOUT_ERROR,
-  compareByRevenue,
   mediate,
-  mediationScore,
 } from './mediate.js';
 export type { MediateOptions, MediationResult } from './mediate.js';
 export {
@@ -55,6 +53,13 @@ export type { NetworkAdapterOptions } from './network-stub.js';
 export { creativeServesRegion } from './regions.js';
 export { demandResponse, describeError, latencySince, safeNow } from './response.js';
 export type { Clock } from './response.js';
-export { MAX_CANDIDATES, compareCandidates, matchScore, rankCandidates } from './select.js';
+export {
+  MAX_CANDIDATES,
+  compareByRevenue,
+  compareIds,
+  matchScore,
+  mediationScore,
+  rankCandidates,
+} from './select.js';
 export { DEFAULT_DEMAND_TIMEOUT_MS } from './types.js';
 export type { DemandAdapter, DemandFetchOptions, DirectAdapterOptions } from './types.js';

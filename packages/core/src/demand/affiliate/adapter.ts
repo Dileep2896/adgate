@@ -23,7 +23,8 @@ import type { AffiliateAdapterOptions } from './types.js';
  *
  * One adapter per affiliate demand entry in the policy: it serves creatives whose `network` is
  * its own, plus creatives without a `network` (the seed file's entry), which belong to whichever
- * network the policy names. Selection and ranking are DirectAdapter's (select.ts). A creative
+ * network the policy names. Selection and ranking are DirectAdapter's (select.ts: revenue
+ * order, the same compareByRevenue mediation ranks with). A creative
  * whose template cannot be built is skipped and named in `error` as
  * build_failed:<id>:<reason>; the ones that did build are still returned. No config entry for
  * the network means no candidates and error 'affiliate_not_configured'. Competitor exclusions

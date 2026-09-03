@@ -54,7 +54,7 @@ describe('buildAffiliateUrl', () => {
     ).toEqual({ ok: false, error: 'affiliate_not_configured' });
   });
 
-  it('lets a creative program_id override the app-level id or tag, never a missing config', () => {
+  it('lets a creative program_id override the app-level program id, never a missing config', () => {
     expect(
       buildAffiliateUrl({
         network: 'partnerstack',
@@ -73,20 +73,31 @@ describe('buildAffiliateUrl', () => {
     ).toEqual({ ok: true, url: 'https://i.example/imp_override/camp_1' });
     expect(
       buildAffiliateUrl({
-        network: 'amazon',
-        template: 'https://www.amazon.com/dp/X',
-        config,
-        program_id: 'other-21',
-      }),
-    ).toEqual({ ok: true, url: 'https://www.amazon.com/dp/X?tag=other-21' });
-    expect(
-      buildAffiliateUrl({
         network: 'partnerstack',
         template: 'https://p.example/?pid={{program_id}}',
         config: {},
         program_id: 'ps_override',
       }),
     ).toEqual({ ok: false, error: 'affiliate_not_configured' });
+  });
+
+  it('never lets a creative program_id replace the owner\u2019s Amazon tag', () => {
+    expect(
+      buildAffiliateUrl({
+        network: 'amazon',
+        template: 'https://www.amazon.com/dp/X',
+        config,
+        program_id: 'other-21',
+      }),
+    ).toEqual({ ok: true, url: 'https://www.amazon.com/dp/X?tag=tag-20' });
+    expect(
+      buildAffiliateUrl({
+        network: 'amazon',
+        template: 'https://www.amazon.com/dp/X?tag={{tag}}',
+        config,
+        program_id: 'other-21',
+      }),
+    ).toEqual({ ok: true, url: 'https://www.amazon.com/dp/X?tag=tag-20' });
   });
 
   it('passes the destination through to the builder', () => {

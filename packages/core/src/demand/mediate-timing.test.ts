@@ -1,7 +1,8 @@
 import { DemandTrace } from '@adgate/schemas';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { request } from './direct.fixture.js';
+import { createDirectAdapter } from './direct.js';
+import { creative, request } from './direct.fixture.js';
 import { FakeAdapter, NO_EXCLUSIONS, candidate, respond } from './mediate.fixture.js';
 import {
   ADAPTER_ERROR_PREFIX,
@@ -187,13 +188,59 @@ describe('mediate: failing adapters', () => {
       selected_source: null,
       trace: { requested: [], responses: [], excluded: [], selected: null },
     });
+  });
+
+  it('the last-resort path still writes one entry per requested source, error name only', async () => {
     const noPolicy = await mediate(
-      [respond('direct', [candidate('cr_1')])],
+      [respond('direct', [candidate('cr_1')]), respond('affiliate', [])],
       request(),
       null as never,
     );
     expect(noPolicy.selected).toBeNull();
-    expect(noPolicy.trace.requested).toEqual(['direct']);
+    expect(noPolicy.selected_source).toBeNull();
+    expect(noPolicy.trace).toEqual({
+      requested: ['direct', 'affiliate'],
+      responses: [
+        { source: 'direct', candidates: 0, latency_ms: 0, error: 'adapter_error:TypeError' },
+        { source: 'affiliate', candidates: 0, latency_ms: 0, error: 'adapter_error:TypeError' },
+      ],
+      excluded: [],
+      selected: null,
+    });
+    expect(DemandTrace.parse(noPolicy.trace)).toEqual(noPolicy.trace);
+    const noRequest = await mediate([respond('koah', [])], null as never, NO_EXCLUSIONS);
+    expect(noRequest.trace.responses).toEqual([
+      { source: 'koah', candidates: 0, latency_ms: 0, error: 'adapter_error:TypeError' },
+    ]);
+    // A policy whose competitor_exclusions getter throws a message: the message never lands.
+    const leaky = {
+      get competitor_exclusions(): string[] {
+        throw new Error('the user said secret');
+      },
+    };
+    const leaked = await mediate([respond('direct', [candidate('cr_1')])], request(), leaky);
+    expect(leaked.trace.responses).toEqual([
+      { source: 'direct', candidates: 0, latency_ms: 0, error: 'adapter_error:Error' },
+    ]);
+    expect(JSON.stringify(leaked)).not.toContain('secret');
+  });
+
+  it('an adapter that throws inside its own selection reaches the trace by error name only', async () => {
+    // DirectAdapter catches the throw itself and reports describeError(); mediate copies that
+    // string verbatim into the signed trace, so the adapter side must never carry a message.
+    const trap = creative({ id: 'cr_trap' });
+    Object.defineProperty(trap, 'active', {
+      get() {
+        throw new Error('secret message');
+      },
+    });
+    const pending = mediate([createDirectAdapter([trap])], request(), NO_EXCLUSIONS);
+    await vi.runAllTimersAsync();
+    const { trace } = await pending;
+    expect(trace.responses).toEqual([
+      { source: 'direct', candidates: 0, latency_ms: 0, error: 'Error' },
+    ]);
+    expect(JSON.stringify(trace)).not.toContain('secret');
   });
 });
 

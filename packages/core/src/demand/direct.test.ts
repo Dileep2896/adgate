@@ -139,22 +139,40 @@ describe('DirectAdapter selection rules', () => {
     expect(response.candidates.map((c) => c.id)).toEqual(['cr_02']);
   });
 
-  it('orders by targeting_match, then ecpm, then id ascending on full ties', async () => {
+  it('orders by ecpm * targeting_match, then ecpm, then id ascending on full ties', async () => {
     const adapter = createDirectAdapter([
-      creative({ id: 'cr_03', ecpm: 5 }),
-      creative({ id: 'cr_01', ecpm: 5 }),
-      creative({ id: 'cr_02', ecpm: 5 }),
-      creative({ id: 'cr_04', ecpm: 9, target_categories: ['software.*'] }),
-      creative({ id: 'cr_00', ecpm: 7 }),
+      creative({ id: 'cr_03', ecpm: 5 }), // 0.75 * 5 = 3.75
+      creative({ id: 'cr_01', ecpm: 5 }), // 3.75
+      creative({ id: 'cr_02', ecpm: 5 }), // 3.75
+      creative({ id: 'cr_04', ecpm: 9, target_categories: ['software.*'] }), // 0.6 * 9 = 5.4
+      creative({ id: 'cr_00', ecpm: 7 }), // 5.25
     ]);
     const response = await adapter.fetch(request(), opts);
-    expect(response.candidates.map((c) => c.id)).toEqual(['cr_00', 'cr_01', 'cr_02']);
+    expect(response.candidates.map((c) => c.id)).toEqual(['cr_04', 'cr_00', 'cr_01']);
     expect(response.candidates).toHaveLength(DIRECT_MAX_CANDIDATES);
     const wildcard = await createDirectAdapter([
       creative({ id: 'cr_04', ecpm: 9, target_categories: ['software.*'] }),
       creative({ id: 'cr_05', ecpm: 1 }),
     ]).fetch(request(), opts);
-    expect(wildcard.candidates.map((c) => c.id)).toEqual(['cr_05', 'cr_04']);
+    expect(wildcard.candidates.map((c) => c.id)).toEqual(['cr_04', 'cr_05']);
+  });
+
+  it('cuts its top 3 with the revenue order mediation uses, never by targeting alone', async () => {
+    // Four exact matches at ecpm 10 (score 7.5 each) and one wildcard match at ecpm 100
+    // (score 60): the wildcard creative must survive the cut, or mediation could never pick it.
+    const adapter = createDirectAdapter([
+      creative({ id: 'cr_01', ecpm: 10 }),
+      creative({ id: 'cr_02', ecpm: 10 }),
+      creative({ id: 'cr_03', ecpm: 10 }),
+      creative({ id: 'cr_04', ecpm: 10 }),
+      creative({ id: 'cr_05', ecpm: 100, target_categories: ['software.devtools.*'] }),
+    ]);
+    const response = await adapter.fetch(request(), opts);
+    expect(response.candidates.map((c) => [c.id, c.targeting_match, c.ecpm_estimate])).toEqual([
+      ['cr_05', 0.6, 100],
+      ['cr_01', 0.75, 10],
+      ['cr_02', 0.75, 10],
+    ]);
   });
 
   it('does not apply competitor exclusions (mediation does)', async () => {
@@ -197,7 +215,7 @@ describe('DirectAdapter never throws', () => {
     const malformed = request({ user: null as unknown as { region?: string } });
     const response = await broken.fetch(malformed, opts);
     expect(response.candidates).toEqual([]);
-    expect(response.error).toMatch(/^TypeError: /);
+    expect(response.error).toBe('TypeError');
     let calls = 0;
     const clock = new DirectAdapter([creative()], {
       now: () => {
@@ -209,6 +227,18 @@ describe('DirectAdapter never throws', () => {
     expect(clocked.candidates).toHaveLength(1);
     expect(clocked.latency_ms).toBe(0);
     expect(calls).toBe(2);
+  });
+
+  it('reports a throw by its error name only, never its message', async () => {
+    const trap = creative({ id: 'cr_trap' });
+    Object.defineProperty(trap, 'active', {
+      get() {
+        throw new Error('secret message');
+      },
+    });
+    const response = await createDirectAdapter([trap]).fetch(request(), opts);
+    expect(response).toEqual({ source: 'direct', candidates: [], latency_ms: 0, error: 'Error' });
+    expect(JSON.stringify(response)).not.toContain('secret');
   });
 
   it('measures latency_ms with the injected clock', async () => {

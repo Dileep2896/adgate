@@ -46,16 +46,34 @@ describe('AffiliateAdapter selection parity with DirectAdapter', () => {
     expect(a.error).toBeUndefined();
   });
 
-  it('orders by targeting_match, then ecpm, then id, top 3, inactive and off-region never', async () => {
+  it('orders by ecpm * targeting_match, then ecpm, then id, top 3, inactive and off-region never', async () => {
     const us = await affiliate.fetch(request(), opts);
-    expect(us.candidates.map((c) => c.id)).toEqual(['cr_00', 'cr_01', 'cr_02']);
+    // cr_04 wildcard 0.6 * 9 = 5.4, cr_00 0.75 * 7 = 5.25, cr_01 0.75 * 5 = 3.75 (id tie-break)
+    expect(us.candidates.map((c) => c.id)).toEqual(['cr_04', 'cr_00', 'cr_01']);
     const de = await affiliate.fetch(
       request({ user: { region: 'DE' }, keywords: ['postgres'] }),
       opts,
     );
-    expect(de.candidates.map((c) => c.id)).toEqual(['cr_07', 'cr_00', 'cr_01']);
+    // cr_07 0.875 * 8 = 7 (EU token, keyword hit), then cr_04 5.4, cr_00 5.25
+    expect(de.candidates.map((c) => c.id)).toEqual(['cr_07', 'cr_04', 'cr_00']);
     expect(de.candidates[0]?.targeting_match).toBe(0.875);
     expect(AFFILIATE_MAX_CANDIDATES).toBe(3);
+  });
+
+  it('a wildcard match at a high ecpm outranks an exact match at a low one (revenue order)', async () => {
+    const adapter = createAffiliateAdapter({
+      catalog: [
+        affiliateCreative({ id: 'cr_exact', ecpm: 10 }),
+        affiliateCreative({ id: 'cr_rich', ecpm: 100, target_categories: ['software.*'] }),
+      ],
+      network: 'partnerstack',
+      config: PARTNERSTACK_CONFIG,
+    });
+    const response = await adapter.fetch(request(), opts);
+    expect(response.candidates.map((c) => [c.id, c.targeting_match])).toEqual([
+      ['cr_rich', 0.6],
+      ['cr_exact', 0.75],
+    ]);
   });
 
   it('does not apply competitor exclusions (mediation does)', async () => {
@@ -120,7 +138,7 @@ describe('AffiliateAdapter never throws', () => {
     const malformed = request({ user: null as unknown as { region?: string } });
     const response = await adapter.fetch(malformed, opts);
     expect(response.candidates).toEqual([]);
-    expect(response.error).toMatch(/^TypeError: /);
+    expect(response.error).toBe('TypeError');
     const lone = createAffiliateAdapter({
       catalog: [affiliateCreative()],
       network: 'partnerstack',

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { z } from 'zod';
 
 import {
   AuditRecord,
@@ -7,68 +8,20 @@ import {
   PrevHash,
   UnsignedAuditRecord,
 } from './audit-record.js';
+import { docJsonBlocks, EXAMPLE_SHA256 } from './doc-examples.fixture.js';
 import { CONTRACT_SCHEMAS, toJsonSchemaObject } from './json-schema.js';
 
 /**
- * The docs/audit.md example, copied verbatim. Two values that are prose in the doc are written
- * in their valid form: `user_hash` ("sha256:... or null") and `signature` ("ed25519:base64...",
- * whose dots are outside the base64 alphabet). Every field name, order and enum is the doc's.
- * Keep it in sync by hand when the contract doc changes (a human decision, see CLAUDE.md).
+ * The docs/audit.md example, extracted from the doc at test time (doc-examples.fixture.ts). Two
+ * values that are prose in the doc are filled with values of the documented format: `user_hash`
+ * ("sha256:... or null") and `signature` ("ed25519:base64...", whose dots are outside the
+ * base64 alphabet); every other field is the doc's. The doc has exactly one JSON block.
  */
-export const AUDIT_RECORD_EXAMPLE = {
-  id: 'aud_01J...',
-  app_id: 'app_01J...',
-  conversation_id_hash: 'sha256:...',
-  user_hash: 'sha256:...',
-  turn_id: 'turn_7',
-  ts: '2026-09-02T18:04:11Z',
-  surface: { type: 'chat', placement: 'after_answer' },
-  classification: {
-    commercial_intent: 0.84,
-    categories: ['software.devtools.database'],
-    sensitive: [],
-    confidence: 0.91,
-    method: 'llm',
-    prompt_version: 'sha256:...',
-  },
-  policy_version: 1,
-  policy_hash: 'sha256:...',
-  policy_decisions: [
-    { rule: 'serve_to_tiers', result: 'pass' },
-    { rule: 'regions', result: 'pass' },
-    { rule: 'blocked_categories', result: 'pass' },
-    { rule: 'min_confidence', result: 'pass' },
-    { rule: 'min_commercial_intent', result: 'pass' },
-    { rule: 'frequency_caps', result: 'pass', detail: 'session=0/1 day=1/3 turns_since=9' },
-    { rule: 'competitor_exclusions', result: 'pending' },
-  ],
-  decision: 'serve',
-  reason: null,
-  demand: {
-    requested: ['direct', 'affiliate'],
-    responses: [
-      { source: 'direct', candidates: 2, latency_ms: 38 },
-      { source: 'affiliate', candidates: 0, latency_ms: 61 },
-    ],
-    excluded: [],
-    selected: 'direct',
-  },
-  creative: {
-    id: 'cr_01J...',
-    advertiser: 'Example DB Cloud',
-    advertiser_domain: 'example.com',
-    content_hash: 'sha256:...',
-  },
-  disclosure: { label: 'Sponsored', position: 'after_answer', style: 'separate_block' },
-  model_output_hash: null,
-  separation_attestation: false,
-  attested_at: null,
-  supersedes_hash: null,
-  prev_hash: 'sha256:...',
-  record_hash: 'sha256:...',
-  signature: `ed25519:${'A'.repeat(86)}==`,
-  key_id: 'k_2026_09',
-};
+const AUDIT_DOC_BLOCKS = docJsonBlocks('audit.md');
+if (AUDIT_DOC_BLOCKS.length !== 1) {
+  throw new Error(`docs/audit.md: expected one json example, found ${AUDIT_DOC_BLOCKS.length}`);
+}
+export const AUDIT_RECORD_EXAMPLE = AUDIT_DOC_BLOCKS[0]?.value as z.input<typeof AuditRecord>;
 
 /** The example with the override_rejected default applied: what AuditRecord.parse returns. */
 const PARSED_EXAMPLE = { ...AUDIT_RECORD_EXAMPLE, override_rejected: [] };
@@ -119,6 +72,9 @@ const without = <K extends keyof typeof PARSED_EXAMPLE>(...keys: K[]) => {
 
 describe('AuditRecord', () => {
   it('parses the docs/audit.md example verbatim, defaulting override_rejected to []', () => {
+    expect(AUDIT_DOC_BLOCKS[0]?.heading).toBe('');
+    expect(AUDIT_RECORD_EXAMPLE.id).toBe('aud_01J...');
+    expect(AUDIT_RECORD_EXAMPLE.user_hash).toBe(EXAMPLE_SHA256);
     expect(AuditRecord.parse(AUDIT_RECORD_EXAMPLE)).toEqual(PARSED_EXAMPLE);
     expect(AuditRecord.parse(PARSED_EXAMPLE)).toEqual(PARSED_EXAMPLE);
   });
@@ -147,10 +103,10 @@ describe('AuditRecord', () => {
     const attested = {
       ...PARSED_EXAMPLE,
       user_hash: null,
-      model_output_hash: 'sha256:abc',
+      model_output_hash: EXAMPLE_SHA256,
       separation_attestation: true,
       attested_at: '2026-09-02T18:04:12Z',
-      supersedes_hash: 'sha256:def',
+      supersedes_hash: EXAMPLE_SHA256.replace(/0/g, 'f'),
     };
     expect(AuditRecord.parse(attested)).toEqual(attested);
   });
@@ -175,13 +131,22 @@ describe('AuditRecord', () => {
     ).toBe(false);
   });
 
-  it('accepts genesis or a sha256 prev_hash and nothing else', () => {
+  it('accepts genesis or a full sha256 prev_hash and nothing else', () => {
     expect(AuditRecord.parse({ ...PARSED_EXAMPLE, prev_hash: 'genesis' }).prev_hash).toBe(
       'genesis',
     );
     expect(PrevHash.parse(GENESIS_PREV_HASH)).toBe('genesis');
-    expect(PrevHash.parse('sha256:abc')).toBe('sha256:abc');
-    for (const bad of ['', 'Genesis', 'sha256:', 'abc', null, 0]) {
+    expect(PrevHash.parse(EXAMPLE_SHA256)).toBe(EXAMPLE_SHA256);
+    for (const bad of [
+      '',
+      'Genesis',
+      'sha256:',
+      'sha256:abc',
+      EXAMPLE_SHA256.toUpperCase(),
+      'abc',
+      null,
+      0,
+    ]) {
       expect(PrevHash.safeParse(bad).success, String(bad)).toBe(false);
       expect(AuditRecord.safeParse({ ...PARSED_EXAMPLE, prev_hash: bad }).success).toBe(false);
     }
@@ -217,6 +182,9 @@ describe('AuditRecord', () => {
       { policy_version: 0 },
       { policy_version: 1.5 },
       { policy_hash: 'abc' },
+      { policy_hash: 'sha256:abc' },
+      { conversation_id_hash: EXAMPLE_SHA256.toUpperCase() },
+      { user_hash: 'sha256:' },
       { policy_decisions: [{ rule: 'made_up', result: 'pass' }] },
       { decision: 'maybe' },
       { decision: 'suppress', creative: null, reason: 'nope' },
@@ -229,6 +197,7 @@ describe('AuditRecord', () => {
       { attested_at: 'yesterday' },
       { supersedes_hash: 'genesis' },
       { record_hash: 'genesis' },
+      { record_hash: `${EXAMPLE_SHA256}0` },
       { signature: 'ed25519:base64...' },
       { signature: `sha256:${'A'.repeat(86)}==` },
       { key_id: 'k 1' },

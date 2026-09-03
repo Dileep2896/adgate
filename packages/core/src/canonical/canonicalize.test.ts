@@ -6,7 +6,7 @@ import { canonicalize } from './canonicalize.js';
 
 const fixture = JSON.parse(
   readFileSync(new URL('../../../../fixtures/canonical-json.json', import.meta.url), 'utf8'),
-) as { cases: Array<{ name: string; inputs: unknown[]; expected: string }> };
+) as { notes: string[]; cases: Array<{ name: string; inputs: unknown[]; expected: string }> };
 
 describe('canonicalize', () => {
   describe('fixtures/canonical-json.json', () => {
@@ -24,6 +24,19 @@ describe('canonicalize', () => {
     const canonical = canonicalize(value);
     expect(canonical).not.toMatch(/\s(?=(?:[^"]*"[^"]*")*[^"]*$)/);
     expect(JSON.parse(canonical)).toEqual(value);
+  });
+
+  it('sorts keys by UTF-16 code unit, so a surrogate pair sorts before U+FB01 (not code point)', () => {
+    const emoji = '\u{1F600}';
+    const ligature = '\uFB01';
+    expect(emoji.codePointAt(0)).toBeGreaterThan(ligature.codePointAt(0) ?? 0);
+    expect(canonicalize({ [ligature]: 2, [emoji]: 1, z: 0 })).toBe(
+      `{"z":0,"${emoji}":1,"${ligature}":2}`,
+    );
+    expect(fixture.notes.some((note) => note.includes('UTF-16 code unit'))).toBe(true);
+    expect(
+      fixture.cases.some((entry) => entry.name.includes('UTF-16 code unit, not code point')),
+    ).toBe(true);
   });
 
   it('is independent of key insertion order at every depth', () => {

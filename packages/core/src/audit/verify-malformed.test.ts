@@ -1,6 +1,7 @@
 import { VerifyCheckName, VerifyResponse } from '@adgate/schemas';
 import { describe, expect, it } from 'vitest';
 
+import { sha256Prefixed } from './crypto.js';
 import type { PublicKeyRing } from './keys.js';
 import { verify, type VerifyContext } from './verify.js';
 import { VERIFY_DETAIL } from './verify-checks.js';
@@ -22,6 +23,8 @@ const NOT_RECORDS: unknown[] = [
   { ...suppressRecord(), ts: 'yesterday' },
   { ...suppressRecord(), record_hash: 42 },
   { ...suppressRecord(), signature: 'sha256:abc' },
+  { ...suppressRecord(), prev_hash: 'sha256:abc' },
+  { ...suppressRecord(), record_hash: `sha256:${'A'.repeat(64)}` },
   { ...suppressRecord(), key_id: 'k 1' },
   { ...serveRecord(), creative: null },
   { ...suppressRecord(), reason: null },
@@ -134,7 +137,7 @@ describe('verify on malformed input', () => {
       verify(null, RING, {}),
       verify(suppressRecord(), RING, {}),
       verify(serveRecord(), RING, {}),
-      verify({ ...suppressRecord(), prev_hash: 'sha256:abc' }, RING, {}),
+      verify({ ...suppressRecord(), prev_hash: sha256Prefixed('elsewhere') }, RING, {}),
     ];
     for (const outcome of outcomes) {
       expect(outcome.checks.map((check) => check.name)).toEqual(CHECK_NAMES);

@@ -167,8 +167,22 @@ describe('attest rejections', () => {
     expect(isAttested({ ...original, separation_attestation: true })).toBe(false);
   });
 
-  it('rejects a model_output_hash that is not sha256:<hex>', () => {
-    for (const bad of ['', 'abc', 'sha256:', 'SHA256:abc', 42, null, undefined]) {
+  it('rejects a model_output_hash that is not sha256:<64 lowercase hex digits>', () => {
+    const digest = MODEL_OUTPUT_HASH.slice('sha256:'.length);
+    for (const bad of [
+      '',
+      'abc',
+      'sha256:',
+      'sha256:abc',
+      'SHA256:abc',
+      `SHA256:${digest}`,
+      `sha256:${digest.toUpperCase()}`,
+      `sha256:${digest}0`,
+      digest,
+      42,
+      null,
+      undefined,
+    ]) {
       const error = catchAttestError(() =>
         attest(original, bad as unknown as string, ATTESTED_AT, opts),
       );
