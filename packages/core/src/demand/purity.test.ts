@@ -68,10 +68,13 @@ describe('demand package purity', () => {
       'catalog.ts',
       'direct.ts',
       'exclusions.ts',
+      'gravity.ts',
       'index.ts',
       'keywords.ts',
+      'koah.ts',
       'match.ts',
       'mediate.ts',
+      'network-stub.ts',
       'regions.ts',
       'response.ts',
       'select.ts',
@@ -101,6 +104,17 @@ describe('demand package purity', () => {
     expect([...reachableBareImports(join(demandDir, 'affiliate/index.ts'))]).toEqual([
       '@adgate/schemas',
     ]);
+  });
+
+  it('the partner stubs (docs/decisions.md item 10) never spell out a fetch call at all', () => {
+    for (const name of ['koah.ts', 'gravity.ts', 'network-stub.ts']) {
+      expect([...reachableBareImports(join(demandDir, name))]).toEqual(['@adgate/schemas']);
+    }
+    for (const name of ['koah.ts', 'gravity.ts']) {
+      const source = readFileSync(join(demandDir, name), 'utf8');
+      expect(source, `${name} references fetch`).not.toMatch(/\bfetch\s*\(/);
+      expect(source, `${name} reaches for a global`).not.toMatch(/globalThis/);
+    }
   });
 
   it('keeps every file under 300 lines (CLAUDE.md)', () => {

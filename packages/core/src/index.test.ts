@@ -89,6 +89,19 @@ describe('@adgate/core', () => {
     expect(core.ADAPTER_ERROR_PREFIX).toBe('adapter_error:');
   });
 
+  it('exports the Koah and Gravity stubs (docs/decisions.md item 10)', () => {
+    expect(typeof core.createKoahAdapter).toBe('function');
+    expect(typeof core.KoahAdapter).toBe('function');
+    expect(typeof core.createGravityAdapter).toBe('function');
+    expect(typeof core.GravityAdapter).toBe('function');
+    expect(typeof core.NetworkStubAdapter).toBe('function');
+    expect(typeof core.isNetworkConfigured).toBe('function');
+    expect(core.NETWORK_NOT_CONFIGURED).toBe('not_configured');
+    expect(core.NETWORK_NOT_IMPLEMENTED).toBe('not_implemented');
+    expect(core.createKoahAdapter({ enabled: false }).source).toBe('koah');
+    expect(core.createGravityAdapter({ enabled: false }).source).toBe('gravity');
+  });
+
   it('re-exports PolicyValidationError from @adgate/schemas', () => {
     expect(core.PolicyValidationError).toBe(schemas.PolicyValidationError);
   });

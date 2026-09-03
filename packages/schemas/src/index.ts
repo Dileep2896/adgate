@@ -11,6 +11,7 @@ export * from './demand-trace.js';
 export * from './evaluate.js';
 export * from './events.js';
 export * from './json-schema.js';
+export * from './network-adapters.js';
 export * from './policy.js';
 export * from './policy-decision.js';
 export * from './policy-loader.js';

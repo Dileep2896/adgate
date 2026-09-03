@@ -134,7 +134,7 @@
       ]
     },
     {
-      "id": "S12", "priority": 12, "dependsOn": ["S11"], "passes": false,
+      "id": "S12", "priority": 12, "dependsOn": ["S11"], "passes": true,
       "title": "Koah and Gravity adapter stubs",
       "description": "KoahAdapter and GravityAdapter implement DemandAdapter, accept config objects, and return a trace error NotConfigured unless enabled with credentials. Leave a documented TODO describing the expected request shape and a link placeholder for partner docs.",
       "acceptanceCriteria": [

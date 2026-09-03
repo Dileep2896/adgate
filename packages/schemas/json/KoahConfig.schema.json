@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The app owner's Koah settings. Until partner API access exists the adapter answers not_implemented even when enabled with both credentials (docs/decisions.md item 10).",
+  "properties": {
+    "enabled": {
+      "default": false,
+      "description": "Whether the Koah adapter may be queried. Off by default; the adapter answers not_configured while false.",
+      "type": "boolean"
+    },
+    "api_key": {
+      "description": "Koah API credential. A secret the gateway reads from its environment; never persisted, logged or written to the audit record.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "base_url": {
+      "description": "Koah API base URL, e.g. https://api.example. Required alongside api_key.",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "title": "KoahConfig",
+  "type": "object"
+}
