@@ -251,7 +251,7 @@
       ]
     },
     {
-      "id": "S23", "priority": 23, "dependsOn": ["S22"], "passes": false,
+      "id": "S23", "priority": 23, "dependsOn": ["S22"], "passes": true,
       "title": "withGeneration and forStream helpers",
       "description": "withGeneration(req, generate) runs evaluate in parallel with the caller's generate() and attests with the final text, returning { answer, decision }. forStream(req) returns { decisionPromise, onChunk, finish } accumulating a hash and attesting on finish.",
       "acceptanceCriteria": [

@@ -8,6 +8,8 @@ describe('@adgate/sdk public surface', () => {
     expect(typeof sdk.hashModelOutput).toBe('function');
     expect(typeof sdk.isEvaluateResponse).toBe('function');
     expect(typeof sdk.failClosedEvaluate).toBe('function');
+    expect(typeof sdk.withGeneration).toBe('function');
+    expect(typeof sdk.forStream).toBe('function');
     expect(sdk.DEFAULT_TIMEOUT_MS).toBe(800);
     expect(sdk.CLIENT_FAILURE_PROMPT_VERSION).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(sdk.EVALUATE_PATH).toBe('/v1/evaluate');
@@ -25,8 +27,10 @@ describe('@adgate/sdk public surface', () => {
       'EVENTS_PATH',
       'createClient',
       'failClosedEvaluate',
+      'forStream',
       'hashModelOutput',
       'isEvaluateResponse',
+      'withGeneration',
     ]);
   });
 });

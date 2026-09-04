@@ -107,6 +107,56 @@ export type TrackOptions = {
   signal?: AbortSignal;
 };
 
+/**
+ * Whether the sponsored block was actually shown to the user, for the attest call the
+ * withGeneration and forStream helpers make on the caller's behalf. A predicate is given the
+ * decision, so an app that renders conditionally can answer once the decision is known.
+ * Default: true for a serve decision, false for a suppress one.
+ */
+export type RenderedOption = boolean | ((decision: EvaluateResult) => boolean);
+
+export type WithGenerationOptions = {
+  rendered?: RenderedOption;
+  /** Applies to both the evaluate and the attest request. */
+  signal?: AbortSignal;
+};
+
+export type WithGenerationResult = {
+  /** Exactly what `generate()` resolved to; the helper never rewrites the answer. */
+  answer: string;
+  decision: EvaluateResult;
+  /** null when there was nothing to attest (the decision carries no audit_id). */
+  attest: AttestResult | null;
+};
+
+export type StreamOptions = WithGenerationOptions;
+
+/** Per-finish overrides; anything omitted falls back to the options forStream was built with. */
+export type StreamFinishOptions = WithGenerationOptions;
+
+export type StreamResult = {
+  /** The chunks passed to onChunk, joined in arrival order. */
+  text: string;
+  decision: EvaluateResult;
+  attest: AttestResult | null;
+};
+
+/** What forStream hands back: the decision, a chunk sink, and one terminal finish. */
+export type StreamHandle = {
+  /** Resolves as soon as the gateway answers, independently of the stream. Never rejects. */
+  decisionPromise: Promise<EvaluateResult>;
+  /**
+   * Appends one chunk of the answer. Chunks must be strings: a caller streaming bytes decodes
+   * them first (`new TextDecoder().decode(bytes, { stream: true })`), because a hash over
+   * split multi-byte characters would not match the text the user saw.
+   */
+  onChunk(chunk: string): void;
+  /** Awaits the decision, hashes the accumulated text and attests. Idempotent. Never rejects. */
+  finish(options?: StreamFinishOptions): Promise<StreamResult>;
+  /** Marks the stream failed: a later finish resolves with attest null and sends nothing. */
+  abort(): void;
+};
+
 export type AdgateClient = {
   /** Asks the gateway whether a sponsored slot may follow this turn. Never rejects. */
   evaluate(request: EvaluateRequest, options?: EvaluateOptions): Promise<EvaluateResult>;

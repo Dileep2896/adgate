@@ -1,3 +1,4 @@
+import { ATTEST_PATH, EVALUATE_PATH } from './client.js';
 import type { EvaluateRequest, FetchInit, FetchLike, FetchResponseLike } from './types.js';
 
 /**
@@ -75,6 +76,28 @@ export const textResponse = (status: number, text: string): Response =>
   new Response(text, { status, headers: { 'content-type': 'text/plain' } });
 
 export const emptyResponse = (status: number): Response => new Response(null, { status });
+
+/**
+ * A fetch that answers /v1/evaluate and /v1/attest from separate scripts, which is what the
+ * withGeneration and forStream helpers exercise. Defaults: a serve decision and a 204 attest.
+ */
+export const routedFetch = (routes?: {
+  evaluate?: (call: FetchCall) => FetchResponseLike | Promise<FetchResponseLike>;
+  attest?: (call: FetchCall) => FetchResponseLike | Promise<FetchResponseLike>;
+}): FakeFetch =>
+  fakeFetch((call) => {
+    if (call.url.endsWith(ATTEST_PATH)) {
+      return (routes?.attest ?? (() => emptyResponse(204)))(call);
+    }
+    if (call.url.endsWith(EVALUATE_PATH)) {
+      return (routes?.evaluate ?? (() => jsonResponse(200, SERVE_BODY)))(call);
+    }
+    return jsonResponse(404, { error: { code: 'not_found', message: call.url } });
+  });
+
+/** The recorded calls whose URL ends with `path` (ATTEST_PATH, EVALUATE_PATH). */
+export const callsTo = (calls: FetchCall[], path: string): FetchCall[] =>
+  calls.filter((call) => call.url.endsWith(path));
 
 /** A fetch that never settles but honours its abort signal like the platform fetch does. */
 export const hangingFetch = (): FakeFetch =>

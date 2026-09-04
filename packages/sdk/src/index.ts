@@ -10,12 +10,14 @@ export {
   EVENTS_PATH,
   failClosedEvaluate,
 } from './client.js';
+export { withGeneration } from './generation.js';
 export { isEvaluateResponse } from './guards.js';
 export {
   CLIENT_FAILURE_PROMPT_SEED,
   CLIENT_FAILURE_PROMPT_VERSION,
   hashModelOutput,
 } from './hash.js';
+export { forStream } from './stream.js';
 export type {
   AdgateClient,
   AttestOptions,
@@ -38,7 +40,14 @@ export type {
   FetchResponseLike,
   Logger,
   PostResult,
+  RenderedOption,
+  StreamFinishOptions,
+  StreamHandle,
+  StreamOptions,
+  StreamResult,
   SuppressReason,
   TrackOptions,
   TrackResult,
+  WithGenerationOptions,
+  WithGenerationResult,
 } from './types.js';

@@ -23,10 +23,12 @@ describe('@adgate/sdk core entry purity', () => {
   it('has the expected implementation files', () => {
     expect(files.map((file) => basename(file))).toEqual([
       'client.ts',
+      'generation.ts',
       'guards.ts',
       'hash.ts',
       'http.ts',
       'index.ts',
+      'stream.ts',
       'types.ts',
     ]);
   });
