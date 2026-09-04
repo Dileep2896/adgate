@@ -27,15 +27,17 @@ beforeAll(async () => {
     entry: {
       index: join(packageDir, 'src/index.ts'),
       react: join(packageDir, 'src/react/index.ts'),
+      ai: join(packageDir, 'src/ai/index.ts'),
     },
     outDir,
     format: ['esm', 'cjs'],
+    splitting: false,
     dts: true,
     sourcemap: true,
     clean: true,
     target: 'es2022',
     tsconfig: join(packageDir, 'tsconfig.json'),
-    external: ['@adgate/schemas', 'react', 'react-dom'],
+    external: ['@adgate/schemas', 'react', 'react-dom', 'ai'],
     silent: true,
     config: false,
   });
@@ -63,10 +65,11 @@ describe('@adgate/sdk build', () => {
     expect(cjs, `CJS entry is ${cjs} bytes gzipped`).toBeLessThan(MAX_GZIP_BYTES);
   });
 
-  it('pulls no zod, no node built-in, no react and no runtime @adgate/schemas into either output', () => {
+  it('pulls no zod, no node built-in, no react, no ai and no runtime @adgate/schemas into either output', () => {
     for (const name of ['index.js', 'index.cjs']) {
       const source = read(name);
       expect(source, `${name} imports react`).not.toMatch(/['"]react/);
+      expect(source, `${name} imports the ai package`).not.toMatch(/['"]ai(\/[^'"]*)?['"]/);
       // Quoted specifiers only: esbuild's own trailer comment on the CJS output mentions "node:".
       expect(source, `${name} contains zod`).not.toMatch(/['"]zod['"/]/);
       expect(source, `${name} contains a node built-in`).not.toMatch(/['"]node:/);
@@ -157,14 +160,75 @@ describe('@adgate/sdk/react build', () => {
   });
 
   it('is reachable through the package exports map', () => {
-    const manifest = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')) as {
-      exports: Record<string, { import: { types: string; default: string }; require: unknown }>;
-      peerDependencies: Record<string, string>;
-    };
+    const manifest = readManifest();
     expect(manifest.exports['./react']).toEqual({
       import: { types: './dist/react.d.ts', default: './dist/react.js' },
       require: { types: './dist/react.d.cts', default: './dist/react.cjs' },
     });
     expect(manifest.peerDependencies['react']).toBe('>=18');
+  });
+});
+
+type Manifest = {
+  exports: Record<string, { import: { types: string; default: string }; require: unknown }>;
+  peerDependencies: Record<string, string>;
+  peerDependenciesMeta: Record<string, { optional?: boolean }>;
+};
+
+const readManifest = (): Manifest =>
+  JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')) as Manifest;
+
+describe('@adgate/sdk/ai build', () => {
+  it('emits dist/ai.js, ai.cjs and declarations for both', () => {
+    for (const name of ['ai.js', 'ai.cjs', 'ai.d.ts', 'ai.d.cts']) {
+      expect(existsSync(join(outDir, name)), `${name} missing`).toBe(true);
+    }
+    expect(existsSync(join(outDir, 'ai.js.map'))).toBe(true);
+    expect(existsSync(join(outDir, 'ai.cjs.map'))).toBe(true);
+  });
+
+  it('never loads the ai package at runtime: it is an optional peer used for types only', () => {
+    for (const name of ['ai.js', 'ai.cjs']) {
+      const source = read(name);
+      expect(source, `${name} imports ai`).not.toMatch(/from\s*['"]ai['"]/);
+      expect(source, `${name} requires ai`).not.toMatch(/require\(['"]ai['"]\)/);
+      expect(source, `${name} imports react`).not.toMatch(/['"]react/);
+      expect(source, `${name} contains zod`).not.toMatch(/['"]zod['"/]/);
+      expect(source, `${name} contains a node built-in`).not.toMatch(/['"]node:/);
+    }
+    // The declarations do reference `ai`: that is where the middleware type comes from.
+    expect(read('ai.d.ts')).toMatch(/['"]ai['"]/);
+  });
+
+  it('ships the middleware and its metadata key', () => {
+    expect(read('ai.js')).toContain('adgate');
+    for (const name of ['ai.d.ts', 'ai.d.cts']) {
+      const declarations = read(name);
+      expect(declarations, `${name} declares adgateMiddleware`).toMatch(
+        /declare const adgateMiddleware/,
+      );
+      expect(declarations, `${name} declares the options`).toMatch(/AdgateMiddlewareOptions/);
+    }
+  });
+
+  it('loads as ESM and as CJS without the ai package being present at runtime', async () => {
+    const esm = (await import(pathToFileURL(join(outDir, 'ai.js')).href)) as Record<
+      string,
+      unknown
+    >;
+    const cjs = createRequire(import.meta.url)(join(outDir, 'ai.cjs')) as Record<string, unknown>;
+    expect(typeof esm['adgateMiddleware']).toBe('function');
+    expect(esm['ADGATE_METADATA_KEY']).toBe('adgate');
+    expect(Object.keys(cjs).sort()).toEqual(Object.keys(esm).sort());
+  });
+
+  it('is reachable through the package exports map and declares ai as an optional peer', () => {
+    const manifest = readManifest();
+    expect(manifest.exports['./ai']).toEqual({
+      import: { types: './dist/ai.d.ts', default: './dist/ai.js' },
+      require: { types: './dist/ai.d.cts', default: './dist/ai.cjs' },
+    });
+    expect(manifest.peerDependencies['ai']).toBe('>=5');
+    expect(manifest.peerDependenciesMeta['ai']).toEqual({ optional: true });
   });
 });

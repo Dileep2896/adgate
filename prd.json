@@ -271,7 +271,7 @@
       ]
     },
     {
-      "id": "S25", "priority": 25, "dependsOn": ["S23"], "passes": false,
+      "id": "S25", "priority": 25, "dependsOn": ["S23"], "passes": true,
       "title": "Vercel AI SDK middleware",
       "description": "@adgate/sdk/ai exports adgateMiddleware(client, { getUser, appId }) usable with wrapLanguageModel: runs evaluate on the latest user message in parallel with generation, attaches the decision to providerMetadata, attests with the final text (streaming and non streaming).",
       "acceptanceCriteria": [

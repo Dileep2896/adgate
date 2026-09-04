@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
  */
 const srcDir = dirname(fileURLToPath(import.meta.url));
 const reactDir = join(srcDir, 'react');
+const aiDir = join(srcDir, 'ai');
 const SPECIFIER = /(?:\bfrom\s+|\bimport\s+|\bimport\s*\(\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]/g;
 
 const isImplementation = (name: string) =>
@@ -21,10 +22,12 @@ const filesIn = (dir: string) =>
     .map((entry) => entry.name)
     .sort();
 const files = filesIn(srcDir).filter(isImplementation);
-/** The React entry (S24) is a separate bundle; these rules are about the CORE entry only. */
+/** The React (S24) and AI (S25) entries are separate bundles; these rules are about the CORE. */
 const reactFiles = filesIn(reactDir).filter(isImplementation);
+const aiFiles = filesIn(aiDir).filter(isImplementation);
 const sourceOf = (name: string) => readFileSync(join(srcDir, name), 'utf8');
 const reactSourceOf = (name: string) => readFileSync(join(reactDir, name), 'utf8');
+const aiSourceOf = (name: string) => readFileSync(join(aiDir, name), 'utf8');
 const specifiersOf = (source: string) =>
   [...source.matchAll(SPECIFIER)].map((match) => match[1] ?? '');
 
@@ -84,11 +87,12 @@ describe('@adgate/sdk core entry purity', () => {
     }
   });
 
-  it('never imports react: the component entry is a separate bundle', () => {
+  it('never imports react or the AI SDK: those entries are separate bundles', () => {
     for (const file of files) {
       expect(sourceOf(file), `${file} imports react`).not.toMatch(
         /['"]react(-dom)?(\/[^'"]*)?['"]/,
       );
+      expect(sourceOf(file), `${file} imports ai`).not.toMatch(/['"]ai(\/[^'"]*)?['"]/);
     }
   });
 
@@ -96,6 +100,7 @@ describe('@adgate/sdk core entry purity', () => {
     for (const [dir, names] of [
       [srcDir, filesIn(srcDir)],
       [reactDir, filesIn(reactDir)],
+      [aiDir, filesIn(aiDir)],
     ] as const) {
       for (const file of names) {
         const lines = readFileSync(join(dir, file), 'utf8').split('\n').length;
@@ -140,5 +145,43 @@ describe('@adgate/sdk react entry', () => {
     expect(reactSourceOf('use-impression.ts'), 'document is never touched').not.toMatch(
       /\bdocument\b/,
     );
+  });
+});
+
+/**
+ * The AI entry may use the `ai` package for TYPES ONLY (it is an optional peer dependency, so a
+ * runtime import would crash an app that never installed it) plus the core client's helpers.
+ * No React, no node built-ins, no HTTP of its own.
+ */
+describe('@adgate/sdk ai entry', () => {
+  it('has the expected implementation files', () => {
+    expect(aiFiles).toEqual(['index.ts', 'messages.ts', 'middleware.ts']);
+  });
+
+  it('imports only the ai types, relative modules and @adgate/schemas types', () => {
+    const allowed = new Set(['ai', '@adgate/schemas']);
+    for (const file of aiFiles) {
+      for (const specifier of specifiersOf(aiSourceOf(file))) {
+        expect(
+          specifier.startsWith('./') || specifier.startsWith('../') || allowed.has(specifier),
+          `${file} imports ${specifier}`,
+        ).toBe(true);
+      }
+      expect(aiSourceOf(file), `${file} imports react`).not.toMatch(/['"]react(-dom)?['"]/);
+      expect(aiSourceOf(file), `${file} imports a node built-in`).not.toMatch(/['"]node:/);
+      expect(aiSourceOf(file), `${file} reads the environment`).not.toMatch(/process\.env/);
+      expect(aiSourceOf(file), `${file} logs to the console`).not.toMatch(/console\./);
+    }
+  });
+
+  it('uses the ai package for types only, so it never loads at runtime', () => {
+    const STATEMENT = /\b(import|export)\b([^;]*?)from\s+['"]ai['"]/g;
+    const statements = aiFiles.flatMap((file) => [...aiSourceOf(file).matchAll(STATEMENT)]);
+    expect(statements.length).toBeGreaterThan(0);
+    for (const statement of statements) {
+      expect(statement[2]?.trimStart().startsWith('type '), `runtime import: ${statement[0]}`).toBe(
+        true,
+      );
+    }
   });
 });

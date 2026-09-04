@@ -28,6 +28,16 @@
         "types": "./dist/react.d.cts",
         "default": "./dist/react.cjs"
       }
+    },
+    "./ai": {
+      "import": {
+        "types": "./dist/ai.d.ts",
+        "default": "./dist/ai.js"
+      },
+      "require": {
+        "types": "./dist/ai.d.cts",
+        "default": "./dist/ai.cjs"
+      }
     }
   },
   "files": [
@@ -46,9 +56,13 @@
     "@adgate/schemas": "workspace:*"
   },
   "peerDependencies": {
+    "ai": ">=5",
     "react": ">=18"
   },
   "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    },
     "react": {
       "optional": true
     }
@@ -58,6 +72,7 @@
     "@testing-library/react": "^16",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "ai": "^7.0.92",
     "jsdom": "^26",
     "react": "^19",
     "react-dom": "^19"
