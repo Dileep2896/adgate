@@ -111,6 +111,9 @@ importers:
       '@adgate/schemas':
         specifier: workspace:*
         version: link:../schemas
+      argon2:
+        specifier: ^0.45.1
+        version: 0.45.1
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(postgres@3.4.9)

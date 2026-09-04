@@ -330,7 +330,7 @@
       ]
     },
     {
-      "id": "S31", "priority": 31, "dependsOn": ["S30"], "passes": false,
+      "id": "S31", "priority": 31, "dependsOn": ["S30"], "passes": true,
       "title": "Apps pages: list, create, policy editor",
       "description": "/apps lists apps; create app generates and shows the API key once; /apps/[id]/policy edits YAML with inline validation errors from loadPolicyFromYaml and shows the policy_hash.",
       "acceptanceCriteria": [

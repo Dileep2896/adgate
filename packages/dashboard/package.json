@@ -17,6 +17,7 @@
     "@adgate/core": "workspace:*",
     "@adgate/gateway": "workspace:*",
     "@adgate/schemas": "workspace:*",
+    "argon2": "^0.45.1",
     "drizzle-orm": "^0.45.2",
     "next": "^15.5.25",
     "postgres": "^3.4.9",

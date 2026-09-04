@@ -15,8 +15,10 @@ const nextConfig = {
   // whichever lockfile it finds first and prints a warning on every start.
   outputFileTracingRoot: resolve(here, '..', '..'),
   // The Postgres driver and Drizzle are plain Node libraries: keep them out of the server
-  // bundle so postgres.js keeps its own dynamic requires and connection handling.
-  serverExternalPackages: ['postgres', 'drizzle-orm'],
+  // bundle so postgres.js keeps its own dynamic requires and connection handling. argon2 is a
+  // native CommonJS addon (it hashes the API key the admin actions issue through
+  // @adgate/gateway/admin) and cannot be bundled at all.
+  serverExternalPackages: ['postgres', 'drizzle-orm', 'argon2'],
 };
 
 export default nextConfig;

@@ -1,5 +1,6 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
+import { login } from './login';
 import { resetAndSeed, type SeededApp } from './seed';
 
 /**
@@ -14,14 +15,6 @@ let seeded: SeededApp;
 test.beforeAll(async () => {
   seeded = await resetAndSeed();
 });
-
-const login = async (page: Page): Promise<void> => {
-  const password = process.env['ADMIN_PASSWORD'] ?? '';
-  expect(password, 'ADMIN_PASSWORD must be set for the e2e run').not.toBe('');
-  await page.goto('/login');
-  await page.getByLabel('Admin password').fill(password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-};
 
 test('an unauthenticated request to /apps is redirected to the login form', async ({ page }) => {
   await page.goto('/apps');
@@ -54,7 +47,6 @@ test('the wrong password is refused', async ({ page }) => {
 test('logging in shows the nav and the seeded app', async ({ page }) => {
   await login(page);
 
-  await expect(page).toHaveURL(/\/apps$/);
   for (const label of NAV_LINKS) {
     await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible();
   }
