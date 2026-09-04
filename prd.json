@@ -241,7 +241,7 @@
       ]
     },
     {
-      "id": "S22", "priority": 22, "dependsOn": ["S03"], "passes": false,
+      "id": "S22", "priority": 22, "dependsOn": ["S03"], "passes": true,
       "title": "@adgate/sdk core client",
       "description": "createClient({ apiKey, baseUrl, timeoutMs }) with evaluate (never rejects; resolves to suppress with reason error on any failure), attest(auditId, modelOutputText) hashing locally with SubtleCrypto or node:crypto, track(auditId, type). tsup build to ESM and CJS with types. Works in Node 20 and browsers.",
       "acceptanceCriteria": [

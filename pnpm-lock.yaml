@@ -94,7 +94,11 @@ importers:
         specifier: ^4.5.4
         version: 4.5.4
 
-  packages/sdk: {}
+  packages/sdk:
+    dependencies:
+      '@adgate/schemas':
+        specifier: workspace:*
+        version: link:../schemas
 
 packages:
 
