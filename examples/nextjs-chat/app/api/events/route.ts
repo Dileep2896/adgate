@@ -20,7 +20,10 @@ const isEventType = (value: unknown): value is EventType =>
 export const POST = async (request: Request): Promise<Response> => {
   const body = (await request.json()) as { audit_id?: unknown; type?: unknown };
   if (typeof body.audit_id !== 'string' || body.audit_id === '' || !isEventType(body.type)) {
-    return Response.json({ error: 'audit_id and a known event type are required' }, { status: 400 });
+    return Response.json(
+      { error: 'audit_id and a known event type are required' },
+      { status: 400 },
+    );
   }
   const result = await adgateClient().track(body.audit_id, body.type);
   return new Response(null, { status: result.ok ? 204 : 502 });

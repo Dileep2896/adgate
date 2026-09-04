@@ -26,8 +26,7 @@ export type Tier = 'free' | 'paid';
 
 export const TIERS: readonly Tier[] = ['free', 'paid'];
 
-export const isTier = (value: unknown): value is Tier =>
-  value === 'free' || value === 'paid';
+export const isTier = (value: unknown): value is Tier => value === 'free' || value === 'paid';
 
 /**
  * What the browser POSTs to /api/chat. `id` and `messages` come from useChat's default
@@ -42,8 +41,9 @@ export type ChatRequestBody = {
 /** The plain text of a message, ignoring every non-text part. */
 export const messageText = (message: ChatMessage): string =>
   message.parts
-    .filter((part): part is Extract<ChatMessage['parts'][number], { type: 'text' }> =>
-      part.type === 'text',
+    .filter(
+      (part): part is Extract<ChatMessage['parts'][number], { type: 'text' }> =>
+        part.type === 'text',
     )
     .map((part) => part.text)
     .join('');

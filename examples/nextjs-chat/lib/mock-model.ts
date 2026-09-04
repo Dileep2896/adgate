@@ -18,8 +18,7 @@ export type LanguageModelV4 = Extract<ModelArgument, { specificationVersion: 'v4
 type CallOptions = Parameters<LanguageModelV4['doGenerate']>[0];
 type GenerateResult = Awaited<ReturnType<LanguageModelV4['doGenerate']>>;
 type StreamResult = Awaited<ReturnType<LanguageModelV4['doStream']>>;
-type StreamPart =
-  StreamResult['stream'] extends ReadableStream<infer Part> ? Part : never;
+type StreamPart = StreamResult['stream'] extends ReadableStream<infer Part> ? Part : never;
 
 export const MOCK_PROVIDER = 'adgate-example';
 export const MOCK_MODEL_ID = 'offline-canned';
@@ -114,7 +113,11 @@ export const chunksOf = (answer: string): string[] =>
 
 const usageFor = (answer: string): GenerateResult['usage'] => ({
   inputTokens: { total: 16, noCache: 16, cacheRead: undefined, cacheWrite: undefined },
-  outputTokens: { total: chunksOf(answer).length, text: chunksOf(answer).length, reasoning: undefined },
+  outputTokens: {
+    total: chunksOf(answer).length,
+    text: chunksOf(answer).length,
+    reasoning: undefined,
+  },
 });
 
 const FINISH_REASON: GenerateResult['finishReason'] = { unified: 'stop', raw: 'stop' };
@@ -171,7 +174,6 @@ export const createMockModel = (options: MockModelOptions = {}): LanguageModelV4
         warnings: [],
       };
     },
-    doStream: ({ prompt }) =>
-      Promise.resolve({ stream: streamOf(answerFor(prompt), delayMs) }),
+    doStream: ({ prompt }) => Promise.resolve({ stream: streamOf(answerFor(prompt), delayMs) }),
   };
 };

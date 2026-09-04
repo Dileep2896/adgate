@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>adgate example: FastAPI chat</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #16181d;
+        --muted: #6b7280;
+        --line: #e5e7eb;
+        --slot: #f7f8fa;
+        --accent: #2563eb;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #101216;
+          --fg: #e8eaee;
+          --muted: #9aa1ab;
+          --line: #262a31;
+          --slot: #171a20;
+          --accent: #7aa2f7;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          15px/1.55 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+      }
+      .page {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 20px 96px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: baseline;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 12px;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0;
+      }
+      .tier {
+        display: flex;
+        gap: 12px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      li.turn {
+        border-bottom: 1px solid var(--line);
+        padding: 20px 0;
+      }
+      .question {
+        margin: 0 0 12px;
+        font-weight: 600;
+      }
+      .answer {
+        margin: 0;
+        white-space: pre-wrap;
+      }
+      /* The sponsored block is a SIBLING of .answer, never a child: separate container,
+         after the answer, always labelled. That separation is what the audit record claims. */
+      .sponsored {
+        margin: 16px 0 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--slot);
+        padding: 12px 14px;
+      }
+      .sponsored .label {
+        display: inline-block;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .sponsored .headline {
+        margin: 6px 0 2px;
+        font-weight: 600;
+      }
+      .sponsored .body {
+        margin: 0 0 8px;
+        color: var(--muted);
+      }
+      .sponsored a {
+        color: var(--accent);
+      }
+      .note,
+      .status {
+        margin: 8px 0 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      form {
+        display: flex;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      input[type='text'] {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--bg);
+        color: var(--fg);
+        font: inherit;
+      }
+      button {
+        padding: 10px 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--slot);
+        color: var(--fg);
+        font: inherit;
+        cursor: pointer;
+      }
+      button[disabled] {
+        opacity: 0.55;
+        cursor: default;
+      }
+      .examples {
+        margin: 16px 0 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .examples button {
+        padding: 4px 8px;
+        margin: 4px 6px 0 0;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>adgate example &middot; FastAPI + SSE</h1>
+        <div class="tier">
+          <label><input type="radio" name="tier" value="free" checked /> Free tier</label>
+          <label><input type="radio" name="tier" value="paid" /> Paid tier</label>
+        </div>
+      </header>
+
+      <ol id="turns"></ol>
+
+      <form id="composer">
+        <input
+          id="message"
+          type="text"
+          autocomplete="off"
+          placeholder="Ask something…"
+          value="which postgres hosting should I use for a side project"
+        />
+        <button type="submit" id="send">Send</button>
+      </form>
+
+      <p class="examples">
+        Try:
+        <button type="button" data-ask="which postgres hosting should I use for a side project">
+          devtools question (serves)
+        </button>
+        <button type="button" data-ask="I have had a headache for three days, what should I do">
+          health question (suppressed)
+        </button>
+      </p>
+    </div>
+
+    <script>
+      // One conversation for the life of the tab: frequency caps are per conversation.
+      const conversationId =
+        'conv_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      let turnCount = 0;
+
+      const turns = document.getElementById('turns');
+      const form = document.getElementById('composer');
+      const input = document.getElementById('message');
+      const send = document.getElementById('send');
+
+      const tier = () => document.querySelector('input[name="tier"]:checked').value;
+
+      const el = (tag, className, text) => {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+      };
+
+      /** Split an SSE buffer into complete `event:`/`data:` frames. */
+      function* frames(buffer) {
+        for (const block of buffer.split('\n\n')) {
+          if (!block.trim()) continue;
+          let name = 'message';
+          const data = [];
+          for (const line of block.split('\n')) {
+            if (line.startsWith('event:')) name = line.slice(6).trim();
+            else if (line.startsWith('data:')) data.push(line.slice(5).trim());
+          }
+          yield { name, data: data.length ? JSON.parse(data.join('\n')) : null };
+        }
+      }
+
+      function renderSponsored(payload) {
+        const creative = payload.creative;
+        // Built as its own element and appended AFTER the answer container, never inside it.
+        const block = el('aside', 'sponsored');
+        block.setAttribute('data-adgate-slot', 'sponsored');
+        block.setAttribute('aria-label', payload.disclosure_label + ' content');
+        block.append(el('span', 'label', payload.disclosure_label));
+        block.append(el('p', 'headline', creative.headline));
+        if (creative.body) block.append(el('p', 'body', creative.body));
+        const link = el('a', null, creative.cta || 'Learn more');
+        link.href = creative.url;
+        link.rel = 'nofollow sponsored noopener';
+        link.target = '_blank';
+        block.append(link);
+        block.append(el('p', 'note', 'Chosen by adgate, not by the model. ' + creative.advertiser));
+        return block;
+      }
+
+      async function ask(question) {
+        turnCount += 1;
+        const turn = el('li', 'turn');
+        turn.append(el('p', 'question', question));
+        const answer = el('div', 'answer');
+        answer.setAttribute('data-adgate-message', 'assistant');
+        turn.append(answer);
+        const status = el('p', 'status', 'Thinking…');
+        turn.append(status);
+        turns.append(turn);
+
+        const response = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            message: question,
+            conversation_id: conversationId,
+            turn_id: 'turn_' + turnCount,
+            tier: tier(),
+          }),
+        });
+        if (!response.ok || !response.body) {
+          status.textContent = 'Request failed: HTTP ' + response.status;
+          return;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const cut = buffer.lastIndexOf('\n\n');
+          if (cut === -1) continue;
+          const ready = buffer.slice(0, cut + 2);
+          buffer = buffer.slice(cut + 2);
+          for (const frame of frames(ready)) {
+            if (frame.name === 'token') {
+              answer.textContent += frame.data.text;
+            } else if (frame.name === 'sponsored') {
+              // Appended to the turn, as a sibling that FOLLOWS the answer container.
+              turn.insertBefore(renderSponsored(frame.data), status);
+            } else if (frame.name === 'decision') {
+              status.textContent =
+                frame.data.decision === 'serve'
+                  ? 'serve · audit ' + frame.data.audit_id
+                  : 'suppress · ' + frame.data.reason + ' · audit ' + frame.data.audit_id;
+            } else if (frame.name === 'error') {
+              status.textContent = frame.data.message;
+            }
+          }
+        }
+      }
+
+      async function submit(question) {
+        if (!question.trim()) return;
+        send.disabled = true;
+        try {
+          await ask(question.trim());
+        } finally {
+          send.disabled = false;
+          input.focus();
+        }
+      }
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const question = input.value;
+        input.value = '';
+        submit(question);
+      });
+
+      for (const button of document.querySelectorAll('[data-ask]')) {
+        button.addEventListener('click', () => submit(button.dataset.ask));
+      }
+    </script>
+  </body>
+</html>

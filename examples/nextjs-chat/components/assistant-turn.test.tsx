@@ -81,7 +81,11 @@ afterEach(cleanup);
 describe('AssistantTurn', () => {
   it('renders the sponsored block outside and after the assistant message container', () => {
     const { container } = render(
-      <AssistantTurn message={assistantMessage(SERVE)} client={trackingClient()} streaming={false} />,
+      <AssistantTurn
+        message={assistantMessage(SERVE)}
+        client={trackingClient()}
+        streaming={false}
+      />,
     );
 
     const assistant = container.querySelector(ASSISTANT_SELECTOR);
@@ -132,7 +136,11 @@ describe('AssistantTurn', () => {
 
   it('renders the answer alone while no decision has arrived', () => {
     const { container } = render(
-      <AssistantTurn message={assistantMessage(null)} client={trackingClient()} streaming={false} />,
+      <AssistantTurn
+        message={assistantMessage(null)}
+        client={trackingClient()}
+        streaming={false}
+      />,
     );
 
     expect(container.querySelector(SLOT_SELECTOR)).toBeNull();

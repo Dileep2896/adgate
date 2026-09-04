@@ -302,7 +302,7 @@
       ]
     },
     {
-      "id": "S28", "priority": 28, "dependsOn": ["S26", "S21"], "passes": false,
+      "id": "S28", "priority": 28, "dependsOn": ["S26", "S21"], "passes": true,
       "title": "examples/fastapi-chat",
       "description": "FastAPI app streaming answers with SSE and emitting a separate 'sponsored' SSE event after the answer using the Python SDK; tiny HTML page that renders the slot below the message.",
       "acceptanceCriteria": [

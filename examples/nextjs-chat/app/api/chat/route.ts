@@ -35,8 +35,7 @@ import { selectModel } from '@/lib/model';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-const SYSTEM_PROMPT =
-  'You are a concise engineering assistant. Answer in at most four sentences.';
+const SYSTEM_PROMPT = 'You are a concise engineering assistant. Answer in at most four sentences.';
 
 const tierOf = (body: ChatRequestBody): Tier => (isTier(body.tier) ? body.tier : 'free');
 

@@ -124,3 +124,36 @@ jobs:
         run: |
           python -m scripts.generate_models
           git diff --exit-code -- src/adgate/models.py
+
+  fastapi-example:
+    name: fastapi example (lint, test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # examples/fastapi-chat is a Python project with no package.json, so `pnpm test` never sees
+    # it either. Its tests fake the gateway with respx, so no Postgres and no network are needed.
+    defaults:
+      run:
+        working-directory: examples/fastapi-chat
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install
+        # The example depends on the local SDK, so install that from the repo first.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ../../packages/sdk-python
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Test
+        run: pytest

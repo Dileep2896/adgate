@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "adgate-fastapi-chat"
+version = "0.0.0"
+description = "adgate example: a FastAPI chat that streams the answer over SSE and emits the sponsored slot as its own event afterwards."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+# `adgate` is this repo's Python SDK and is NOT on PyPI yet: install it from the local path in
+# the same pip command, which is what satisfies this requirement.
+#   pip install -e ../../packages/sdk-python -e ".[dev]"
+dependencies = [
+  "adgate",
+  "fastapi>=0.115",
+  "httpx>=0.27",
+  "uvicorn[standard]>=0.30",
+]
+
+[project.optional-dependencies]
+# respx fakes the gateway so the test suite never opens a socket; httpx (already a runtime
+# dependency) is also the test client, over ASGITransport.
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.24",
+  "respx>=0.21",
+  "ruff>=0.6",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "BLE", "C4", "SIM", "RUF", "ANN", "T20"]
+ignore = ["ANN401"] # Any is the honest type for a JSON body
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN"]

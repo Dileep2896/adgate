@@ -52,8 +52,8 @@ export const Chat = (): ReactElement => {
         <div>
           <h1 className="text-lg font-semibold">adgate example chat</h1>
           <p className="text-sm text-stone-500">
-            Sponsored blocks are rendered after the answer, in their own labelled container,
-            never inside the model&apos;s text.
+            Sponsored blocks are rendered after the answer, in their own labelled container, never
+            inside the model&apos;s text.
           </p>
         </div>
         <TierToggle tier={tier} onChange={setTier} disabled={busy} />

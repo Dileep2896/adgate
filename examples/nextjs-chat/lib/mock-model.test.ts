@@ -20,7 +20,9 @@ type Prompt = Parameters<typeof answerFor>[0];
 
 const ask = (text: string): Prompt => [{ role: 'user', content: [{ type: 'text', text }] }];
 
-const readStream = async (stream: ReadableStream<{ type: string }>): Promise<{ type: string }[]> => {
+const readStream = async (
+  stream: ReadableStream<{ type: string }>,
+): Promise<{ type: string }[]> => {
   const parts: { type: string }[] = [];
   const reader = stream.getReader();
   for (;;) {
