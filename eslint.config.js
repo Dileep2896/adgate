@@ -11,6 +11,8 @@ export default tseslint.config(
       '**/coverage/**',
       '**/.turbo/**',
       '.ralph/**',
+      // Generated and rewritten by `next build`; it is triple-slash references by design.
+      '**/next-env.d.ts',
     ],
   },
   js.configs.recommended,

@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+
+/*
+ * <SponsoredSlot> ships with only enough inline style to read as a separate block. The example
+ * restyles it here to show that the block is ordinary DOM the host app owns: the one thing an
+ * integration may never do is hide the disclosure label or move the block into the answer.
+ */
+.adgate-sponsored-slot {
+  border: 1px solid var(--color-amber-300);
+  background: var(--color-amber-50);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+}
+
+.adgate-sponsored-slot [data-adgate-part='label'] {
+  color: var(--color-amber-800);
+  text-transform: uppercase;
+}
+
+.adgate-sponsored-slot [data-adgate-part='cta'] {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-weight: 600;
+  color: var(--color-amber-900);
+  text-decoration: underline;
+}
+
+.adgate-sponsored-slot [data-adgate-part='dismiss'] {
+  float: right;
+  color: var(--color-amber-700);
+  cursor: pointer;
+}

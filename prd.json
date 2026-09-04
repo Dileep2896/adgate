@@ -292,7 +292,7 @@
       ]
     },
     {
-      "id": "S27", "priority": 27, "dependsOn": ["S24", "S25", "S21"], "passes": false,
+      "id": "S27", "priority": 27, "dependsOn": ["S24", "S25", "S21"], "passes": true,
       "title": "examples/nextjs-chat",
       "description": "Minimal Next.js chat using the Vercel AI SDK against an OpenAI compatible endpoint, wired with adgateMiddleware and SponsoredSlot, a free/paid toggle to show paid suppression, and a README with 5 minute setup against the local gateway.",
       "acceptanceCriteria": [

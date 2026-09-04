@@ -1,10 +1,12 @@
 node_modules
 dist
 .next
+*.tsbuildinfo
 coverage
 .env
 .env.*
 !.env.example
+!.env.local.example
 .ralph/logs/*.log
 .turbo
 __pycache__
