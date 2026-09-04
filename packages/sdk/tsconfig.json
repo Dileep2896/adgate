@@ -3,6 +3,11 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
+    // DOM is needed by the src/react entry (Element.closest, IntersectionObserver, the JSX
+    // intrinsic elements of @types/react). @types/node 20 guards its own fetch/Response/Event
+    // globals with `typeof globalThis extends { onmessage: any }`, so the two libs coexist.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
     "types": ["node"]
   },
   "include": ["src"]

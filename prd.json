@@ -261,7 +261,7 @@
       ]
     },
     {
-      "id": "S24", "priority": 24, "dependsOn": ["S22"], "passes": false,
+      "id": "S24", "priority": 24, "dependsOn": ["S22"], "passes": true,
       "title": "React SponsoredSlot component",
       "description": "@adgate/sdk/react exports SponsoredSlot({ decision, client, onDismiss }). Renders nothing on suppress. On serve: separate block, label from disclosure_label, headline, body, CTA link with rel sponsored noopener, aria-label Sponsored content, dismiss button firing a dismiss event, impression event once on viewport entry (IntersectionObserver, SSR safe). Refuses to render inside an ancestor with data-adgate-message=assistant and logs a warning.",
       "acceptanceCriteria": [

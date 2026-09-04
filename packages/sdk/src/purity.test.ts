@@ -10,12 +10,21 @@ import { describe, expect, it } from 'vitest';
  * so zod never reaches the bundle (build.test.ts checks the output; this test checks the source).
  */
 const srcDir = dirname(fileURLToPath(import.meta.url));
+const reactDir = join(srcDir, 'react');
 const SPECIFIER = /(?:\bfrom\s+|\bimport\s+|\bimport\s*\(\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]/g;
 
 const isImplementation = (name: string) =>
-  name.endsWith('.ts') && !name.endsWith('.test.ts') && name !== 'test-support.ts';
-const files = readdirSync(srcDir).filter(isImplementation).sort();
+  /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) && !name.startsWith('test-support.');
+const filesIn = (dir: string) =>
+  readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .sort();
+const files = filesIn(srcDir).filter(isImplementation);
+/** The React entry (S24) is a separate bundle; these rules are about the CORE entry only. */
+const reactFiles = filesIn(reactDir).filter(isImplementation);
 const sourceOf = (name: string) => readFileSync(join(srcDir, name), 'utf8');
+const reactSourceOf = (name: string) => readFileSync(join(reactDir, name), 'utf8');
 const specifiersOf = (source: string) =>
   [...source.matchAll(SPECIFIER)].map((match) => match[1] ?? '');
 
@@ -75,10 +84,61 @@ describe('@adgate/sdk core entry purity', () => {
     }
   });
 
-  it('keeps every file under 300 lines (CLAUDE.md)', () => {
-    for (const file of readdirSync(srcDir)) {
-      const lines = sourceOf(file).split('\n').length;
-      expect(lines, `${file} has ${lines} lines`).toBeLessThanOrEqual(300);
+  it('never imports react: the component entry is a separate bundle', () => {
+    for (const file of files) {
+      expect(sourceOf(file), `${file} imports react`).not.toMatch(
+        /['"]react(-dom)?(\/[^'"]*)?['"]/,
+      );
     }
+  });
+
+  it('keeps every file under 300 lines (CLAUDE.md)', () => {
+    for (const [dir, names] of [
+      [srcDir, filesIn(srcDir)],
+      [reactDir, filesIn(reactDir)],
+    ] as const) {
+      for (const file of names) {
+        const lines = readFileSync(join(dir, file), 'utf8').split('\n').length;
+        expect(lines, `${file} has ${lines} lines`).toBeLessThanOrEqual(300);
+      }
+    }
+  });
+});
+
+/**
+ * The React entry may use React and the DOM, but nothing else: no Next.js, no CSS-in-JS, no
+ * router, no HTTP of its own. It talks to the gateway only through the client it is handed.
+ */
+describe('@adgate/sdk react entry', () => {
+  it('has the expected implementation files', () => {
+    expect(reactFiles).toEqual(['index.ts', 'sponsored-slot.tsx', 'use-impression.ts']);
+  });
+
+  it('imports only react, relative modules and @adgate/schemas types', () => {
+    const allowed = new Set(['react', '@adgate/schemas']);
+    for (const file of reactFiles) {
+      for (const specifier of specifiersOf(reactSourceOf(file))) {
+        expect(
+          specifier.startsWith('./') || specifier.startsWith('../') || allowed.has(specifier),
+          `${file} imports ${specifier}`,
+        ).toBe(true);
+      }
+      expect(reactSourceOf(file), `${file} imports next`).not.toMatch(/['"]next(\/[^'"]*)?['"]/);
+      expect(reactSourceOf(file), `${file} imports a node built-in`).not.toMatch(/['"]node:/);
+      expect(reactSourceOf(file), `${file} reads the environment`).not.toMatch(/process\.env/);
+    }
+  });
+
+  it('touches window and document only from inside an effect', () => {
+    // The one allowed exception is the module-level `typeof document === 'undefined'` probe
+    // that picks useEffect over useLayoutEffect on the server; it reads no property.
+    const source = reactSourceOf('sponsored-slot.tsx');
+    expect(source).toMatch(/typeof document === 'undefined'/);
+    expect(source, 'window is never touched').not.toMatch(/\bwindow\b/);
+    expect(source, 'document is only probed').not.toMatch(/document\./);
+    expect(reactSourceOf('use-impression.ts'), 'window is never touched').not.toMatch(/\bwindow\b/);
+    expect(reactSourceOf('use-impression.ts'), 'document is never touched').not.toMatch(
+      /\bdocument\b/,
+    );
   });
 });
