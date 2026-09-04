@@ -311,7 +311,7 @@
       ]
     },
     {
-      "id": "S29", "priority": 29, "dependsOn": ["S27", "S28"], "passes": false,
+      "id": "S29", "priority": 29, "dependsOn": ["S27", "S28"], "passes": true,
       "title": "docs/integration.md",
       "description": "Integration guide for three shapes: web chat UI, agent framework loop (evaluate on the user goal at task start, render the slot only in the final report), coding agent CLI (one labeled line after the final answer, never inside code blocks). Copy paste snippets for TS and Python.",
       "acceptanceCriteria": [
