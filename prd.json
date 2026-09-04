@@ -320,7 +320,7 @@
       ]
     },
     {
-      "id": "S30", "priority": 30, "dependsOn": ["S21"], "passes": false,
+      "id": "S30", "priority": 30, "dependsOn": ["S21"], "passes": true,
       "title": "Dashboard scaffold",
       "description": "packages/dashboard: Next.js App Router + Tailwind, single admin password from env with a cookie session, read only Drizzle queries module, layout with nav for apps, creatives, audit, reports.",
       "acceptanceCriteria": [

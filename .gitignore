@@ -9,6 +9,11 @@ coverage
 !.env.local.example
 .ralph/logs/*.log
 .turbo
+
+# playwright (packages/dashboard e2e); browsers and reports are local dev artefacts
+test-results
+playwright-report
+playwright/.cache
 __pycache__
 *.egg-info
 .venv

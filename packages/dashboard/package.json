@@ -1,0 +1,34 @@
+{
+  "name": "@adgate/dashboard",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Operator dashboard: reads the gateway's Postgres directly, behind a single admin password.",
+  "scripts": {
+    "dev": "next dev --port ${DASHBOARD_PORT:-3000}",
+    "build": "next build",
+    "start": "next start --port ${DASHBOARD_PORT:-3000}",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@adgate/core": "workspace:*",
+    "@adgate/gateway": "workspace:*",
+    "@adgate/schemas": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "next": "^15.5.25",
+    "postgres": "^3.4.9",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "tailwindcss": "^4.1.18"
+  }
+}
