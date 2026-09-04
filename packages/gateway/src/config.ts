@@ -57,6 +57,8 @@ export const GatewayEnv = z.object({
   GRAVITY_ENABLED: envBool.default(false),
   GRAVITY_API_KEY: nonEmpty.optional(),
   GRAVITY_BASE_URL: nonEmpty.optional(),
+  RATE_LIMIT_RPS: z.coerce.number().positive().default(20),
+  RATE_LIMIT_BURST: positiveInt.default(40),
 });
 export type GatewayEnv = z.infer<typeof GatewayEnv>;
 
@@ -107,6 +109,8 @@ export const GatewayConfig = GatewayEnv.transform((env) => ({
   gravity: GravityConfig.parse(
     networkConfig(env.GRAVITY_ENABLED, env.GRAVITY_API_KEY, env.GRAVITY_BASE_URL),
   ),
+  /** Per-API-key token bucket on the write endpoints (rate-limit/pg.ts): TokenBucketOptions. */
+  rateLimit: { rps: env.RATE_LIMIT_RPS, burst: env.RATE_LIMIT_BURST },
 }));
 export type GatewayConfig = z.infer<typeof GatewayConfig>;
 

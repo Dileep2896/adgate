@@ -2,10 +2,12 @@ import type { HealthResponse } from '@adgate/schemas';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
+import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import type { Logger } from 'pino';
 
 import type { AppEnv } from './app-env.js';
+import { BODY_LIMIT_BYTES } from './body-limit.js';
 import { createAuditReader } from './audit-api/loader.js';
 import { auditRecordRoute, verifyRoute } from './audit-api/route.js';
 import { attestRoute } from './attest/route.js';
@@ -20,9 +22,14 @@ import { createEventStore } from './events/store.js';
 import type { EvaluateDeps } from './evaluate/deps.js';
 import { evaluateRoute } from './evaluate/route.js';
 import { errorCode, errorResponse } from './http-error.js';
+import { buildOpenApiDocument } from './openapi/document.js';
+import { openApiRoute } from './openapi/route.js';
+import type { RateLimiter } from './rate-limit/limiter.js';
+import { rateLimit, REMAINING_HEADER, RETRY_AFTER_HEADER } from './rate-limit/middleware.js';
 import { REQUEST_ID_HEADER, requestContext } from './request-id.js';
 
 export { errorCode, errorResponse } from './http-error.js';
+export { BODY_LIMIT_BYTES } from './body-limit.js';
 
 /**
  * The Hono application. createApp wires middleware and routes around injected dependencies
@@ -30,8 +37,10 @@ export { errorCode, errorResponse } from './http-error.js';
  * server.ts serves it. Routes arrive story by story: GET /healthz; when evaluate deps are given,
  * POST /v1/evaluate, /v1/attest and /v1/events behind bearerAuth (app keys), GET /v1/audit/:id
  * and /v1/verify/:id behind bearerAuth (app or advertiser_read keys) and the public click
- * redirect GET /c/:audit_id, all sharing the evaluate deps' database, keys and clock; a body
- * size limit ahead of every route; and the docs/api.md error behaviour: every non-2xx body is
+ * redirect GET /c/:audit_id, all sharing the evaluate deps' database, keys and clock; a
+ * per-key token bucket after bearerAuth on the three write endpoints (429 + Retry-After) when
+ * a rate limiter is given; GET /openapi.json built once from the Zod schemas; a body size
+ * limit ahead of every route; and the docs/api.md error behaviour: every non-2xx body is
  * { error: { code, message } }.
  */
 
@@ -47,16 +56,19 @@ export interface AppDeps {
    * none of them exists.
    */
   evaluate?: EvaluateDeps | undefined;
+  /**
+   * The token bucket behind POST /v1/evaluate, /v1/attest and /v1/events, keyed by API key id
+   * (rate-limit/). Absent = those routes are not limited (unit tests without Postgres);
+   * server.ts always passes the Postgres limiter.
+   */
+  rateLimiter?: RateLimiter | undefined;
 }
 
 export type App = Hono<AppEnv>;
 
-/**
- * The largest request body any route reads (256 KiB; an EvaluateRequest with four 4,000 code
- * point messages is under 20 KiB). Larger bodies are 413 payload_too_large before a route runs.
- * S36 (load and abuse) confirms or tunes the figure.
- */
-export const BODY_LIMIT_BYTES = 256 * 1024;
+const passthrough = createMiddleware<AppEnv>(async (_c, next) => {
+  await next();
+});
 
 const payloadTooLarge = (): never => {
   throw new HTTPException(413, {
@@ -73,7 +85,7 @@ export const createApp = (deps: AppDeps): App => {
     cors({
       origin: [...deps.corsAllowedOrigins],
       allowHeaders: ['Authorization', 'Content-Type', REQUEST_ID_HEADER],
-      exposeHeaders: [REQUEST_ID_HEADER],
+      exposeHeaders: [REQUEST_ID_HEADER, RETRY_AFTER_HEADER, REMAINING_HEADER],
       maxAge: 600,
     }),
   );
@@ -83,16 +95,30 @@ export const createApp = (deps: AppDeps): App => {
     const body: HealthResponse = { ok: true };
     return c.json(body);
   });
+  app.get(
+    '/openapi.json',
+    openApiRoute(buildOpenApiDocument({ serverUrl: deps.evaluate?.publicBaseUrl })),
+  );
 
   if (deps.evaluate !== undefined) {
     const { db, signing, ring, now, policies } = deps.evaluate;
     const keyStore = createApiKeyStore(db);
     const appKey = bearerAuth({ store: keyStore, roles: ['app'] });
     const readKey = bearerAuth({ store: keyStore, roles: ['app', 'advertiser_read'] });
+    // One bucket per API key, shared by the three write endpoints; a no-op without a limiter.
+    const limited =
+      deps.rateLimiter === undefined
+        ? passthrough
+        : rateLimit({ limiter: deps.rateLimiter, keyOf: (c) => c.get('auth').key_id, now });
     const auditApi = { ring, reader: createAuditReader(db) };
-    app.post('/v1/evaluate', appKey, evaluateRoute(deps.evaluate));
-    app.post('/v1/attest', appKey, attestRoute({ signing, now, store: createAttestStore(db) }));
-    app.post('/v1/events', appKey, eventsRoute({ store: createEventStore(db, { now }) }));
+    app.post('/v1/evaluate', appKey, limited, evaluateRoute(deps.evaluate));
+    app.post(
+      '/v1/attest',
+      appKey,
+      limited,
+      attestRoute({ signing, now, store: createAttestStore(db) }),
+    );
+    app.post('/v1/events', appKey, limited, eventsRoute({ store: createEventStore(db, { now }) }));
     app.get('/v1/audit/:id', readKey, auditRecordRoute(auditApi));
     app.get('/v1/verify/:id', readKey, verifyRoute(auditApi));
     app.get('/c/:audit_id', clickRoute({ now, policies, store: createClickStore(db, { now }) }));

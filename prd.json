@@ -231,7 +231,7 @@
       ]
     },
     {
-      "id": "S21", "priority": 21, "dependsOn": ["S20"], "passes": false,
+      "id": "S21", "priority": 21, "dependsOn": ["S20"], "passes": true,
       "title": "Rate limiting, OpenAPI, load script",
       "description": "Token bucket per API key stored in Postgres behind a RateLimiter interface; 429 with Retry-After. /openapi.json generated from the Zod schemas. packages/gateway/scripts/load.ts drives evaluate with examples/evaluate.json and prints p50/p95.",
       "acceptanceCriteria": [

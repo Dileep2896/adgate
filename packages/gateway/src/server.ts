@@ -6,6 +6,7 @@ import { createDb } from './db/client.js';
 import { loadRootEnvFile } from './env-file.js';
 import { createEvaluateDeps } from './evaluate/deps.js';
 import { createLogger } from './logger.js';
+import { createPgRateLimiter } from './rate-limit/pg.js';
 import { type GatewaySigningKeys, loadSigningKeys } from './signing.js';
 
 /**
@@ -44,6 +45,7 @@ const main = (): void => {
       classifier: config.classifier === null ? 'rules_only' : config.classifier.model,
       koah_enabled: config.koah.enabled,
       gravity_enabled: config.gravity.enabled,
+      rate_limit: config.rateLimit,
     },
     'configuration loaded',
   );
@@ -54,6 +56,7 @@ const main = (): void => {
     corsAllowedOrigins: config.corsAllowedOrigins,
     db: database.db,
     evaluate: createEvaluateDeps(config, database.db, { signing: keys.signing, ring: keys.ring }),
+    rateLimiter: createPgRateLimiter(database.db, config.rateLimit),
   });
   const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
     logger.info({ port: info.port, address: info.address }, 'gateway listening');

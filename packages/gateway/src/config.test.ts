@@ -99,6 +99,19 @@ describe('loadConfig', () => {
     expect(config.classifierTimeoutMs).toBe(400);
     expect(config.koah).toEqual({ enabled: false });
     expect(config.gravity).toEqual({ enabled: false });
+    expect(config.rateLimit).toEqual({ rps: 20, burst: 40 });
+  });
+
+  it('reads the rate limit and rejects a zero rate or a fractional burst', () => {
+    expect(
+      loadConfig({ ...MINIMAL, RATE_LIMIT_RPS: '0.5', RATE_LIMIT_BURST: '3' }).rateLimit,
+    ).toEqual({
+      rps: 0.5,
+      burst: 3,
+    });
+    expect(failure({ ...MINIMAL, RATE_LIMIT_RPS: '0' }).message).toContain('RATE_LIMIT_RPS');
+    expect(failure({ ...MINIMAL, RATE_LIMIT_BURST: '2.5' }).message).toContain('RATE_LIMIT_BURST');
+    expect(failure({ ...MINIMAL, RATE_LIMIT_BURST: '0' }).message).toContain('RATE_LIMIT_BURST');
   });
 
   it('parses a fully populated environment', () => {

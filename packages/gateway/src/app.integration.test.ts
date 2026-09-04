@@ -51,6 +51,7 @@ describe('migrations', () => {
         'user_day_caps',
         'classify_cache',
         'raw_text',
+        'rate_limits',
       ]),
     );
   });

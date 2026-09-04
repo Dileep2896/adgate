@@ -14,7 +14,7 @@ import {
 } from './schema.js';
 
 describe('schema', () => {
-  it('lists the ten tables of the story', () => {
+  it('lists the ten tables of the story plus rate_limits (S21)', () => {
     expect(TABLE_NAMES).toEqual([
       'apps',
       'advertisers',
@@ -26,6 +26,7 @@ describe('schema', () => {
       'cap_state',
       'user_day_caps',
       'classify_cache',
+      'rate_limits',
     ]);
     expect(ALL_TABLES.map((table) => getTableName(table))).toEqual(TABLE_NAMES);
   });

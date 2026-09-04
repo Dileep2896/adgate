@@ -24,6 +24,8 @@ import { advertisers, auditRecords, creatives, TABLE_NAMES } from '../db/schema.
 import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { findRepoRoot } from '../env-file.js';
 import { createLogger, type LogLevel } from '../logger.js';
+import type { RateLimiter, TokenBucketOptions } from '../rate-limit/limiter.js';
+import { createPgRateLimiter } from '../rate-limit/pg.js';
 import { type GatewaySigningKeys, loadSigningKeys } from '../signing.js';
 import { collectLogs } from '../test-support/logs.js';
 import { createEvaluateDeps, type EvaluateDeps, type EvaluateDepsOverrides } from './deps.js';
@@ -93,6 +95,10 @@ export interface HarnessOptions {
   logLevel?: LogLevel | undefined;
   /** Pool options for the harness handle (default max 4 and the client's timeout defaults). */
   db?: DbOptions | undefined;
+  /** Bucket of the Postgres limiter on the write routes. Default: one no test trips by accident. */
+  rateLimit?: TokenBucketOptions | undefined;
+  /** A limiter of your own (say, a failing one) instead of the Postgres one. */
+  rateLimiter?: RateLimiter | undefined;
 }
 
 export interface PostOptions {
@@ -127,7 +133,9 @@ const PER_EVALUATION_TABLES = [
   'cap_state',
   'user_day_caps',
   'classify_cache',
+  'rate_limits',
 ];
+const DEFAULT_TEST_RATE_LIMIT: TokenBucketOptions = { rps: 10_000, burst: 10_000 };
 
 export const createHarness = async (options: HarnessOptions = {}): Promise<Harness> => {
   const url = requireTestDatabaseUrl();
@@ -161,6 +169,9 @@ export const createHarness = async (options: HarnessOptions = {}): Promise<Harne
     corsAllowedOrigins: [],
     db: handle.db,
     evaluate: deps,
+    rateLimiter:
+      options.rateLimiter ??
+      createPgRateLimiter(handle.db, options.rateLimit ?? DEFAULT_TEST_RATE_LIMIT),
   });
 
   const post: Harness['post'] = async (body, postOptions = {}) => {

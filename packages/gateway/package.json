@@ -16,7 +16,7 @@
     "drizzle"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/server.ts src/db/migrate.ts src/keygen.ts src/scripts/create-app.ts src/scripts/create-key.ts src/scripts/seed-creatives.ts --format esm --dts --sourcemap --clean",
+    "build": "tsup src/index.ts src/server.ts src/db/migrate.ts src/keygen.ts src/scripts/create-app.ts src/scripts/create-key.ts src/scripts/seed-creatives.ts src/scripts/load.ts --format esm --dts --sourcemap --clean",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "test": "vitest run",
@@ -27,6 +27,7 @@
     "create-app": "tsx src/scripts/create-app.ts",
     "create-key": "tsx src/scripts/create-key.ts",
     "seed-creatives": "tsx src/scripts/seed-creatives.ts",
+    "load": "tsx scripts/load.ts",
     "lint": "eslint ."
   },
   "dependencies": {
