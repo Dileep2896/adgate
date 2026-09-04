@@ -281,7 +281,7 @@
       ]
     },
     {
-      "id": "S26", "priority": 26, "dependsOn": ["S03"], "passes": false,
+      "id": "S26", "priority": 26, "dependsOn": ["S03"], "passes": true,
       "title": "Python SDK",
       "description": "packages/sdk-python: package adgate (pyproject, hatchling, Python 3.10+). Pydantic v2 models generated from packages/schemas/json by a script and checked in. Sync and async clients (httpx) with evaluate (never raises), attest, track, and async with_generation. pytest with respx.",
       "acceptanceCriteria": [

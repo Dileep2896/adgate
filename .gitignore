@@ -10,6 +10,9 @@ coverage
 __pycache__
 *.egg-info
 .venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
 .claude/settings.local.json
 
 # original starter archive, not part of the repo

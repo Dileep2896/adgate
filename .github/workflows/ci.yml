@@ -79,3 +79,48 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  python:
+    name: python sdk (lint, typecheck, test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # packages/sdk-python has no package.json, so pnpm and turbo never see it and `pnpm test`
+    # does not run this suite. It gets its own job, in parallel with the node one. No Postgres:
+    # the SDK tests are unit tests and respx answers every request, so nothing touches a network.
+    defaults:
+      run:
+        working-directory: packages/sdk-python
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        # 3.12, not the newest: the package supports 3.10+ and CI wants the version with the
+        # widest wheel coverage for the dev tools (pyproject pins datamodel-code-generator,
+        # whose output must be byte identical to the checked-in models.py).
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Typecheck
+        run: mypy
+
+      - name: Test
+        run: pytest
+
+      - name: Contract models are not stale
+        # Belt and braces next to tests/test_models_generated.py: regenerate in place and let
+        # git prove nothing moved, so a schema change without a regeneration cannot merge.
+        run: |
+          python -m scripts.generate_models
+          git diff --exit-code -- src/adgate/models.py
