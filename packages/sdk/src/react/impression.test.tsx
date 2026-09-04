@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AUDIT_ID } from '../test-support.js';
 import { SponsoredSlot, SPONSORED_ARIA_LABEL } from './sponsored-slot.js';
+import { DEFAULT_IMPRESSION_THRESHOLD } from './use-impression.js';
 import {
   fakeTrackClient,
   installIntersectionObserver,
@@ -43,6 +44,31 @@ describe('SponsoredSlot impression', () => {
 
     observers.leave();
     expect(client.calls).toEqual([]);
+  });
+
+  it('observes 0 as well as the threshold, so a tall block still gets a callback', () => {
+    render(<SponsoredSlot decision={serveDecision()} client={fakeTrackClient()} />);
+
+    expect(observers.records[0]?.options).toEqual({ threshold: [0, DEFAULT_IMPRESSION_THRESHOLD] });
+  });
+
+  it('ignores a sliver of a normal block', () => {
+    const client = fakeTrackClient();
+    render(<SponsoredSlot decision={serveDecision()} client={client} />);
+
+    // 20 % of a block that fits in the viewport: the reader has not seen it yet.
+    observers.enter(undefined, { ratio: 0.2, height: 200, rootHeight: 800 });
+
+    expect(client.calls).toEqual([]);
+  });
+
+  it('counts a block taller than the viewport that can never reach the threshold', () => {
+    const client = fakeTrackClient();
+    render(<SponsoredSlot decision={serveDecision()} client={client} />);
+
+    observers.enter(undefined, { ratio: 0.2, height: 2000, rootHeight: 800 });
+
+    expect(client.calls).toEqual([{ auditId: AUDIT_ID, type: 'impression' }]);
   });
 
   it('records exactly one impression when the block becomes visible', () => {

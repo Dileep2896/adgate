@@ -10,6 +10,12 @@ import {
 } from 'react';
 
 import type { AdgateClient, EvaluateResult, EventType } from '../types.js';
+import { useInAssistantMessage } from './message-boundary.js';
+import {
+  ASSISTANT_MESSAGE_ATTRIBUTE,
+  ASSISTANT_MESSAGE_SELECTOR,
+  isInsideAssistantMessage,
+} from './separation.js';
 import { useImpression } from './use-impression.js';
 
 /**
@@ -20,21 +26,40 @@ import { useImpression } from './use-impression.js';
  * - serve: the disclosure label as visible text (never a tooltip), the headline, the body, a
  *   CTA anchor with rel="sponsored noopener noreferrer", and a dismiss button.
  * - one impression per audit id, fired when the block enters the viewport.
- * - if any ancestor carries data-adgate-message="assistant" the block refuses to render and
- *   warns once: an ad inside model output is exactly what adgate exists to prevent.
+ *
+ * Separation is enforced twice, because the two halves catch different mistakes:
+ *
+ * 1. React context (message-boundary.tsx). Wrap assistant output in <AdgateMessageBoundary>, or
+ *    pass `inAssistantMessage` explicitly. A slot inside it renders null during RENDER, so a
+ *    server-rendered page never even serialises the ad. This is the mechanism apps should use.
+ * 2. The DOM backstop: after mount, an ancestor carrying data-adgate-message="assistant"
+ *    (across shadow boundaries too) blocks the block and warns. It cannot run on the server, so
+ *    it only helps an app that has not adopted the boundary. It is re-checked immediately before
+ *    the impression fires, in case the block was moved after mount.
+ *
+ * Either way nothing is rendered and no impression is recorded: an ad inside model output is
+ * exactly what adgate exists to prevent.
  *
  * No Next.js, no CSS-in-JS, no router: it is a plain React component that works in any React
  * 18+ app, and it never throws, because the host app must not break because of adgate.
  */
-export const ASSISTANT_MESSAGE_ATTRIBUTE = 'data-adgate-message';
-export const ASSISTANT_MESSAGE_SELECTOR = `[${ASSISTANT_MESSAGE_ATTRIBUTE}="assistant"]`;
+export { ASSISTANT_MESSAGE_ATTRIBUTE, ASSISTANT_MESSAGE_SELECTOR };
 export const SPONSORED_ARIA_LABEL = 'Sponsored content';
 export const DISMISS_ARIA_LABEL = 'Dismiss sponsored content';
 export const SLOT_CLASS_NAME = 'adgate-sponsored-slot';
+/** Used when the creative arrives with a blank label: a block is never rendered unlabelled. */
+export const FALLBACK_DISCLOSURE_LABEL = 'Sponsored';
 export const SEPARATION_WARNING =
   'adgate: SponsoredSlot must not render inside model output. An ancestor has ' +
   `${ASSISTANT_MESSAGE_ATTRIBUTE}="assistant"; render the sponsored block after the assistant ` +
   'message, as a sibling. Nothing was rendered and no impression was recorded.';
+export const BOUNDARY_WARNING =
+  'adgate: SponsoredSlot must not render inside model output. It is inside an ' +
+  'AdgateMessageBoundary (or was given inAssistantMessage); render the sponsored block after ' +
+  'the assistant message, as a sibling. Nothing was rendered and no impression was recorded.';
+export const MISSING_LABEL_WARNING =
+  `adgate: the creative carried a blank disclosure_label; rendered "${FALLBACK_DISCLOSURE_LABEL}" ` +
+  'instead. A sponsored block is never shown without a visible label.';
 
 /** Only `track` is used, so any object with that method works (including a full AdgateClient). */
 export type SponsoredSlotClient = Pick<AdgateClient, 'track'>;
@@ -51,6 +76,11 @@ export type SponsoredSlotProps = {
   className?: string;
   /** Where the disclosure label sits inside the block. Default 'top' (first exposure). */
   labelPosition?: LabelPosition;
+  /**
+   * Escape hatch for apps that know they are inside assistant output but cannot wrap it in an
+   * AdgateMessageBoundary. True renders nothing, on the server as well as in the browser.
+   */
+  inAssistantMessage?: boolean;
   /** Extra content rendered inside the block, after the CTA. */
   children?: ReactNode;
 };
@@ -85,6 +115,7 @@ export const SponsoredSlot = ({
   onDismiss,
   className,
   labelPosition = 'top',
+  inAssistantMessage,
   children,
 }: SponsoredSlotProps): ReactElement | null => {
   const containerRef = useRef<HTMLElement | null>(null);
@@ -94,40 +125,72 @@ export const SponsoredSlot = ({
   const blockedRef = useRef(false);
   const [blocked, setBlocked] = useState(false);
   const [dismissedSlot, setDismissedSlot] = useState<string | null>(null);
+  // One warning per component per message, including under StrictMode, which deliberately runs
+  // every render and every effect twice in development.
+  const warnedRef = useRef<Set<string>>(new Set());
+  const warnOnce = useCallback((message: string) => {
+    if (warnedRef.current.has(message)) {
+      return;
+    }
+    warnedRef.current.add(message);
+    console.warn(message);
+  }, []);
 
+  const nested = useInAssistantMessage() || inAssistantMessage === true;
   const creative = decision.decision === 'serve' ? decision.creative : null;
   const auditId = decision.audit_id === '' ? null : decision.audit_id;
   const slotId = auditId ?? creative?.id ?? null;
   const dismissed = slotId !== null && dismissedSlot === slotId;
-  const canRender = creative !== null && !blocked && !dismissed;
+  const hasCreative = creative !== null;
+  const canRender = hasCreative && !nested && !blocked && !dismissed;
+  // The gateway's schema says min length 1, so this is a broken demand source or a proxy; the
+  // block still has to carry a visible label, so fall back to the constant rather than hide it.
+  const labelIsBlank = hasCreative && creative.disclosure_label.trim() === '';
+  const label =
+    labelIsBlank || creative === null ? FALLBACK_DISCLOSURE_LABEL : creative.disclosure_label;
 
-  // Separation guard. Runs before paint, so a wrongly nested ad is never shown to anyone.
-  useIsomorphicLayoutEffect(() => {
-    const element = containerRef.current;
-    // blockedRef also keeps the warning to one per component, including under StrictMode,
-    // which deliberately runs every effect twice in development.
-    if (blockedRef.current || !canRender || element === null) {
-      return;
+  useEffect(() => {
+    if (nested && hasCreative) {
+      warnOnce(BOUNDARY_WARNING);
     }
-    if (typeof element.closest !== 'function') {
-      return;
+  }, [hasCreative, nested, warnOnce]);
+
+  useEffect(() => {
+    if (canRender && labelIsBlank) {
+      warnOnce(MISSING_LABEL_WARNING);
     }
-    if (element.closest(ASSISTANT_MESSAGE_SELECTOR) === null) {
-      return;
-    }
+  }, [canRender, labelIsBlank, warnOnce]);
+
+  const block = useCallback(() => {
     blockedRef.current = true;
     setBlocked(true);
-    console.warn(SEPARATION_WARNING);
-  }, [canRender]);
+    warnOnce(SEPARATION_WARNING);
+  }, [warnOnce]);
+
+  // DOM backstop. Runs before paint, so a wrongly nested ad is never shown to anyone.
+  useIsomorphicLayoutEffect(() => {
+    if (blockedRef.current || !canRender) {
+      return;
+    }
+    if (isInsideAssistantMessage(containerRef.current)) {
+      block();
+    }
+  }, [block, canRender]);
 
   const handleImpression = useCallback(
     (id: string) => {
       if (blockedRef.current) {
         return;
       }
+      // Re-checked here and not only at mount: a chat UI may move the node afterwards, and an
+      // impression is the moment the ad was actually seen.
+      if (isInsideAssistantMessage(containerRef.current)) {
+        block();
+        return;
+      }
       trackSafely(client, id, 'impression');
     },
-    [client],
+    [block, client],
   );
 
   useImpression({
@@ -149,10 +212,10 @@ export const SponsoredSlot = ({
     return null;
   }
 
-  const label = (
+  const labelRow = (
     <div data-adgate-part="label-row">
       <span data-adgate-part="label" style={styles.label}>
-        {creative.disclosure_label}
+        {label}
       </span>
       <span data-adgate-part="advertiser" style={styles.advertiser}>
         {creative.advertiser}
@@ -168,7 +231,7 @@ export const SponsoredSlot = ({
       className={joinClassNames(SLOT_CLASS_NAME, className)}
       style={styles.container}
     >
-      {labelPosition === 'top' ? label : null}
+      {labelPosition === 'top' ? labelRow : null}
       <p data-adgate-part="headline" style={styles.headline}>
         {creative.headline}
       </p>
@@ -192,7 +255,7 @@ export const SponsoredSlot = ({
         &times;
       </button>
       {children}
-      {labelPosition === 'bottom' ? label : null}
+      {labelPosition === 'bottom' ? labelRow : null}
     </aside>
   );
 };

@@ -17,7 +17,8 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
-      }
+      },
+      "default": "./dist/index.js"
     },
     "./react": {
       "import": {
@@ -27,7 +28,8 @@
       "require": {
         "types": "./dist/react.d.cts",
         "default": "./dist/react.cjs"
-      }
+      },
+      "default": "./dist/react.js"
     },
     "./ai": {
       "import": {
@@ -37,7 +39,18 @@
       "require": {
         "types": "./dist/ai.d.cts",
         "default": "./dist/ai.cjs"
-      }
+      },
+      "default": "./dist/ai.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "react": [
+        "./dist/react.d.ts"
+      ],
+      "ai": [
+        "./dist/ai.d.ts"
+      ]
     }
   },
   "files": [
@@ -56,7 +69,7 @@
     "@adgate/schemas": "workspace:*"
   },
   "peerDependencies": {
-    "ai": ">=5",
+    "ai": "^7",
     "react": ">=18"
   },
   "peerDependenciesMeta": {

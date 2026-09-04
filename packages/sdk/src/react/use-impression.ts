@@ -23,6 +23,37 @@ export type UseImpressionOptions = {
 
 export const DEFAULT_IMPRESSION_THRESHOLD = 0.5;
 
+/**
+ * Whether one observer entry counts as "the user saw it".
+ *
+ * Normally that is `intersectionRatio >= threshold`. A block TALLER than the viewport can never
+ * reach a fractional threshold, however far the reader scrolls, so for those any visible sliver
+ * counts: the alternative is never recording an impression the advertiser paid for. `rootBounds`
+ * is null in a cross-origin iframe, where the heights are unknowable; then the plain rule applies.
+ */
+const isVisible = (entry: IntersectionObserverEntry, threshold: number): boolean => {
+  if (!entry.isIntersecting) {
+    return false;
+  }
+  const ratio = entry.intersectionRatio;
+  if (typeof ratio !== 'number') {
+    // A polyfill that reports no ratios: the flag is all there is.
+    return true;
+  }
+  if (ratio >= threshold) {
+    return true;
+  }
+  const height = entry.boundingClientRect?.height;
+  const rootHeight = entry.rootBounds?.height;
+  return (
+    ratio > 0 &&
+    typeof height === 'number' &&
+    typeof rootHeight === 'number' &&
+    rootHeight > 0 &&
+    height > rootHeight
+  );
+};
+
 export const useImpression = ({
   targetRef,
   auditId,
@@ -64,12 +95,14 @@ export const useImpression = ({
     let observer: IntersectionObserver | null = null;
     observer = new Observer(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
+        if (entries.some((entry) => isVisible(entry, threshold))) {
           fire();
           observer?.disconnect();
         }
       },
-      { threshold },
+      // Two thresholds: the normal one, plus 0 so a block taller than the viewport still gets a
+      // callback (it would otherwise never cross 0.5 and the observer would stay silent).
+      { threshold: [0, threshold] },
     );
     observer.observe(element);
     return () => {

@@ -224,6 +224,13 @@ describe('evaluate: never rejects', () => {
       JSON.stringify({ ...SERVE_BODY, creative: { ...SERVE_BODY.creative, url: undefined } }),
     ],
     [
+      'a creative whose disclosure label is blank',
+      JSON.stringify({
+        ...SERVE_BODY,
+        creative: { ...SERVE_BODY.creative, disclosure_label: '   ' },
+      }),
+    ],
+    [
       'a suppress with a creative',
       JSON.stringify({ ...SUPPRESS_BODY, creative: SERVE_BODY.creative }),
     ],

@@ -116,7 +116,13 @@ describe('@adgate/sdk core entry purity', () => {
  */
 describe('@adgate/sdk react entry', () => {
   it('has the expected implementation files', () => {
-    expect(reactFiles).toEqual(['index.ts', 'sponsored-slot.tsx', 'use-impression.ts']);
+    expect(reactFiles).toEqual([
+      'index.ts',
+      'message-boundary.tsx',
+      'separation.ts',
+      'sponsored-slot.tsx',
+      'use-impression.ts',
+    ]);
   });
 
   it('imports only react, relative modules and @adgate/schemas types', () => {
@@ -155,7 +161,14 @@ describe('@adgate/sdk react entry', () => {
  */
 describe('@adgate/sdk ai entry', () => {
   it('has the expected implementation files', () => {
-    expect(aiFiles).toEqual(['index.ts', 'messages.ts', 'middleware.ts']);
+    expect(aiFiles).toEqual([
+      'ai-types.ts',
+      'index.ts',
+      'messages.ts',
+      'middleware.ts',
+      'stream-decorator.ts',
+      'turn.ts',
+    ]);
   });
 
   it('imports only the ai types, relative modules and @adgate/schemas types', () => {

@@ -6,7 +6,12 @@ import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SERVE_BODY } from '../test-support.js';
-import { SPONSORED_ARIA_LABEL, SponsoredSlot } from './sponsored-slot.js';
+import { AdgateMessageBoundary } from './message-boundary.js';
+import {
+  FALLBACK_DISCLOSURE_LABEL,
+  SPONSORED_ARIA_LABEL,
+  SponsoredSlot,
+} from './sponsored-slot.js';
 import { fakeTrackClient, serveDecision, suppressDecision } from './test-support.js';
 
 const CREATIVE = SERVE_BODY.creative;
@@ -48,5 +53,47 @@ describe('SponsoredSlot server rendering', () => {
       '',
     );
     expect(client.calls).toEqual([]);
+  });
+
+  it('serialises no ad markup inside an AdgateMessageBoundary', () => {
+    const client = fakeTrackClient();
+
+    const html = renderToString(
+      <div>
+        <AdgateMessageBoundary>
+          <p>the answer</p>
+          <SponsoredSlot decision={serveDecision()} client={client} />
+        </AdgateMessageBoundary>
+      </div>,
+    );
+
+    // The DOM guard cannot run here at all, so the boundary is the only thing standing between
+    // the ad and the HTML the browser receives.
+    expect(html).toContain('the answer');
+    expect(html).not.toContain('data-adgate-slot');
+    expect(html).not.toContain(CREATIVE.headline);
+    expect(html).not.toContain(CREATIVE.url);
+    expect(client.calls).toEqual([]);
+  });
+
+  it('serialises no ad markup when inAssistantMessage is set', () => {
+    const html = renderToString(
+      <SponsoredSlot decision={serveDecision()} client={fakeTrackClient()} inAssistantMessage />,
+    );
+
+    expect(html).toBe('');
+  });
+
+  it('falls back to a constant label when the creative carries a blank one', () => {
+    const decision = serveDecision();
+    if (decision.creative !== null) {
+      decision.creative.disclosure_label = '   ';
+    }
+
+    const html = renderToString(<SponsoredSlot decision={decision} client={fakeTrackClient()} />);
+
+    // Never an unlabelled block, not even in the first server-rendered paint.
+    expect(html).toContain(FALLBACK_DISCLOSURE_LABEL);
+    expect(html).toContain(CREATIVE.headline);
   });
 });

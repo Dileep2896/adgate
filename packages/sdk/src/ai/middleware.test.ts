@@ -2,7 +2,7 @@ import { generateText, wrapLanguageModel } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ATTEST_PATH, EVALUATE_PATH } from '../client.js';
+import { EVALUATE_PATH } from '../client.js';
 import { hashModelOutput } from '../hash.js';
 import {
   AUDIT_ID,
@@ -17,6 +17,7 @@ import { adgateMiddleware } from './middleware.js';
 import {
   adgateMetadataOf as adgateOf,
   ANSWER,
+  attestCalls,
   callParams,
   fakeClient,
   generateResult,
@@ -41,6 +42,7 @@ describe('adgateMiddleware generate path', () => {
 
     expect(result.content).toEqual([{ type: 'text', text: ANSWER }]);
     expect(adgateOf(result)).toEqual({ decision: SERVE_BODY, audit_id: AUDIT_ID });
+    await attestCalls(transport);
     expect(transport.calls).toHaveLength(2);
   });
 
@@ -147,8 +149,7 @@ describe('adgateMiddleware generate path', () => {
 
     await model.doGenerate(callParams(userPrompt(QUESTION)));
 
-    const attests = callsTo(transport.calls, ATTEST_PATH);
-    expect(attests).toHaveLength(1);
+    const attests = await attestCalls(transport);
     expect(bodyOf(attests[0]!)).toEqual({
       audit_id: AUDIT_ID,
       model_output_hash: await hashModelOutput('Managed Postgres is the boring choice.'),
@@ -166,7 +167,7 @@ describe('adgateMiddleware generate path', () => {
     const result = await model.doGenerate(callParams(userPrompt(QUESTION)));
 
     expect(adgateOf(result)?.decision.decision).toBe('suppress');
-    expect(bodyOf(callsTo(transport.calls, ATTEST_PATH)[0]!)['rendered']).toBe(false);
+    expect(bodyOf((await attestCalls(transport))[0]!)['rendered']).toBe(false);
   });
 
   it('calls onDecision exactly once', async () => {

@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AUDIT_ID, SERVE_BODY } from '../test-support.js';
 import {
   DISMISS_ARIA_LABEL,
+  FALLBACK_DISCLOSURE_LABEL,
+  MISSING_LABEL_WARNING,
   SEPARATION_WARNING,
   SLOT_CLASS_NAME,
   SPONSORED_ARIA_LABEL,
@@ -78,6 +80,23 @@ describe('SponsoredSlot rendering', () => {
     expect(screen.getByText(CREATIVE.headline)).toBeVisible();
     expect(screen.getByText(CREATIVE.body)).toBeVisible();
     expect(screen.getByText(CREATIVE.advertiser)).toBeVisible();
+  });
+
+  it('renders the fallback label and warns once when the creative label is blank', () => {
+    const decision = serveDecision();
+    if (decision.creative !== null) {
+      decision.creative.disclosure_label = ' \t ';
+    }
+    const { rerender } = render(<SponsoredSlot decision={decision} client={fakeTrackClient()} />);
+
+    const block = screen.getByRole('complementary', { name: SPONSORED_ARIA_LABEL });
+    expect(block).toContainElement(screen.getByText(FALLBACK_DISCLOSURE_LABEL));
+    expect(screen.getByText(CREATIVE.headline)).toBeVisible();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(MISSING_LABEL_WARNING);
+
+    rerender(<SponsoredSlot decision={decision} client={fakeTrackClient()} />);
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 
   it('links the CTA out with rel="sponsored noopener noreferrer" in a new tab', () => {

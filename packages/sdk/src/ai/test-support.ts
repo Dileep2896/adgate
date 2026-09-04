@@ -1,8 +1,16 @@
 import { wrapLanguageModel, type LanguageModelMiddleware } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
+import { expect, vi } from 'vitest';
 
-import { createClient } from '../client.js';
-import { API_KEY, BASE_URL, routedFetch, type FakeFetch } from '../test-support.js';
+import { ATTEST_PATH, createClient } from '../client.js';
+import {
+  API_KEY,
+  BASE_URL,
+  callsTo,
+  routedFetch,
+  type FakeFetch,
+  type FetchCall,
+} from '../test-support.js';
 import type { AdgateClient } from '../types.js';
 import { ADGATE_METADATA_KEY, type AdgateProviderMetadata } from './middleware.js';
 
@@ -26,23 +34,32 @@ export const USAGE = {
 
 export const FINISH_REASON = { unified: 'stop', raw: 'stop' } as const;
 
+/** What a step that ends in a tool call reports: the turn is not over and its text is partial. */
+export const TOOL_CALLS_FINISH_REASON = { unified: 'tool-calls', raw: 'tool_calls' } as const;
+
 export const ANSWER = 'Use a managed Postgres with a free tier while the project is small.';
 
 /** A doGenerate result whose text content parts join to `text`. */
-export const generateResult = (texts: string[]): GenerateResult => ({
+export const generateResult = (
+  texts: string[],
+  finishReason: GenerateResult['finishReason'] = FINISH_REASON,
+): GenerateResult => ({
   content: texts.map((text) => ({ type: 'text' as const, text })),
-  finishReason: FINISH_REASON,
+  finishReason,
   usage: USAGE,
   warnings: [],
 });
 
 /** The chunks a streaming model emits for `texts`, ending with the terminal finish part. */
-export const streamScript = (texts: string[]): StreamPart[] => [
+export const streamScript = (
+  texts: string[],
+  finishReason: GenerateResult['finishReason'] = FINISH_REASON,
+): StreamPart[] => [
   { type: 'stream-start', warnings: [] },
   { type: 'text-start', id: 't1' },
   ...texts.map((text) => ({ type: 'text-delta' as const, id: 't1', delta: text })),
   { type: 'text-end', id: 't1' },
-  { type: 'finish', usage: USAGE, finishReason: FINISH_REASON },
+  { type: 'finish', usage: USAGE, finishReason },
 ];
 
 /** A non-streaming model that answers with `texts`, wrapped in the middleware under test. */
@@ -71,6 +88,18 @@ export const fakeClient = (
     client: createClient({ apiKey: API_KEY, baseUrl: BASE_URL, fetch: transport.fetch }),
     transport,
   };
+};
+
+/**
+ * The attest requests, once there are `count` of them. The generate path fires its attest in the
+ * background (the answer must not wait for the audit write), so a test that wants to look at it
+ * has to wait for it rather than assume it was sent before doGenerate resolved.
+ */
+export const attestCalls = async (transport: FakeFetch, count = 1): Promise<FetchCall[]> => {
+  await vi.waitFor(() => {
+    expect(callsTo(transport.calls, ATTEST_PATH)).toHaveLength(count);
+  });
+  return callsTo(transport.calls, ATTEST_PATH);
 };
 
 /** What the middleware attached, read off a generate result or a stream part. */

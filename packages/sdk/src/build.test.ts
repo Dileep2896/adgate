@@ -1,6 +1,5 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -14,6 +13,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
  * artefacts: every format plus types exists, the core entry gzips under 15 kB and carries no
  * node built-in, zod, react or @adgate/schemas runtime import, and the React entry is a
  * separate file that leaves react to the host app.
+ *
+ * The build goes into packages/sdk/node_modules/.adgate-build-*: a directory OUTSIDE the package
+ * would not resolve `react` when the built React entry is imported here, and node_modules is
+ * already ignored by git, eslint and vitest.
  */
 const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MAX_GZIP_BYTES = 15 * 1024;
@@ -22,7 +25,7 @@ let outDir = '';
 const read = (name: string) => readFileSync(join(outDir, name), 'utf8');
 
 beforeAll(async () => {
-  outDir = mkdtempSync(join(tmpdir(), 'adgate-sdk-build-'));
+  outDir = mkdtempSync(join(packageDir, 'node_modules', '.adgate-build-'));
   await build({
     entry: {
       index: join(packageDir, 'src/index.ts'),
@@ -159,18 +162,35 @@ describe('@adgate/sdk/react build', () => {
     }
   });
 
+  it('loads as ESM with react resolvable, the way a host app imports it', async () => {
+    const entry = (await import(pathToFileURL(join(outDir, 'react.js')).href)) as Record<
+      string,
+      unknown
+    >;
+
+    expect(typeof entry['SponsoredSlot']).toBe('function');
+    expect(typeof entry['AdgateMessageBoundary']).toBe('function');
+    expect(typeof entry['useImpression']).toBe('function');
+    expect(entry['SPONSORED_ARIA_LABEL']).toBe('Sponsored content');
+  });
+
   it('is reachable through the package exports map', () => {
     const manifest = readManifest();
     expect(manifest.exports['./react']).toEqual({
       import: { types: './dist/react.d.ts', default: './dist/react.js' },
       require: { types: './dist/react.d.cts', default: './dist/react.cjs' },
+      default: './dist/react.js',
     });
     expect(manifest.peerDependencies['react']).toBe('>=18');
   });
 });
 
 type Manifest = {
-  exports: Record<string, { import: { types: string; default: string }; require: unknown }>;
+  exports: Record<
+    string,
+    { import: { types: string; default: string }; require: unknown; default: string }
+  >;
+  typesVersions: Record<string, Record<string, string[]>>;
   peerDependencies: Record<string, string>;
   peerDependenciesMeta: Record<string, { optional?: boolean }>;
 };
@@ -227,8 +247,38 @@ describe('@adgate/sdk/ai build', () => {
     expect(manifest.exports['./ai']).toEqual({
       import: { types: './dist/ai.d.ts', default: './dist/ai.js' },
       require: { types: './dist/ai.d.cts', default: './dist/ai.cjs' },
+      default: './dist/ai.js',
     });
-    expect(manifest.peerDependencies['ai']).toBe('>=5');
+    // The middleware targets provider spec v4, which is what ai 7 ships: a wider range would
+    // promise majors nothing here has ever been built or tested against.
+    expect(manifest.peerDependencies['ai']).toBe('^7');
     expect(manifest.peerDependenciesMeta['ai']).toEqual({ optional: true });
+  });
+});
+
+describe('@adgate/sdk resolution for older tooling', () => {
+  it('gives every exports entry a default condition, and every target exists', () => {
+    const manifest = readManifest();
+    for (const [subpath, entry] of Object.entries(manifest.exports)) {
+      expect(typeof entry.default, `${subpath} has no default condition`).toBe('string');
+      for (const target of [entry.default, entry.import.default, entry.import.types]) {
+        expect(existsSync(join(outDir, target.replace('./dist/', ''))), `${target} missing`).toBe(
+          true,
+        );
+      }
+    }
+  });
+
+  it('maps the subpath types with typesVersions, for a resolver that ignores exports', () => {
+    const manifest = readManifest();
+    expect(manifest.typesVersions['*']).toEqual({
+      react: ['./dist/react.d.ts'],
+      ai: ['./dist/ai.d.ts'],
+    });
+    for (const targets of Object.values(manifest.typesVersions['*'] ?? {})) {
+      for (const target of targets) {
+        expect(existsSync(join(outDir, target.replace('./dist/', '')))).toBe(true);
+      }
+    }
   });
 });

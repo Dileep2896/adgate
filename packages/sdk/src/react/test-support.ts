@@ -60,10 +60,17 @@ export type ObserverRecord = {
   disconnects: number;
 };
 
+/**
+ * How much of the block the browser reports as visible. The defaults are a small block fully
+ * inside the viewport; a test that cares passes its own (a tall block reports a ratio well under
+ * the threshold with a height larger than rootHeight).
+ */
+export type Visibility = { ratio?: number; height?: number; rootHeight?: number };
+
 export type IntersectionObserverStub = {
   records: ObserverRecord[];
   /** Reports the target of one observer (the newest by default) as visible. */
-  enter(index?: number): void;
+  enter(index?: number, visibility?: Visibility): void;
   /** Reports it as not visible, which must never count as an impression. */
   leave(index?: number): void;
   restore(): void;
@@ -110,22 +117,39 @@ export const installIntersectionObserver = (): IntersectionObserverStub => {
       return [];
     }
   }
-  const report = (isIntersecting: boolean, index?: number) => {
+  const report = (isIntersecting: boolean, index?: number, visibility?: Visibility) => {
     const record = records[index ?? records.length - 1];
     if (record === undefined) {
       throw new Error('no IntersectionObserver was created');
     }
     const entries = record.targets.map(
-      (target) => ({ isIntersecting, target }) as IntersectionObserverEntry,
+      (target) =>
+        ({
+          isIntersecting,
+          intersectionRatio: isIntersecting ? (visibility?.ratio ?? 1) : 0,
+          boundingClientRect: { height: visibility?.height ?? 200 },
+          rootBounds: { height: visibility?.rootHeight ?? 800 },
+          target,
+        }) as IntersectionObserverEntry,
     );
-    act(() => {
-      record.callback(entries, null as unknown as IntersectionObserver);
-    });
+    // React only flushes an update from act() when the environment flag is set, and Testing
+    // Library sets it around its own calls, not ours: an entry that blocks the slot would
+    // otherwise warn and leave the re-render pending.
+    const scope = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean | undefined };
+    const previous = scope.IS_REACT_ACT_ENVIRONMENT;
+    scope.IS_REACT_ACT_ENVIRONMENT = true;
+    try {
+      act(() => {
+        record.callback(entries, null as unknown as IntersectionObserver);
+      });
+    } finally {
+      scope.IS_REACT_ACT_ENVIRONMENT = previous;
+    }
   };
   return {
     records,
-    enter: (index) => {
-      report(true, index);
+    enter: (index, visibility) => {
+      report(true, index, visibility);
     },
     leave: (index) => {
       report(false, index);

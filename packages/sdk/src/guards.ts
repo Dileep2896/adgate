@@ -26,7 +26,11 @@ const CREATIVE_STRING_FIELDS = [
 ] as const;
 
 const isCreativeShape = (value: unknown): boolean =>
-  isRecord(value) && CREATIVE_STRING_FIELDS.every((field) => isString(value[field]));
+  isRecord(value) &&
+  CREATIVE_STRING_FIELDS.every((field) => isString(value[field])) &&
+  // docs/api.md gives disclosure_label a min length of 1, and a blank one would render a
+  // sponsored block with no visible label. Fail closed rather than show an unlabelled ad.
+  (value['disclosure_label'] as string).trim().length > 0;
 
 const isClassificationShape = (value: unknown): boolean =>
   isRecord(value) &&

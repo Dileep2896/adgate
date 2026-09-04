@@ -9,6 +9,7 @@ import { adgateMiddleware } from './middleware.js';
 import {
   adgateMetadataOf as adgateOf,
   ANSWER,
+  attestCalls,
   callParams,
   fakeClient,
   userPrompt,
@@ -60,7 +61,7 @@ describe('adgateMiddleware never breaks a generation', () => {
 
     expect(result.content).toEqual([{ type: 'text', text: ANSWER }]);
     expect(adgateOf(result)?.audit_id).toBe(AUDIT_ID);
-    expect(callsTo(transport.calls, ATTEST_PATH)).toHaveLength(1);
+    expect(await attestCalls(transport)).toHaveLength(1);
   });
 
   it('does not throw when the gateway rejects the attest', async () => {
