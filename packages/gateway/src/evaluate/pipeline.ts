@@ -175,6 +175,7 @@ const runPipeline = async (deps: EvaluateDeps, ctx: EvaluateContext): Promise<Ev
   });
   return {
     response,
+    demand: persisted.record.demand,
     diagnostics: {
       classify_source: outcome.source,
       cache_source: cache.source,

@@ -82,3 +82,91 @@ The gateway log had no warn or error lines during either run and every request a
 
 `pnpm --filter @adgate/gateway load -- --help` lists every flag (`--body` takes another
 EvaluateRequest JSON file; `--requests` and `--concurrency` default to 200 and 10).
+
+## Metrics (`GET /metrics`)
+
+The gateway exposes Prometheus metrics in the text exposition format (version 0.0.4). The
+format is written by the gateway itself (`packages/gateway/src/metrics/`), with no client
+library: HELP/TYPE lines, counters and cumulative histogram buckets are a few dozen lines of
+code, and CLAUDE.md keeps dependencies to the stack list. `prom-client` is the standard choice
+if that ever stops being true.
+
+### Access
+
+- `GET /metrics` requires `Authorization: Bearer $METRICS_TOKEN`, compared in constant time.
+  It is an operator secret and is **not** an API key: API keys belong to one app, this body
+  describes the whole process.
+- Wrong or missing token: `401` with the usual `{ "error": { "code": "unauthorized" } }` body.
+- **`METRICS_TOKEN` unset: the route is not mounted at all and a scrape gets `404`.** A
+  deployment that forgot to set the token exposes nothing. Recording always happens; only the
+  endpoint is gated, so setting the variable and restarting is all that is needed.
+- The response carries `Cache-Control: no-store` and the same security headers as every other
+  response. The endpoint is deliberately absent from `openapi.json`: docs/api.md is the API
+  contract, and this is an operational endpoint.
+
+### What is exposed
+
+| Metric | Type | Labels | Meaning |
+| --- | --- | --- | --- |
+| `adgate_decisions_total` | counter | `decision`, `reason` | Every evaluate outcome. `reason="none"` on a serve; otherwise the documented suppress reason (`paid_user`, `sensitive_category:health`, `no_fill`, `error`, …). |
+| `adgate_evaluate_duration_seconds` | histogram | – | The whole `POST /v1/evaluate` handler. Buckets 0.005 … 5 s, with edges at the docs/api.md targets (p95 under 300 ms warm, under 700 ms cold). |
+| `adgate_demand_adapter_duration_seconds` | histogram | `source` | One observation per demand adapter queried, taken from the `latency_ms` of the audit record's demand trace, so the metric equals what was audited. Buckets end just past the 250 ms per-adapter budget. |
+| `adgate_classify_cache_total` | counter | `result` | Classifier cache lookups: `hit_memory` (process LRU), `hit_postgres` (`classify_cache` table), `miss`. |
+| `adgate_http_requests_total` | counter | `route`, `status` | Every response, including 404, 413 and 500. `route` is the route PATTERN (`/v1/audit/:id`), never the path; anything unrouted is `other`. |
+| `adgate_attest_total` | counter | `result` | `POST /v1/attest` outcomes: `ok`, `invalid_request`, `not_found`, `already_attested`, `unauthorized`, `rate_limited`, `error`. |
+| `adgate_rate_limited_total` | counter | – | Requests refused with 429 by the per-key token bucket. |
+| `adgate_process_uptime_seconds` | gauge | – | Seconds since this process built its registry. |
+| `adgate_metrics_series_dropped_total` | counter | – | Series refused because a family hit its cardinality limit (256 label combinations). Non-zero means a metric is being labelled with something unbounded: it is a bug, not a capacity signal. |
+
+Cardinality is bounded by construction. Every label value is a member of a contract enum, an
+HTTP status, or a route pattern from a fixed list. No `app_id`, `audit_id`, creative id,
+conversation hash or user hash is ever a label: those identify one tenant or one turn, they
+already live in the audit record and the logs, and as labels they would multiply every series
+by the number of tenants.
+
+The classifier cache **ratio is not exposed as a gauge**, deliberately: a ratio gauge is an
+average over the whole process lifetime that no query can window, and it cannot be aggregated
+across replicas. Three counters can, over any range:
+
+```promql
+# Cache hit ratio over 5 minutes
+sum(rate(adgate_classify_cache_total{result=~"hit_.*"}[5m]))
+  / sum(rate(adgate_classify_cache_total[5m]))
+
+# Evaluate p95, the docs/api.md target
+histogram_quantile(0.95, sum by (le) (rate(adgate_evaluate_duration_seconds_bucket[5m])))
+
+# Suppression mix
+sum by (reason) (rate(adgate_decisions_total{decision="suppress"}[5m]))
+
+# Fill rate on turns that reached demand
+sum(rate(adgate_decisions_total{decision="serve"}[5m]))
+  / sum(rate(adgate_decisions_total{decision="serve"}[5m])
+      + rate(adgate_decisions_total{reason="no_fill"}[5m]))
+```
+
+### Scrape config
+
+```yaml
+scrape_configs:
+  - job_name: adgate-gateway
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 15s
+    authorization:
+      type: Bearer
+      # Prometheus reads the token from a file so it is not in the config.
+      credentials_file: /etc/prometheus/adgate-metrics-token
+    static_configs:
+      - targets: ['gateway:8787']
+```
+
+Check it by hand with:
+
+```
+curl -sS -H "Authorization: Bearer $METRICS_TOKEN" http://localhost:8787/metrics | head -20
+```
+
+Counters are per process and reset when it restarts, which is what `rate()` and `increase()`
+expect. Run one scrape job per gateway instance rather than behind a load balancer, or the
+series of several processes will be mixed into one.

@@ -12,6 +12,8 @@ describe('@adgate/gateway', () => {
     expect(gateway.TABLE_NAMES).toContain('audit_records');
     expect(typeof gateway.createEvaluateDeps).toBe('function');
     expect(typeof gateway.evaluateRoute).toBe('function');
+    expect(typeof gateway.createMetricsRegistry).toBe('function');
+    expect(typeof gateway.metricsRoute).toBe('function');
   });
 
   it('names every table exactly once', () => {

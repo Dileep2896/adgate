@@ -99,6 +99,8 @@ export interface HarnessOptions {
   rateLimit?: TokenBucketOptions | undefined;
   /** A limiter of your own (say, a failing one) instead of the Postgres one. */
   rateLimiter?: RateLimiter | undefined;
+  /** METRICS_TOKEN for this app. Default: none, so GET /metrics is not mounted (404). */
+  metricsToken?: string | undefined;
 }
 
 export interface PostOptions {
@@ -172,6 +174,7 @@ export const createHarness = async (options: HarnessOptions = {}): Promise<Harne
     rateLimiter:
       options.rateLimiter ??
       createPgRateLimiter(handle.db, options.rateLimit ?? DEFAULT_TEST_RATE_LIMIT),
+    ...(options.metricsToken === undefined ? {} : { metricsToken: options.metricsToken }),
   });
 
   const post: Harness['post'] = async (body, postOptions = {}) => {

@@ -1,9 +1,10 @@
-import { prefixedUlid } from '@adgate/core';
+import { latencySince, prefixedUlid } from '@adgate/core';
 import { EvaluateRequest } from '@adgate/schemas';
 import type { Context } from 'hono';
 
 import type { AppEnv } from '../app-env.js';
 import { errorResponse } from '../http-error.js';
+import type { GatewayMetrics } from '../metrics/instrument.js';
 import { INVALID_REQUEST_CODE, parseJsonBody } from '../request-body.js';
 import type { EvaluateDeps } from './deps.js';
 import { AUDIT_ID_PREFIX } from './fail-closed.js';
@@ -18,6 +19,11 @@ import { errorEvaluateResponse } from './response.js';
  * and hand the validated request to evaluate(), whose answer is always HTTP 200 (docs/api.md
  * "Error behavior"). One log line per evaluation carries ids, enums and timings, never the
  * messages, the context summary or the key.
+ *
+ * It is also where the evaluate metrics are recorded (S38), once per DECISION: a request
+ * rejected at the boundary produced no decision and is only counted by
+ * adgate_http_requests_total. The recorder swallows its own failures, so nothing here can turn
+ * a metric into a response.
  */
 export const APP_MISMATCH_MESSAGE = 'app_id does not belong to the API key';
 
@@ -29,7 +35,7 @@ export const parseEvaluateBody = async (c: Context<AppEnv>): Promise<ParsedBody>
 };
 
 export const evaluateRoute =
-  (deps: EvaluateDeps) =>
+  (deps: EvaluateDeps, metrics?: GatewayMetrics) =>
   async (c: Context<AppEnv>): Promise<Response> => {
     const started = deps.now();
     const log = c.get('logger');
@@ -45,11 +51,20 @@ export const evaluateRoute =
     }
 
     try {
-      const { response, diagnostics } = await evaluate(deps, {
+      const { response, diagnostics, demand } = await evaluate(deps, {
         app,
         request: parsed.request,
         log,
         started,
+      });
+      metrics?.recordEvaluation({
+        decision: response.decision,
+        reason: response.reason,
+        durationMs: latencySince(deps.now, started),
+        ...(diagnostics.cache_source === undefined
+          ? {}
+          : { cacheSource: diagnostics.cache_source }),
+        ...(demand === undefined ? {} : { demand }),
       });
       // The request logger already carries req_id, key_id and app_id (bearerAuth).
       log.info(
@@ -71,6 +86,11 @@ export const evaluateRoute =
         { error_name: error instanceof Error ? error.name : 'NonError', audit_id: auditId },
         'evaluate wrapper failed; the returned audit_id has no record',
       );
+      metrics?.recordEvaluation({
+        decision: 'suppress',
+        reason: 'error',
+        durationMs: latencySince(deps.now, started),
+      });
       return c.json(errorEvaluateResponse(auditId, 0), 200);
     }
   };

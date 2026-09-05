@@ -46,6 +46,8 @@ const main = (): void => {
       koah_enabled: config.koah.enabled,
       gravity_enabled: config.gravity.enabled,
       rate_limit: config.rateLimit,
+      // Never the token itself: only whether GET /metrics exists in this process.
+      metrics_enabled: config.metricsToken !== null,
     },
     'configuration loaded',
   );
@@ -57,6 +59,7 @@ const main = (): void => {
     db: database.db,
     evaluate: createEvaluateDeps(config, database.db, { signing: keys.signing, ring: keys.ring }),
     rateLimiter: createPgRateLimiter(database.db, config.rateLimit),
+    metricsToken: config.metricsToken,
   });
   const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
     logger.info({ port: info.port, address: info.address }, 'gateway listening');

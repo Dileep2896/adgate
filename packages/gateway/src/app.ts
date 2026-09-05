@@ -21,6 +21,9 @@ import { createEventStore } from './events/store.js';
 import type { EvaluateDeps } from './evaluate/deps.js';
 import { evaluateRoute } from './evaluate/route.js';
 import { errorCode, errorResponse } from './http-error.js';
+import { createGatewayMetrics, httpMetrics, METRICS_PATH } from './metrics/instrument.js';
+import type { MetricsRegistry } from './metrics/registry.js';
+import { metricsRoute } from './metrics/route.js';
 import { buildOpenApiDocument } from './openapi/document.js';
 import { openApiRoute } from './openapi/route.js';
 import type { RateLimiter } from './rate-limit/limiter.js';
@@ -41,7 +44,8 @@ export { BODY_LIMIT_BYTES } from './body-limit.js';
  * per-key token bucket after bearerAuth on the three write endpoints (429 + Retry-After) when
  * a rate limiter is given; GET /openapi.json built once from the Zod schemas; a body size
  * limit ahead of every route; the security.ts response headers and CORS allowlist (an origin
- * off CORS_ALLOWED_ORIGINS gets no CORS headers and its preflight is 403); and the
+ * off CORS_ALLOWED_ORIGINS gets no CORS headers and its preflight is 403); GET /metrics behind
+ * METRICS_TOKEN when one is configured (metrics/, never mounted without a token); and the
  * docs/api.md error behaviour: every non-2xx body is
  * { error: { code, message } }.
  */
@@ -64,6 +68,16 @@ export interface AppDeps {
    * server.ts always passes the Postgres limiter.
    */
   rateLimiter?: RateLimiter | undefined;
+  /**
+   * METRICS_TOKEN: the bearer GET /metrics requires. Absent or null = the route is not mounted
+   * at all, so a scrape gets the ordinary 404 (metrics/route.ts). Recording happens either way.
+   */
+  metricsToken?: string | null | undefined;
+  /**
+   * The metric store to record into. Default: a fresh registry per app, so tests never share
+   * counters. Pass one to read the numbers without scraping.
+   */
+  metrics?: MetricsRegistry | undefined;
 }
 
 export type App = Hono<AppEnv>;
@@ -80,8 +94,14 @@ const payloadTooLarge = (): never => {
 
 export const createApp = (deps: AppDeps): App => {
   const app = new Hono<AppEnv>();
+  // Uptime is wall clock on purpose: it says how long THIS process has been up, so it must not
+  // follow an injected evaluate clock.
+  const metrics = createGatewayMetrics(
+    deps.metrics === undefined ? {} : { registry: deps.metrics },
+  );
 
   app.use('*', requestContext(deps.logger));
+  app.use('*', httpMetrics(metrics));
   app.use('*', securityHeaders());
   app.use('*', corsPolicy(deps.corsAllowedOrigins));
   app.use('*', bodyLimit({ maxSize: BODY_LIMIT_BYTES, onError: payloadTooLarge }));
@@ -94,6 +114,10 @@ export const createApp = (deps: AppDeps): App => {
     '/openapi.json',
     openApiRoute(buildOpenApiDocument({ serverUrl: deps.evaluate?.publicBaseUrl })),
   );
+  const metricsToken = deps.metricsToken ?? null;
+  if (metricsToken !== null) {
+    app.get(METRICS_PATH, metricsRoute({ registry: metrics.registry, token: metricsToken }));
+  }
 
   if (deps.evaluate !== undefined) {
     const { db, signing, ring, now, policies } = deps.evaluate;
@@ -106,7 +130,7 @@ export const createApp = (deps: AppDeps): App => {
         ? passthrough
         : rateLimit({ limiter: deps.rateLimiter, keyOf: (c) => c.get('auth').key_id, now });
     const auditApi = { ring, reader: createAuditReader(db) };
-    app.post('/v1/evaluate', appKey, limited, evaluateRoute(deps.evaluate));
+    app.post('/v1/evaluate', appKey, limited, evaluateRoute(deps.evaluate, metrics));
     app.post(
       '/v1/attest',
       appKey,

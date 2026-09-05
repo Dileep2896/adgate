@@ -397,7 +397,7 @@
       ]
     },
     {
-      "id": "S38", "priority": 38, "dependsOn": ["S36"], "passes": false,
+      "id": "S38", "priority": 38, "dependsOn": ["S36"], "passes": true,
       "title": "Prometheus metrics",
       "description": "GET /metrics with counters for decisions by reason, histograms for evaluate latency and per adapter latency, classifier cache hit ratio.",
       "acceptanceCriteria": [

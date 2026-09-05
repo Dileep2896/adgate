@@ -83,6 +83,9 @@ export const failClosed = async (
     });
     return {
       response: errorEvaluateResponse(persisted.record.id, latency()),
+      // An error record queried nothing, so this trace is empty; it is carried anyway so the
+      // caller never has to tell "no record" from "a record with no demand".
+      demand: persisted.record.demand,
       diagnostics: { error_name, persisted: true, seq: persisted.seq },
     };
   } catch (persistError) {

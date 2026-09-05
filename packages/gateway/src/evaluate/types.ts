@@ -1,5 +1,5 @@
 import type { ClassifyLlmFailure, ClassifySource } from '@adgate/core';
-import type { EvaluateRequest, EvaluateResponse } from '@adgate/schemas';
+import type { DemandTrace, EvaluateRequest, EvaluateResponse } from '@adgate/schemas';
 import type { Logger } from 'pino';
 
 import type { AppRow } from '../db/tables/apps.js';
@@ -33,4 +33,12 @@ export interface EvaluateDiagnostics {
 export interface EvaluateResult {
   response: EvaluateResponse;
   diagnostics: EvaluateDiagnostics;
+  /**
+   * The demand block of the record that was written, for the per-adapter latency metric
+   * (metrics/instrument.ts). Reading it off the PERSISTED record rather than off the mediation
+   * result keeps the metric equal to what the audit record proves: when the cap re-check under
+   * the app lock suppresses a turn, the record carries no demand and neither does this.
+   * Absent when no record was written.
+   */
+  demand?: DemandTrace | undefined;
 }
