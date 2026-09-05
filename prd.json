@@ -340,7 +340,7 @@
       ]
     },
     {
-      "id": "S32", "priority": 32, "dependsOn": ["S31"], "passes": false,
+      "id": "S32", "priority": 32, "dependsOn": ["S31"], "passes": true,
       "title": "App overview metrics",
       "description": "/apps/[id]: last 30 days of turns evaluated, ad eligible rate, fill rate, impressions, clicks, CTR, estimated revenue (sum of ecpm_estimate per impression / 1000), RPM per 1000 eligible turns, suppress reason breakdown, with recharts. Global /apps header shows YC metrics: apps integrated, total turns, eligible rate, RPM, advertisers with a generated report.",
       "acceptanceCriteria": [

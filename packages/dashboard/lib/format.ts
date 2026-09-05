@@ -32,3 +32,31 @@ export const formatDate = (value: Date | null | undefined): string =>
 
 /** `v3` - the policy version as it appears next to a hash. */
 export const formatPolicyVersion = (version: number): string => `v${String(version)}`;
+
+/**
+ * A rate as a percentage with one decimal: `60.0%`. A null rate is one whose denominator was 0
+ * (see lib/metrics.ts) and renders as `-`, never as `0.0%`: "no eligible turns" and "nothing
+ * filled" are different facts and an operator must be able to tell them apart.
+ */
+export const PERCENT_DIGITS = 1;
+
+export const formatPercent = (value: number | null): string =>
+  value === null ? '-' : `${(value * 100).toFixed(PERCENT_DIGITS)}%`;
+
+/**
+ * An estimated amount in whatever currency the creatives' ecpm is quoted in (the catalog does
+ * not carry one, so neither does this): two decimals, `-` when it is unknown.
+ */
+export const AMOUNT_DIGITS = 2;
+
+export const formatAmount = (value: number | null): string =>
+  value === null ? '-' : value.toFixed(AMOUNT_DIGITS);
+
+/** `12,345` - thousands separated, locale pinned so the rendered page never depends on one. */
+export const formatCount = (value: number): string => value.toLocaleString('en-US');
+
+/** `sensitive_category:health` reads as `sensitive: health` on a chart axis. */
+export const formatReason = (reason: string): string =>
+  reason.startsWith('sensitive_category:')
+    ? `sensitive: ${reason.slice('sensitive_category:'.length)}`
+    : reason;

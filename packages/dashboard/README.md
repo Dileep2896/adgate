@@ -4,16 +4,52 @@ The operator dashboard. A Next.js App Router app that reads the gateway's Postgr
 with Drizzle and shows what the gateway has been doing. It is private to this repo and is
 never published.
 
-## What it does today (S30, S31)
+## What it does today (S30, S31, S32)
 
 - `/login` - one admin password, a signed cookie session.
-- `/apps` - every app registered against this gateway: name, app id, policy version and hash
-  (truncated, with a copy button), when it was created, the size of its private creative
-  catalog and how many turns it evaluated in the last 30 days.
+- `/apps` - the five gateway-wide numbers (apps integrated, turns in the last 30 days, ad
+  eligible rate, RPM, advertisers with a generated report) over every app registered against
+  this gateway: name, app id, policy version and hash (truncated, with a copy button), when it
+  was created, the size of its private creative catalog and how many turns it evaluated in the
+  last 30 days.
 - `/apps/new` - register an app and read its first API key, once.
-- `/apps/[id]` - the app's policy YAML in an editor with inline schema errors, and its API
-  keys with a Revoke button.
+- `/apps/[id]` - the app's last 30 days (turns evaluated, ad eligible rate, fill rate,
+  impressions, clicks, CTR, estimated revenue, RPM) with a decisions-per-day chart and a
+  suppress-reason breakdown, then the policy YAML in an editor with inline schema errors, and
+  the API keys with a Revoke button.
 - `/creatives`, `/audit`, `/reports` - placeholders filled in by S33, S34 and S35.
+
+## The metrics
+
+`lib/metrics.ts` is a PURE module - no database, no React, no environment, no clock - and it is
+the only place that defines what a number means. It is worth reading its header before touching
+anything on the overview; in particular:
+
+- **turns evaluated** counts the `is_latest` audit record of each turn, so an attested turn is
+  counted once, not twice.
+- **ad eligible** means the turn got past every policy rule up to and including
+  `frequency_caps` and the gateway went on to ask demand: `decision = serve`, or `suppress` with
+  reason `no_fill`. Everything else (`paid_user`, `region_blocked`, `sensitive_category:<name>`,
+  `low_confidence`, `low_commercial_intent`, `frequency_cap`) is a rejection before demand, and
+  `error` is not counted as eligible either - adgate fails closed and does not claim
+  eligibility it cannot prove.
+- **RPM** is per 1000 ELIGIBLE turns, not per 1000 impressions.
+- Every rate is `null`, rendered `-`, when its denominator is 0. "No eligible turns" and
+  "nothing filled" are different facts.
+
+`lib/metrics.test.ts` computes all of it by hand from a fixture with round numbers.
+
+`lib/metrics-queries.ts` holds the SQL. audit_records is the table that grows and the one that
+holds the signed chain, so no query here may read it whole: the per-app queries filter by
+`(app_id, ts)` and the global ones walk `apps` with a `CROSS JOIN LATERAL` that AGGREGATES (a
+plain lateral gets pulled up into the outer join and goes straight back to a full scan), so
+every access lands on `audit_records_app_id_ts_idx`. `lib/metrics-queries.integration.test.ts`
+seeds 10 000 records and runs `EXPLAIN` on each query, failing on a `Seq Scan on audit_records`.
+
+The charts are `recharts`, in two CLIENT components under `components/charts/` that receive
+already computed plain arrays. Nothing server side reaches the browser through them: after S32
+the shared First Load JS is unchanged at 102 kB and only `/apps/[id]`, the one route with
+charts, grew (107 kB -> 220 kB).
 
 ## Read only by default, one handle that writes
 
@@ -76,6 +112,7 @@ Read from the repo-root `.env` (see `.env.example`) or from the real environment
 | `DASHBOARD_SESSION_SECRET` | no       | Session HMAC key; derived from the password if unset. |
 | `DASHBOARD_PORT`           | no       | `pnpm dev` port, default 3000.                       |
 | `DASHBOARD_E2E_PORT`       | no       | Playwright port, default 3210.                       |
+| `DATABASE_URL_TEST`        | tests    | Playwright's database. The metrics integration test creates and uses `<that database>_dashboard`, so `turbo run test` cannot have it and the gateway's suites truncating the same tables at once. |
 
 ## Commands
 
@@ -83,8 +120,9 @@ Read from the repo-root `.env` (see `.env.example`) or from the real environment
 pnpm dev                                  # gateway on :8787 and the dashboard on :3000
 pnpm --filter @adgate/dashboard dev       # dashboard alone
 pnpm --filter @adgate/dashboard build
-pnpm --filter @adgate/dashboard test      # vitest unit tests (85: session, rate limit, env,
-                                          # redirect, form parsing, policy validate-then-save)
+pnpm --filter @adgate/dashboard test      # vitest (128): the pure unit tests, the chart
+                                          # components in jsdom, and the metrics integration
+                                          # test, which needs docker Postgres
 pnpm --filter @adgate/dashboard typecheck
 pnpm --filter @adgate/dashboard lint
 ```
@@ -103,6 +141,10 @@ pnpm --filter @adgate/dashboard test:e2e
 `playwright.config.ts` builds the app and starts it with `next start` on `DASHBOARD_E2E_PORT`,
 pointed at `DATABASE_URL_TEST`. `e2e/seed.ts` applies the gateway's migrations, truncates every
 table and inserts one app row.
+
+`e2e/metrics.spec.ts` seeds a second app with ten known turns and asserts the rendered overview
+matches the numbers computed by hand in `e2e/seed.ts`, that the app with no traffic renders
+zeros, dashes and two EMPTY charts with nothing thrown, and that the `/apps` header agrees.
 
 `e2e/smoke.spec.ts` checks that `/apps` redirects an anonymous visitor to `/login`, that a
 forged cookie does not get past the layout, that a wrong password is refused, and that logging

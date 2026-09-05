@@ -2,15 +2,24 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { ApiKeysTable } from '@/components/api-keys-table';
+import { AppOverview } from '@/components/app-overview';
 import { CopyButton } from '@/components/copy-button';
 import { PolicyEditor } from '@/components/policy-editor';
 import { formatTimestamp } from '@/lib/format';
+import { computeMetrics, decisionsPerDay, suppressBreakdown } from '@/lib/metrics';
+import {
+  appDecisionCounts,
+  appEventCounts,
+  defaultMetricsWindow,
+  METRICS_WINDOW_DAYS,
+} from '@/lib/metrics-queries';
 import { getApp, listApiKeys } from '@/lib/queries';
 
 /**
- * One app: its identity, its policy in an editor, and its API keys. The two writes this page
+ * One app: how it is doing, its policy in an editor, and its API keys. The two writes this page
  * can start (save the policy, revoke a key) are server actions in ../actions.ts and use the
- * dashboard's only read-write handle; everything rendered here is read through lib/queries.ts.
+ * dashboard's only read-write handle; everything rendered here is read through lib/queries.ts
+ * and lib/metrics-queries.ts, and every number is computed by the pure lib/metrics.ts.
  */
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +30,12 @@ const AppDetailPage = async ({ params }: { params: Promise<{ id: string }> }) =>
   if (app === null) {
     notFound();
   }
-  const keys = await listApiKeys(app.id);
+  const metricWindow = defaultMetricsWindow();
+  const [keys, decisions, eventCounts] = await Promise.all([
+    listApiKeys(app.id),
+    appDecisionCounts(app.id, metricWindow),
+    appEventCounts(app.id, metricWindow),
+  ]);
 
   return (
     <section className="space-y-8">
@@ -39,6 +53,13 @@ const AppDetailPage = async ({ params }: { params: Promise<{ id: string }> }) =>
           <span className="text-xs">updated {formatTimestamp(app.updatedAt)}</span>
         </p>
       </div>
+
+      <AppOverview
+        metrics={computeMetrics(decisions, eventCounts)}
+        daily={decisionsPerDay(decisions, metricWindow)}
+        breakdown={suppressBreakdown(decisions)}
+        days={METRICS_WINDOW_DAYS}
+      />
 
       <PolicyEditor
         appId={app.id}

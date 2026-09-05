@@ -5,6 +5,7 @@ import { auditRecords, events, rawText } from './tables/audit.js';
 import { capState, classifyCache, userDayCaps } from './tables/caps.js';
 import { creatives } from './tables/catalog.js';
 import { rateLimits } from './tables/rate-limits.js';
+import { reports } from './tables/reports.js';
 
 /**
  * The Drizzle schema: every table in one place for `drizzle(sql, { schema })` and for tests
@@ -15,6 +16,7 @@ export * from './tables/audit.js';
 export * from './tables/caps.js';
 export * from './tables/catalog.js';
 export * from './tables/rate-limits.js';
+export * from './tables/reports.js';
 
 export const ALL_TABLES = [
   apps,
@@ -28,6 +30,7 @@ export const ALL_TABLES = [
   userDayCaps,
   classifyCache,
   rateLimits,
+  reports,
 ] as const;
 
 /** The SQL names of every table, in ALL_TABLES order. */

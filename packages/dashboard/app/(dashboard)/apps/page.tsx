@@ -1,19 +1,71 @@
 import Link from 'next/link';
 
 import { CopyButton } from '@/components/copy-button';
-import { formatPolicyVersion, formatTimestamp, truncateHash } from '@/lib/format';
+import { MetricGrid, type Metric } from '@/components/metric-grid';
+import {
+  formatAmount,
+  formatCount,
+  formatPercent,
+  formatPolicyVersion,
+  formatTimestamp,
+  truncateHash,
+} from '@/lib/format';
+import { computeGlobalMetrics, type GlobalMetrics } from '@/lib/metrics';
+import { defaultMetricsWindow, globalMetricRows, METRICS_WINDOW_DAYS } from '@/lib/metrics-queries';
 import { AUDIT_WINDOW_DAYS, listAppsWithCounts } from '@/lib/queries';
 
 /**
  * The app list: one row per tenant registered against this gateway, with the policy it is
  * running, the size of its private creative catalog and how many turns it evaluated in the
  * last 30 days. Read only; "New app" is the one link that leads to a write.
+ *
+ * The header is the whole gateway in five numbers (docs/BUILD_GUIDE.md Phase 8): how many apps
+ * are integrated, how many turns they processed, how many of those the policy let reach demand,
+ * what those eligible turns earned per thousand, and how many advertisers have taken a
+ * verification report. Computed by the pure lib/metrics.ts from grouped counts.
  */
 
 export const dynamic = 'force-dynamic';
 
+/** The five numbers, in the order the story tells them. */
+const headlineMetrics = (metrics: GlobalMetrics): Metric[] => [
+  {
+    label: 'Apps integrated',
+    value: formatCount(metrics.appsIntegrated),
+    hint: 'have written an audit record',
+    testId: 'global-apps',
+  },
+  {
+    label: `Turns (${METRICS_WINDOW_DAYS}d)`,
+    value: formatCount(metrics.turnsEvaluated),
+    hint: `${formatCount(metrics.serves)} served`,
+    testId: 'global-turns',
+  },
+  {
+    label: 'Ad eligible',
+    value: formatPercent(metrics.eligibleRate),
+    hint: `${formatCount(metrics.adEligible)} turns reached demand`,
+    testId: 'global-eligible-rate',
+  },
+  {
+    label: 'RPM',
+    value: formatAmount(metrics.rpm),
+    hint: 'per 1000 eligible turns',
+    testId: 'global-rpm',
+  },
+  {
+    label: 'Advertisers with a report',
+    value: formatCount(metrics.advertisersWithReport),
+    hint: 'verification reports generated',
+    testId: 'global-reports',
+  },
+];
+
 const AppsPage = async () => {
-  const apps = await listAppsWithCounts();
+  const [apps, rows] = await Promise.all([
+    listAppsWithCounts(),
+    globalMetricRows(defaultMetricsWindow()),
+  ]);
 
   return (
     <section>
@@ -30,6 +82,10 @@ const AppsPage = async () => {
         >
           New app
         </Link>
+      </div>
+
+      <div className="mb-8">
+        <MetricGrid metrics={headlineMetrics(computeGlobalMetrics(rows))} />
       </div>
 
       {apps.length === 0 ? (

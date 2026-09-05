@@ -4,10 +4,13 @@ import { and, count, desc, eq, gte, isNotNull, max } from 'drizzle-orm';
 import { type DashboardDb, dashboardDb } from './db';
 
 /**
- * Every read the dashboard makes, in one module. SELECT only (see lib/db.ts): writes go
- * through the admin server actions and their own handle (lib/db-write.ts). Each function takes
- * the handle so a test can pass its own. Rows come back as plain data; page components format,
- * they do not query.
+ * The dashboard's reads. SELECT only (see lib/db.ts): writes go through the admin server
+ * actions and their own handle (lib/db-write.ts). Each function takes the handle so a test can
+ * pass its own. Rows come back as plain data; page components format, they do not query.
+ *
+ * The overview metrics have their own module, lib/metrics-queries.ts, because their queries
+ * carry an obligation this file's do not - every one of them must reach audit_records through
+ * an index - and an integration test EXPLAINs each. Add a metric query there, not here.
  */
 
 /** The window the app list counts audit records over. */
