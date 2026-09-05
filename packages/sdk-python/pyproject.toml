@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "adgate"
-version = "0.0.0"
+version = "0.1.0"
 description = "adgate client for Python: evaluate a turn, attest the model output hash, track events. Never raises."
 readme = "README.md"
 license = "Apache-2.0"

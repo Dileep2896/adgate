@@ -1174,11 +1174,11 @@ class EventRequest(BaseModel):
 
 class Message(BaseModel):
     """
-    One conversation turn. Servers truncate to the last 4 messages and 4,000 characters before classification.
+    One conversation turn. Servers truncate to the last 4 messages and 4,000 characters before classification, and reject a single message over 32,768 characters.
     """
 
     role: MessageRole
-    content: str
+    content: Annotated[str, Field(max_length=32768)]
 
 
 class PolicyConfig(BaseModel):

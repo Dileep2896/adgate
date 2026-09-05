@@ -1,0 +1,16 @@
+# @adgate/schemas
+
+## 0.1.0
+
+### Minor Changes
+
+- First release of the adgate client packages.
+  
+  `@adgate/schemas` is the contract from `docs/api.md`, `docs/policy.md` and `docs/audit.md` as Zod
+  schemas plus the generated JSON Schema files: evaluate, attest, events, the policy configuration
+  and overrides, the signed audit record and the verification result.
+  
+  `@adgate/sdk` is the client for Node 20 and browsers — `evaluate`, `attest`, `track` and the
+  generation helpers, never throwing and failing closed to `suppress` — with two optional entries:
+  `@adgate/sdk/react` for the labelled `SponsoredSlot` block that can never render inside model
+  output, and `@adgate/sdk/ai` for the Vercel AI SDK middleware.

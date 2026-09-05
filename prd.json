@@ -415,7 +415,7 @@
       ]
     },
     {
-      "id": "S40", "priority": 40, "dependsOn": ["S39", "S26"], "passes": false,
+      "id": "S40", "priority": 40, "dependsOn": ["S39", "S26"], "passes": true,
       "title": "Release pipeline",
       "description": "Changesets for versioning; GitHub Actions publish @adgate/sdk and @adgate/schemas to npm and adgate to PyPI on tag; Dockerfile for the gateway published to GHCR; tag v0.1.0 instructions in CONTRIBUTING.md.",
       "acceptanceCriteria": [

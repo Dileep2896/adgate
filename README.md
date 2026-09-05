@@ -204,6 +204,34 @@ Continuous integration (`.github/workflows/ci.yml`) runs install, typecheck, lin
 every push and pull request against a Postgres 16 service container, plus a separate job for the
 Python SDK.
 
+## Published artifacts
+
+**Not yet published.** The release pipeline exists — changesets for versioning and
+`.github/workflows/release.yml` for a `v*` tag — and its dry runs pass locally, but nothing below
+has been pushed to a registry yet. Until a human cuts the first release (the procedure and the
+secrets they need are in [CONTRIBUTING.md](CONTRIBUTING.md#releasing)), use the packages from a
+checkout, as the Quickstart does.
+
+| Artifact | Where it will live | Once released |
+| --- | --- | --- |
+| `@adgate/schemas` | npm | `npm i @adgate/schemas` |
+| `@adgate/sdk`, `@adgate/sdk/react`, `@adgate/sdk/ai` | npm | `npm i @adgate/sdk` |
+| `adgate` (Python SDK) | PyPI | `pip install adgate` |
+| the gateway service | GHCR | `docker pull ghcr.io/<owner>/<repo>/gateway:0.1.0` |
+
+The image you can build today, from the repo root (the whole workspace is the build context):
+
+```bash
+docker build -f packages/gateway/Dockerfile -t adgate-gateway .
+docker run --rm -p 8787:8787 \
+  -e DATABASE_URL='postgres://adgate:adgate@host.docker.internal:5432/adgate' \
+  -e ADGATE_SIGNING_KEY_ID=... -e ADGATE_SIGNING_KEY_PEM='-----BEGIN PRIVATE KEY-----\n...' \
+  adgate-gateway
+```
+
+`@adgate/core`, `@adgate/gateway`, `@adgate/dashboard` and the examples are private and are never
+published; the SDK's only runtime dependency is `@adgate/schemas`.
+
 ## Repo layout
 
 ```
@@ -218,7 +246,8 @@ docs/               api.md, policy.md, audit.md are the contract; privacy.md is 
 fixtures/           classifier golden set
 scripts/db/         Postgres init script (creates adgate_test)
 scripts/ralph/      the build loop
-.github/workflows/  CI
+.changeset/         changesets config and pending release notes
+.github/workflows/  CI and release
 ```
 
 ## Building adgate with the loop

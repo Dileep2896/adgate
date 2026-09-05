@@ -1,6 +1,17 @@
 {
   "name": "@adgate/schemas",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "The adgate contract as Zod schemas and JSON Schema: evaluate, policy, audit record, verify. Runtime dependency of @adgate/sdk.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/adgate/adgate/tree/main/packages/schemas",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adgate/adgate.git",
+    "directory": "packages/schemas"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

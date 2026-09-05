@@ -1,8 +1,14 @@
 {
   "name": "@adgate/sdk",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "adgate client for Node and browsers: evaluate a turn, attest the model output hash, track events. Never throws.",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/adgate/adgate/tree/main/packages/sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adgate/adgate.git",
+    "directory": "packages/sdk"
+  },
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.cjs",

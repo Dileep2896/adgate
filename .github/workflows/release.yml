@@ -1,0 +1,201 @@
+# adgate release.
+#
+# Triggered by a version tag (`git tag v0.1.0 && git push --follow-tags`), which publishes three
+# kinds of artefact from one commit:
+#
+#   npm    @adgate/schemas and @adgate/sdk        secret: NPM_TOKEN
+#   PyPI   adgate (packages/sdk-python)           secret: PYPI_API_TOKEN
+#   GHCR   ghcr.io/<owner>/<repo>/gateway         no secret: the built in GITHUB_TOKEN
+#
+# It is also runnable by hand (Actions -> Release -> Run workflow) with the `dry_run` input,
+# which defaults to true. In dry-run mode every job does all of its real work — install, build,
+# pack, `python -m build`, `docker build` — and stops one step short of publishing:
+# `pnpm publish --dry-run`, `twine check` instead of `twine upload`, and `push: false`.
+# That path needs no secrets at all, so the pipeline can be exercised on a fork or on a
+# repository whose maintainer has not added the tokens yet.
+#
+# Versions come from the repository, never from the tag: changesets writes the npm versions
+# (`pnpm changeset` then `pnpm run version`) and CONTRIBUTING.md's release procedure bumps
+# packages/sdk-python/pyproject.toml by hand. Each job checks the tag against them and fails
+# rather than publishing a mismatch.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Do everything except publish (no secrets required)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # true only for a manual run that asked for it; a tag push always publishes for real.
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+
+jobs:
+  npm:
+    name: npm (@adgate/schemas, @adgate/sdk)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        # No version input: pnpm/action-setup@v4 reads it from package.json "packageManager".
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Tag matches the package versions
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          for pkg in packages/schemas packages/sdk; do
+            version=$(node -p "require('./$pkg/package.json').version")
+            if [ "$version" != "$tag" ]; then
+              echo "::error::$pkg is at $version but the tag is $tag. Run pnpm run version, commit, then tag."
+              exit 1
+            fi
+          done
+          echo "tag v$tag matches both packages"
+
+      - name: Build
+        # dist/ is what gets packed: both packages publish "files": ["dist", ...] only.
+        run: pnpm build
+
+      - name: Publish (dry run)
+        if: env.DRY_RUN == 'true'
+        # -r skips private packages, so the gateway, the dashboard and the examples are never
+        # candidates. --no-git-checks: a workflow_dispatch run is not on a release branch.
+        run: pnpm publish -r --dry-run --no-git-checks
+
+      - name: Authenticate with npm
+        if: env.DRY_RUN != 'true'
+        # The literal ${NPM_TOKEN} is what npm expands at read time, so the token itself never
+        # lands in a file on the runner.
+        run: printf '//registry.npmjs.org/:_authToken=${NPM_TOKEN}\n' > "$HOME/.npmrc"
+
+      - name: Publish
+        if: env.DRY_RUN != 'true'
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # Already published versions are skipped, so a re-run of a partially failed release is
+        # safe. "access": "public" is in each package.json publishConfig.
+        run: pnpm publish -r --no-git-checks
+
+  pypi:
+    name: PyPI (adgate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: packages/sdk-python
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Tag matches the package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(python -c "import re,pathlib; print(re.search(r'^version = \"([^\"]+)\"$', pathlib.Path('pyproject.toml').read_text(), re.M).group(1))")
+          if [ "$version" != "$tag" ]; then
+            echo "::error::packages/sdk-python is at $version but the tag is $tag. Bump pyproject.toml and __init__.py, commit, then tag."
+            exit 1
+          fi
+          echo "tag v$tag matches pyproject.toml"
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Check the distributions
+        # The dry-run stop line: twine check validates the metadata and the long description
+        # exactly as the upload would, without contacting PyPI.
+        run: twine check dist/*
+
+      - name: Upload to PyPI
+        if: env.DRY_RUN != 'true'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
+
+  image:
+    name: gateway image (GHCR)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+      # What lets the built in GITHUB_TOKEN push to ghcr.io. No secret to add.
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: env.DRY_RUN != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/gateway
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=sha,enable=${{ github.event_name == 'workflow_dispatch' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          # The build context is the repo root: the gateway imports its workspace siblings.
+          context: .
+          file: packages/gateway/Dockerfile
+          push: ${{ env.DRY_RUN != 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

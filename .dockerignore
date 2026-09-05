@@ -1,0 +1,47 @@
+# The docker build context is the repo root (see packages/gateway/Dockerfile). Everything the
+# builder needs is source, package manifests and the lockfile; everything else only slows the
+# context upload down or, worse, would leak into the image.
+#
+# Patterns are matched from the context root and `*` never crosses a `/`, so anything that can
+# appear inside a package carries a `**/` prefix.
+#
+# Note what is NOT excluded: every workspace package, including the dashboard, the SDKs and the
+# examples. `pnpm install --frozen-lockfile` compares the lockfile against the projects listed
+# in pnpm-workspace.yaml, so hiding one of them from the context fails the install outright.
+
+# Installed and built artefacts: the builder installs and builds inside the image, and a host
+# node_modules is the wrong platform for argon2's native binding.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/*.tsbuildinfo
+**/coverage
+
+# Secrets and local state. Never copy a real .env into an image.
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.local.example
+
+# Version control, CI and build-loop metadata
+.git
+.github
+.claude
+.ralph
+
+# Test and tooling artefacts
+**/test-results
+**/playwright-report
+**/playwright/.cache
+**/__pycache__
+**/*.egg-info
+**/.venv
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+
+# Documentation and the original starter archive: nothing in the gateway build reads them.
+docs
+**/*.md
+adgate-starter.zip

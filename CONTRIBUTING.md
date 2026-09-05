@@ -151,21 +151,137 @@ belongs in `docs/privacy.md`, which is the data inventory. A stale inventory is 
 
 ## Releasing
 
-<!-- TODO(S40): the release pipeline — changesets, the GitHub Actions publish jobs for
-     @adgate/sdk, @adgate/schemas and the `adgate` PyPI package, and the gateway image on GHCR —
-     lands with story S40. The flow below is the intended shape; S40 confirms or corrects it. -->
+**Nothing has been published yet.** The pipeline below is built and exercised, but no version of
+any artefact is on npm, PyPI or GHCR, and `.github/workflows/release.yml` has never run on
+GitHub: this repository has no remote. The first real release is a human decision (see
+"What a human must do once", below).
 
-Versioning is by [changesets](https://github.com/changesets/changesets). A change to a published
-package (`@adgate/sdk`, `@adgate/schemas`, `packages/sdk-python`) needs a changeset in the same
-pull request.
+### What is published, and what is not
+
+| Artefact | Where | Versioned by |
+| --- | --- | --- |
+| `@adgate/schemas` | npm, public | changesets |
+| `@adgate/sdk` | npm, public | changesets |
+| `adgate` | PyPI | `packages/sdk-python/pyproject.toml`, by hand |
+| the gateway image | `ghcr.io/<owner>/<repo>/gateway` | the git tag |
+
+`@adgate/core`, `@adgate/gateway`, `@adgate/dashboard` and the examples are `"private": true`
+and are never published. `@adgate/core` is deliberately one of them: only the gateway and the
+dashboard import it, and `@adgate/sdk` does not — the SDK's one runtime dependency is
+`@adgate/schemas`, which is why that package has to be public. `pnpm publish -r` skips every
+private package on its own, and they are also listed in `.changeset/config.json`'s `ignore`.
+
+### Adding a changeset
+
+A change to `@adgate/schemas` or `@adgate/sdk` needs a changeset in the same pull request:
 
 ```bash
-pnpm changeset                 # describe the change and pick the version bumps
-pnpm changeset version         # applies the bumps and writes CHANGELOG.md
-git commit -am "chore: release v0.1.0"
-git tag v0.1.0
-git push --follow-tags         # the tag is what triggers the publish workflows
+pnpm changeset      # pick the packages, pick major/minor/patch, write the entry for the changelog
 ```
 
-Before tagging: `pnpm audit:prod`, all four gates green, the Playwright suite green, and the
-Python suites green.
+That writes a small markdown file under `.changeset/`. Commit it. It is not a release; it is a
+note saying what the next release should do. Changes that touch only private packages need none.
+A change to the Python SDK needs no changeset either — see the version bump below.
+
+### Cutting a release
+
+```bash
+pnpm run version               # changeset version + pnpm install --lockfile-only
+```
+
+`pnpm run version` consumes every changeset file, bumps the versions, writes each package's
+`CHANGELOG.md`, and refreshes the lockfile. Use the root script, not `changeset version` on its
+own: the lockfile has to be rewritten in the same commit or CI's `--frozen-lockfile` install
+fails. Workspace dependencies stay `workspace:*` in the repository; pnpm rewrites them to the
+real version (`"@adgate/schemas": "0.1.0"`) inside the published tarball.
+
+Then bring the Python package to the same version by hand — changesets does not know about it:
+
+```bash
+# packages/sdk-python/pyproject.toml   version = "0.1.0"
+# packages/sdk-python/src/adgate/__init__.py   __version__ = "0.1.0"
+```
+
+`tests/test_version.py` fails if those two disagree, and the release workflow fails if either
+disagrees with the tag.
+
+Before tagging: `pnpm audit:prod`, all four gates green, the Playwright suite green, the Python
+suites green, and the local dry runs below.
+
+```bash
+git commit -am "chore: release v0.1.0"
+git tag v0.1.0
+git push --follow-tags         # the tag is what triggers .github/workflows/release.yml
+```
+
+### The release workflow
+
+`.github/workflows/release.yml` runs on any `v*` tag and has three independent jobs:
+
+| Job | Does | Needs |
+| --- | --- | --- |
+| `npm` | install, build, `pnpm publish -r` | `NPM_TOKEN` |
+| `pypi` | `python -m build`, `twine check`, `twine upload` | `PYPI_API_TOKEN` |
+| `image` | `docker build` from `packages/gateway/Dockerfile`, push to GHCR | nothing (`GITHUB_TOKEN` with `packages: write`) |
+
+Each job first checks the tag against the version in the repository and fails rather than
+publishing a mismatch. Publishing an already published version is skipped, so re-running a
+partially failed release is safe.
+
+The same workflow can be run by hand from the Actions tab (**Release → Run workflow**) with the
+`dry_run` input, which **defaults to true**. In that mode every job does all of its real work
+and stops one step short: `pnpm publish --dry-run`, `twine check` without `twine upload`, and
+`docker build` with `push: false`. No secrets are involved, so a fork or a repository with no
+tokens can still exercise the whole pipeline.
+
+### Running the dry runs locally
+
+These are the exact commands the dry-run path runs:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build
+pnpm publish -r --dry-run --no-git-checks         # prints one tarball per public package
+
+cd packages/sdk-python
+pip install build twine
+python -m build                                   # dist/adgate-<version>{.tar.gz,-py3-none-any.whl}
+twine check dist/*
+cd ../..
+
+docker build -f packages/gateway/Dockerfile -t adgate-gateway:dev .
+```
+
+The image is built from the repo root, not from `packages/gateway`: the gateway imports its
+workspace siblings, so the whole workspace is the build context (`.dockerignore` trims it). To
+run it against the compose Postgres:
+
+```bash
+docker run --rm -p 8787:8787 \
+  -e DATABASE_URL='postgres://adgate:adgate@host.docker.internal:5433/adgate' \
+  -e ADGATE_SIGNING_KEY_ID=k_2026_09 \
+  -e ADGATE_SIGNING_KEY_PEM="$(grep '^ADGATE_SIGNING_KEY_PEM=' .env | cut -d= -f2- | tr -d '"')" \
+  adgate-gateway:dev
+curl -s localhost:8787/healthz     # {"ok":true}
+```
+
+Two things bite here. `docker --env-file` does **not** strip the quotes around a value, so
+passing `.env` straight in hands the gateway a PEM that starts with `"` and it exits 1; pass the
+signing key with `-e` as above. And `localhost` inside the container is the container, so the
+host Postgres is `host.docker.internal` — on this repository's dev machine on port 5433, on a
+fresh clone 5432. The image runs the server only; apply migrations from a checkout with
+`pnpm db:migrate`.
+
+### What a human must do once
+
+1. Create the npm organisation `@adgate` and add a granular access token with publish rights for
+   `@adgate/schemas` and `@adgate/sdk` as the repository secret `NPM_TOKEN`.
+2. Claim the `adgate` name on PyPI and add a project-scoped API token as the repository secret
+   `PYPI_API_TOKEN`.
+3. Nothing for GHCR: the image is pushed with the built-in `GITHUB_TOKEN`. After the first push,
+   set the package's visibility to public in the repository's package settings if that is what
+   you want.
+4. Run the workflow manually once with `dry_run` left at true, confirm all three jobs are green,
+   then tag `v0.1.0`.
+5. Verify from a clean machine: `npm view @adgate/sdk`, `pip install adgate`, and
+   `docker pull ghcr.io/<owner>/<repo>/gateway:0.1.0`.

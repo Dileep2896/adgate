@@ -1,6 +1,8 @@
 {
   "name": "@adgate/core",
   "version": "0.0.0",
+  "private": true,
+  "description": "Pure classify, policy, demand and audit logic. Not published: only the private gateway and dashboard consume it.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
