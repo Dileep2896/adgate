@@ -1,9 +1,11 @@
+import { createKeyRing, verify } from '@adgate/core';
 import { describe, expect, it } from 'vitest';
 
-import { FIXTURE_RECORDS, fixtureInput, invalidWith } from './report-fixture';
+import { FIXTURE_RECORDS, fixtureInput, fixtureRecord, invalidWith } from './report-fixture';
 import {
   CHAIN_INTEGRITY_CHECKS,
   computeReport,
+  isDisclosureCompliant,
   REPORT_VERSION,
   type ReportInput,
   type ReportRecordInput,
@@ -134,7 +136,9 @@ describe('the six record fixture', () => {
   });
 
   // R1, R2, R3 and R4 carry "Sponsored" after the answer. R5's label is empty and R6 cannot be
-  // read, so 4 of 6 = 66.67%. The suppression counts: it carries a disclosure block too.
+  // read, so 4 of 6 = 66.67%. The suppression counts: it carries a disclosure block too - and a
+  // suppression only reaches a report at all in this fixture, never from the live gateway, which
+  // stamps advertiser_id on serves alone (lib/report-queries.ts).
   it('measures disclosure compliance over every record, suppressions included', () => {
     expect(report.disclosure_compliance.passing).toBe(4);
     expect(report.disclosure_compliance.total).toBe(6);
@@ -180,6 +184,58 @@ describe('the six record fixture', () => {
     ]);
     expect(report.chain_integrity.checks).not.toContain('disclosure_present');
     expect(report.chain_integrity.checks).not.toContain('separation_attested');
+  });
+});
+
+describe('the verifier block', () => {
+  it('is absent when the caller did not say, and never invented', () => {
+    expect(reportOf(FIXTURE_RECORDS).verifier).toBeUndefined();
+  });
+
+  it('carries what the caller said about the keys, word for word', () => {
+    const issue = 'ADGATE_PUBLIC_KEYS_JSON: unusable';
+    expect(reportOf(FIXTURE_RECORDS, { verifier: { key_source: 'none', issue } }).verifier).toEqual(
+      { key_source: 'none', issue },
+    );
+  });
+});
+
+describe('disclosure compliance', () => {
+  /**
+   * The report's rule and docs/audit.md's `disclosure_present` check must be the SAME rule. A
+   * report that graded a turn compliant while GET /v1/verify/:id failed it would be an adgate
+   * document contradicting an adgate API, so this asks core itself rather than restating the
+   * conditions. The ring is empty on purpose: only the disclosure check is read, and the
+   * signature verdict is irrelevant to it.
+   */
+  const ring = createKeyRing({});
+  const coreSaysCompliant = (record: unknown): boolean =>
+    verify(record, ring).checks.find((check) => check.name === 'disclosure_present')?.ok === true;
+
+  it('agrees with core on every fixture record', () => {
+    for (const entry of FIXTURE_RECORDS) {
+      expect(isDisclosureCompliant(entry.record), entry.auditId).toBe(
+        coreSaysCompliant(entry.record),
+      );
+    }
+  });
+
+  it('agrees with core on a missing label, a wrong position and a wrong style', () => {
+    const cases = [
+      fixtureRecord({ id: 'aud_ok', appId: 'app_alpha' }),
+      fixtureRecord({ id: 'aud_no_label', appId: 'app_alpha', label: '   ' }),
+      fixtureRecord({ id: 'aud_inline', appId: 'app_alpha', position: 'inline' }),
+      fixtureRecord({ id: 'aud_styled', appId: 'app_alpha', style: 'inline_text' }),
+    ];
+    expect(cases.map((record) => isDisclosureCompliant(record))).toEqual([
+      true,
+      false,
+      false,
+      false,
+    ]);
+    for (const record of cases) {
+      expect(isDisclosureCompliant(record), record.id).toBe(coreSaysCompliant(record));
+    }
   });
 });
 

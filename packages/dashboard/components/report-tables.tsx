@@ -137,7 +137,10 @@ export const ReportTables = ({ report }: { report: ReportDocument }) => (
           <Empty columns={3}>
             {report.chain_integrity.status === 'empty'
               ? 'No records to verify.'
-              : 'Every record verified: schema, record_hash, chain, signature, creative_hash, disclosure_present, separation_attested and supersedes.'}
+              : // The checks the document says the number is over, never a hardcoded list: chain
+                // integrity is six of docs/audit.md's eight checks (lib/report-document.ts), and
+                // naming the other two here would claim more than the report measured.
+                `Every record verified: ${report.chain_integrity.checks.join(', ')}.`}
           </Empty>
         ) : (
           report.chain_integrity.failures.map((row) => (

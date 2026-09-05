@@ -17,6 +17,16 @@ import type { ReportAdvertiser, ReportDocument, ReportPeriod } from './report';
  *                      (the app's record at seq - 1), the record an attestation supersedes and
  *                      that record's own predecessor. Without them the `chain` check has nothing
  *                      to compare prev_hash against;
+ *
+ *                      A PREDECESSOR IS A REFERENCE, NOT A DOCUMENT. An app's chain interleaves
+ *                      every advertiser it served, so the record before one advertiser's serve
+ *                      is usually a COMPETITOR's: shipping it whole would hand advertiser A
+ *                      advertiser B's creative id, name, domain, the categories of the turn and
+ *                      the competitor exclusions that were applied. core's checkChain reads two
+ *                      fields of a predecessor - record_hash and app_id - so that is all a
+ *                      predecessor-only entry carries, marked `redacted`. The full document is
+ *                      kept only for a SUPERSEDED VERSION of a record in the report, which is a
+ *                      version of the advertiser's own turn and is verified in full;
  *   creatives          the six content fields of every creative the records name, so
  *                      `creative_hash` can be recomputed rather than taken on trust. This is
  *                      also the only place the advertiser sees the copy that was actually
@@ -47,10 +57,38 @@ export const BundleRecordSchema = z.object({
   record_hash: z.string().min(1),
   is_latest: z.boolean(),
   ts: z.string().min(1),
-  /** The signed document exactly as stored; verify() hashes this, so it is never reshaped. */
+  /**
+   * The signed document exactly as stored; verify() hashes this, so it is never reshaped.
+   * On a `redacted` entry it is the chain reference instead: { record_hash, app_id }.
+   */
   record: z.unknown(),
+  /**
+   * True when `record` is a chain reference rather than the document: this row is in the bundle
+   * only so a reported record's `chain` check has something to compare prev_hash against, and it
+   * belongs to a turn that is not this advertiser's. Absent means a full document.
+   */
+  redacted: z.boolean().optional(),
 });
 export type BundleRecord = z.infer<typeof BundleRecordSchema>;
+
+/** Why a supporting record is in the bundle, which decides how much of it is carried. */
+export type SupportingRole = 'predecessor' | 'superseded';
+
+export interface SupportingRecord extends BundleRecord {
+  role: SupportingRole;
+}
+
+/** The two fields core's checkChain reads off a predecessor, and nothing else. */
+export const chainReference = (record: BundleRecord): BundleRecord => ({
+  audit_id: record.audit_id,
+  app_id: record.app_id,
+  seq: record.seq,
+  record_hash: record.record_hash,
+  is_latest: record.is_latest,
+  ts: record.ts,
+  record: { record_hash: record.record_hash, app_id: record.app_id },
+  redacted: true,
+});
 
 export const BundleCreativeSchema = z.object({
   id: z.string().min(1),
@@ -65,7 +103,15 @@ export type BundleCreative = z.infer<typeof BundleCreativeSchema>;
 
 export const ReportBundleSchema = z.object({
   bundle_version: z.literal(BUNDLE_VERSION),
+  /** When the REPORT was generated: the claim's date, copied from the stored report. */
   generated_at: z.string().min(1),
+  /**
+   * When these RECORDS were read, which is download time - the bundle re-reads them rather than
+   * freezing them (lib/report-generate.ts). The two dates differ, and an auditor comparing a
+   * bundle with the report it came from needs to know which is which. Optional so a bundle
+   * written before this field existed still parses.
+   */
+  collected_at: z.string().min(1).optional(),
   report_id: z.string().min(1),
   advertiser: z.object({ id: z.string(), name: z.string(), domain: z.string() }),
   period: z.object({ start: z.string(), end: z.string() }),
@@ -85,27 +131,71 @@ export interface ReportBundle extends Omit<ReportBundleFile, 'report'> {
 
 export interface ReportBundleInput {
   reportId: string;
+  /** The stored report's own timestamp: when the CLAIM was made. */
   generatedAt: string;
+  /** When the records below were read out of the database. */
+  collectedAt: string;
   advertiser: ReportAdvertiser;
   period: ReportPeriod;
   report: ReportDocument;
   records: readonly BundleRecord[];
-  supportingRecords: readonly BundleRecord[];
+  supportingRecords: readonly SupportingRecord[];
   creatives: readonly BundleCreative[];
   publicKeys: Readonly<Record<string, string>>;
 }
 
-/** Sorted and de-duplicated so two bundles of the same data are byte-identical. */
+/** One chain order, so two bundles of the same data are byte-identical. */
+const sorted = (records: readonly BundleRecord[]): BundleRecord[] =>
+  [...records].sort(
+    (a, b) =>
+      a.app_id.localeCompare(b.app_id) ||
+      a.seq - b.seq ||
+      a.record_hash.localeCompare(b.record_hash),
+  );
+
+/** Sorted and de-duplicated. */
 const uniqueRecords = (records: readonly BundleRecord[]): BundleRecord[] => {
   const byHash = new Map<string, BundleRecord>();
   for (const record of records) {
     byHash.set(record.record_hash, record);
   }
-  return [...byHash.values()].sort(
-    (a, b) =>
-      a.app_id.localeCompare(b.app_id) ||
-      a.seq - b.seq ||
-      a.record_hash.localeCompare(b.record_hash),
+  return sorted([...byHash.values()]);
+};
+
+/**
+ * The supporting set: reported records are never repeated, and a row that is only somebody's
+ * positional predecessor is reduced to a chain reference. A row that is BOTH (a predecessor of
+ * one record and the superseded version of another) keeps its document - it is a version of a
+ * record that is in this report either way.
+ */
+const supportingEntries = (
+  records: readonly SupportingRecord[],
+  reported: ReadonlySet<string>,
+): BundleRecord[] => {
+  const byHash = new Map<string, { entry: SupportingRecord; full: boolean }>();
+  for (const entry of records) {
+    if (reported.has(entry.record_hash)) {
+      continue;
+    }
+    const existing = byHash.get(entry.record_hash);
+    byHash.set(entry.record_hash, {
+      entry,
+      full: entry.role === 'superseded' || (existing?.full ?? false),
+    });
+  }
+  return sorted(
+    [...byHash.values()].map(({ entry, full }) => {
+      const record: BundleRecord = {
+        audit_id: entry.audit_id,
+        app_id: entry.app_id,
+        seq: entry.seq,
+        record_hash: entry.record_hash,
+        is_latest: entry.is_latest,
+        ts: entry.ts,
+        record: entry.record,
+      };
+      return full ? record : chainReference(record);
+    }),
   );
 };
 
@@ -114,15 +204,13 @@ export const buildReportBundle = (input: ReportBundleInput): ReportBundle => {
   return {
     bundle_version: BUNDLE_VERSION,
     generated_at: input.generatedAt,
+    collected_at: input.collectedAt,
     report_id: input.reportId,
     advertiser: input.advertiser,
     period: input.period,
     report: input.report,
     records: uniqueRecords(input.records),
-    // A record that is already reported is never repeated in the supporting set.
-    supporting_records: uniqueRecords(
-      input.supportingRecords.filter((record) => !reported.has(record.record_hash)),
-    ),
+    supporting_records: supportingEntries(input.supportingRecords, reported),
     creatives: [...input.creatives].sort((a, b) => a.id.localeCompare(b.id)),
     public_keys: Object.fromEntries(
       Object.entries(input.publicKeys).sort(([a], [b]) => a.localeCompare(b)),
@@ -157,7 +245,11 @@ const indexBundle = (bundle: ReportBundleFile): BundleIndex => {
   return { byPosition, byHash, byId, creativeHashes };
 };
 
-/** The app's record at seq - 1, or null at the start of a chain or when it is not in the bundle. */
+/**
+ * The app's record at seq - 1, or null at the start of a chain or when it is not in the bundle.
+ * For a supporting entry that is a chain reference this is { record_hash, app_id }, which is
+ * exactly what core's checkChain compares prev_hash against.
+ */
 const predecessorOf = (index: BundleIndex, entry: BundleRecord): unknown => {
   if (entry.seq <= 1) {
     return null;

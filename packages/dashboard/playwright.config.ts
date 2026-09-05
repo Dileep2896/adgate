@@ -71,6 +71,11 @@ export default defineConfig({
         process.env['DASHBOARD_SESSION_SECRET'] ?? 'playwright-e2e-session-secret',
       ADGATE_SIGNING_KEY_ID: signingKeyId,
       ADGATE_PUBLIC_KEYS_JSON: publicKeysJson,
+      // Playwright IS the proxy here: each spec sends its own x-forwarded-for so the specs do
+      // not share the 10 logins per minute one client address gets (lib/rate-limit.ts). The
+      // server under test therefore trusts exactly one hop; a real deployment leaves this off
+      // unless a proxy it controls rewrites the header.
+      TRUST_PROXY: 'true',
     },
   },
 });

@@ -98,15 +98,31 @@ records name, and the public keys. That is everything the eight checks need, so:
 
 ```sh
 pnpm --filter @adgate/dashboard verify:bundle path/to/rep_....json
+# with the operator's published keys, which is what makes it evidence:
+pnpm --filter @adgate/dashboard verify:bundle path/to/rep_....json --keys adgate-public-keys.json
 ```
 
 rebuilds each record's `VerifyContext` from the bundle itself, runs `@adgate/core`'s `verify()`
 and prints a pass/fail line per record - with no database, no network and no adgate deployment
-(`scripts/verify-bundle.ts`, `lib/report-bundle.ts`). Exit code 0 when every record verifies, 1
-when one does not, 2 when the file is not a bundle.
-`lib/report-generate.integration.test.ts` generates a real bundle, writes it to a temp file and
-runs that script in a separate process, then rewrites one record with SQL and asserts the same
-script reports `FAIL`.
+(`scripts/verify-bundle.ts`, `lib/bundle-check.ts`, `lib/report-bundle.ts`). Exit code 0 when
+every record verifies, 1 when one does not, 2 when the file is not a bundle, 3 when it holds no
+records at all. `lib/report-generate.integration.test.ts` generates a real bundle, writes it to a
+temp file and runs that script in a separate process, then rewrites one record with SQL and
+asserts the same script reports `FAIL`.
+
+**What a run without `--keys` proves.** The ring then comes from the bundle, so the file
+authenticates itself: every record verifies against keys the same file supplied, which shows the
+bundle is internally consistent and nothing more - a fabricated bundle signed with a fresh
+keypair passes identically. The script prints that warning on every such run. `--keys <file>`
+takes the key_id -> PEM map from wherever the operator publishes it and uses that ring instead,
+noting any key in the bundle it does not confirm; `--key-id <id>` is the weaker check that every
+record names the key you expected.
+
+**A supporting record is not a document.** An app's chain interleaves every advertiser it served,
+so a reported record's positional predecessor usually belongs to a competitor. The bundle carries
+those as chain references - `record_hash` and `app_id`, which is all `checkChain` reads - marked
+`redacted`; the full document is kept only for a superseded version of a record in the report,
+which is the advertiser's own turn.
 
 The bundle carries PUBLIC keys only, and the records are re-read at download time rather than
 frozen at generation: if a record was edited after the report was generated, the bundle fails to

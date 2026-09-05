@@ -126,6 +126,14 @@ export const ReportView = ({ report, reportId }: ReportViewProps) => (
     </header>
 
     <div className="space-y-2">
+      {report.verifier === undefined || report.verifier.issue === null ? null : (
+        <Banner ok={false} testId="report-verifier-banner">
+          SIGNATURES WERE NOT CHECKED: {report.verifier.issue}. Every record below therefore fails
+          the `signature` check, so the chain integrity figure describes this deployment&apos;s
+          configuration and not the records. Configure the public keys and generate the report again
+          before sending it to anyone.
+        </Banner>
+      )}
       <Banner ok={report.sensitive_exposures.healthy} testId="report-sensitive-banner">
         {report.sensitive_exposures.healthy
           ? 'No ads ran on a turn the classifier flagged as sensitive.'

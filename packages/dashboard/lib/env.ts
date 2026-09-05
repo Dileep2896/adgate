@@ -71,7 +71,31 @@ const DashboardEnvSchema = z.object({
   DATABASE_URL: optionalNonEmpty,
   ADMIN_PASSWORD: optionalNonEmpty,
   DASHBOARD_SESSION_SECRET: optionalNonEmpty,
+  TRUST_PROXY: optionalNonEmpty,
+  TRUSTED_PROXY_HOPS: optionalNonEmpty,
 });
+
+const TRUTHY = new Set(['1', 'true', 'yes', 'on']);
+
+/**
+ * How many proxy hops in front of this process may be believed, from TRUSTED_PROXY_HOPS (an
+ * integer, which wins) or TRUST_PROXY (a boolean meaning "exactly one").
+ *
+ * DEFAULT 0: BELIEVE NOTHING. x-forwarded-for is a request header, so a dashboard reachable
+ * directly must not key its login rate limiter on it (lib/rate-limit.ts). Anything unparseable
+ * is 0 as well - a typo must not silently hand an attacker a header they control.
+ */
+export const parseTrustedProxyHops = (
+  trustProxy: string | undefined,
+  hops: string | undefined,
+): number => {
+  const explicit = (hops ?? '').trim();
+  if (explicit !== '') {
+    const value = Number(explicit);
+    return Number.isInteger(value) && value >= 0 ? value : 0;
+  }
+  return TRUTHY.has((trustProxy ?? '').trim().toLowerCase()) ? 1 : 0;
+};
 
 export interface DashboardEnv {
   nodeEnv: 'development' | 'test' | 'production';
@@ -82,6 +106,11 @@ export interface DashboardEnv {
   sessionSecret: string;
   /** Secure cookies outside development, so the session cookie is https-only in production. */
   secureCookies: boolean;
+  /**
+   * Proxy hops whose x-forwarded-for entries may be believed; 0 (the default) trusts none.
+   * Only the login rate limiter reads it - see clientKey() in lib/rate-limit.ts.
+   */
+  trustedProxyHops: number;
 }
 
 /**
@@ -97,7 +126,14 @@ export const loadDashboardEnv = (
     const names = parsed.error.issues.map((issue) => issue.path.join('.')).join(', ');
     throw new DashboardConfigError(`invalid dashboard environment: ${names}`);
   }
-  const { NODE_ENV, DATABASE_URL, ADMIN_PASSWORD, DASHBOARD_SESSION_SECRET } = parsed.data;
+  const {
+    NODE_ENV,
+    DATABASE_URL,
+    ADMIN_PASSWORD,
+    DASHBOARD_SESSION_SECRET,
+    TRUST_PROXY,
+    TRUSTED_PROXY_HOPS,
+  } = parsed.data;
   const missing = [
     ...(DATABASE_URL === undefined ? ['DATABASE_URL'] : []),
     ...(ADMIN_PASSWORD === undefined ? ['ADMIN_PASSWORD'] : []),
@@ -113,6 +149,7 @@ export const loadDashboardEnv = (
     adminPassword: ADMIN_PASSWORD,
     sessionSecret: DASHBOARD_SESSION_SECRET ?? `adgate-dashboard-session:${ADMIN_PASSWORD}`,
     secureCookies: NODE_ENV === 'production',
+    trustedProxyHops: parseTrustedProxyHops(TRUST_PROXY, TRUSTED_PROXY_HOPS),
   };
 };
 

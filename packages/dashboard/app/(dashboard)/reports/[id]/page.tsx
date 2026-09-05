@@ -48,9 +48,14 @@ const ReportPage = async ({ params }: { params: Promise<{ id: string }> }) => {
 
       <p className="no-print text-xs text-stone-400">
         The JSON bundle contains this report, the underlying audit records with the neighbours their
-        checks read, the creative content behind every content_hash, and the public keys. Re-verify
-        it offline with <code className="font-mono">tsx scripts/verify-bundle.ts &lt;file&gt;</code>
-        .
+        checks read (a predecessor that belongs to another advertiser is carried as its record_hash
+        and app_id only), the creative content behind every content_hash, and the public keys.
+        Re-verify it offline with{' '}
+        <code className="font-mono">tsx scripts/verify-bundle.ts &lt;file&gt;</code>. Run on its own
+        that recomputes every hash and signature against the keys the bundle carries, which shows
+        the file is internally consistent - it is not proof that adgate produced it. Add{' '}
+        <code className="font-mono">--keys &lt;file&gt;</code> with the operator&apos;s published
+        public keys to check that too.
       </p>
     </section>
   );

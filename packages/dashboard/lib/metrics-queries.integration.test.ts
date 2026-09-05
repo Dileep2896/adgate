@@ -20,7 +20,9 @@ import {
   appDecisionCountsQuery,
   appEventCounts,
   appEventCountsQuery,
+  appLastTurnsQuery,
   appsIntegratedQuery,
+  appWindowCountsQuery,
   defaultMetricsWindow,
   globalDecisionCountsQuery,
   globalEventCountsQuery,
@@ -39,6 +41,7 @@ import {
   openSeedClient,
   prepareMetricsTestDatabase,
 } from './metrics-test-db';
+import { listAppsWithCounts } from './queries';
 import { type ReportRange, reportEventCountsQuery, reportRecordsQuery } from './report-queries';
 
 /**
@@ -121,6 +124,10 @@ const AUDIT_QUERIES: [string, (db: DashboardDb) => SQLWrapper][] = [
   ['global decision counts', (handle) => globalDecisionCountsQuery(handle, WINDOW)],
   ['global event counts', (handle) => globalEventCountsQuery(handle, WINDOW)],
   ['apps integrated', (handle) => appsIntegratedQuery(handle)],
+  // The two columns of the /apps table. They used to be `group by app_id` with no app_id
+  // predicate, which is a full scan of the chain by construction.
+  ['app list turn counts', (handle) => appWindowCountsQuery(handle, WINDOW)],
+  ['app list last turn', (handle) => appLastTurnsQuery(handle)],
   [
     'audit search, one app',
     (handle) =>
@@ -252,6 +259,30 @@ describe('the hand written app', () => {
   it('excludes turns older than the window', async () => {
     const empty = metricsWindow(new Date('2020-01-01T00:00:00.000Z'), 30);
     expect(await appDecisionCounts(FIXTURE_APP_ID, empty, db)).toEqual([]);
+  });
+});
+
+describe('the app list', () => {
+  /**
+   * The per-app column and the header now count the SAME window (the finding: a rolling
+   * now-30x24h here against whole UTC days above could never agree), and the count is the
+   * is_latest one, so an attested turn is one turn in both.
+   */
+  it('counts each turn once, over the window the header uses', async () => {
+    const rows = await listAppsWithCounts(WINDOW, db);
+    const fixture = rows.find((row) => row.id === FIXTURE_APP_ID);
+
+    expect(fixture?.auditCount30d).toBe(10);
+    expect(fixture?.lastTurnAt).toBeInstanceOf(Date);
+
+    const header = computeGlobalMetrics(await globalMetricRows(WINDOW, db));
+    expect(rows.reduce((sum, row) => sum + row.auditCount30d, 0)).toBe(header.turnsEvaluated);
+  });
+
+  it('lists every app, including the ones that have never written a record', async () => {
+    const rows = await listAppsWithCounts(WINDOW, db);
+    expect(rows).toHaveLength(BULK_APPS + 1);
+    expect(rows.every((row) => row.auditCount30d >= 0)).toBe(true);
   });
 });
 

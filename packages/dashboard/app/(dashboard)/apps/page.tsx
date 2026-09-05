@@ -12,7 +12,7 @@ import {
 } from '@/lib/format';
 import { computeGlobalMetrics, type GlobalMetrics } from '@/lib/metrics';
 import { defaultMetricsWindow, globalMetricRows, METRICS_WINDOW_DAYS } from '@/lib/metrics-queries';
-import { AUDIT_WINDOW_DAYS, listAppsWithCounts } from '@/lib/queries';
+import { listAppsWithCounts } from '@/lib/queries';
 
 /**
  * The app list: one row per tenant registered against this gateway, with the policy it is
@@ -62,10 +62,10 @@ const headlineMetrics = (metrics: GlobalMetrics): Metric[] => [
 ];
 
 const AppsPage = async () => {
-  const [apps, rows] = await Promise.all([
-    listAppsWithCounts(),
-    globalMetricRows(defaultMetricsWindow()),
-  ]);
+  // ONE window for the whole page: the header's "Turns (30d)" and the per-app column below it
+  // are the same 30 whole UTC days, so the column really does add up to the headline.
+  const period = defaultMetricsWindow();
+  const [apps, rows] = await Promise.all([listAppsWithCounts(period), globalMetricRows(period)]);
 
   return (
     <section>
@@ -109,7 +109,7 @@ const AppsPage = async () => {
                 <th className="table-head">Policy</th>
                 <th className="table-head">Created</th>
                 <th className="table-head">Creatives</th>
-                <th className="table-head">Turns ({AUDIT_WINDOW_DAYS}d)</th>
+                <th className="table-head">Turns ({METRICS_WINDOW_DAYS}d)</th>
                 <th className="table-head">Last turn</th>
               </tr>
             </thead>

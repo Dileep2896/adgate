@@ -55,11 +55,33 @@ export const createRateLimiter = (options: RateLimiterOptions): RateLimiter => {
     }
   };
 
+  /**
+   * Pruning only drops ELAPSED windows, so a spray of distinct keys inside a single window
+   * leaves the map full: without this the map would grow past maxKeys and every check() would
+   * pay for the scan above. Oldest window first, so the entry closest to expiring goes.
+   *
+   * Evicting a key forgets its budget, which is a real (small) hole: an attacker who can mint
+   * maxKeys distinct keys per window can push their own window out early. That is the price of
+   * a bounded in-memory map, and the reason this limiter is documented as friction rather than
+   * as a security boundary - the password check is the boundary.
+   */
+  const evictOldest = (count: number): void => {
+    const oldest = [...windows.entries()]
+      .sort(([, a], [, b]) => a.startedAt - b.startedAt)
+      .slice(0, count);
+    for (const [key] of oldest) {
+      windows.delete(key);
+    }
+  };
+
   return {
     check: (key, now) => {
       const nowMs = now.getTime();
-      if (windows.size >= maxKeys) {
+      if (windows.size >= maxKeys && !windows.has(key)) {
         prune(nowMs);
+        if (windows.size >= maxKeys) {
+          evictOldest(windows.size - maxKeys + 1);
+        }
       }
       const existing = windows.get(key);
       const window =
@@ -98,16 +120,55 @@ export const loginRateLimiter = (): RateLimiter => {
   return limiter;
 };
 
+/** Every attempt whose client cannot be identified shares this bucket: it limits harder. */
+export const SHARED_BUCKET = 'unknown';
+
+/** What the request says about who sent it. Nothing here is trusted by default. */
+export interface ClientAddress {
+  /** x-forwarded-for exactly as received: a client-controlled header unless a proxy rewrote it. */
+  forwardedFor: string | null;
+  /** x-real-ip, written by the same proxy that writes x-forwarded-for, so trusted with it. */
+  realIp: string | null;
+  /**
+   * The peer address the platform reports, when it reports one. Next's Node server does not
+   * expose the socket to a route handler - it folds the peer address into x-forwarded-for when
+   * the client sent no such header - so this is null there, and an untrusted deployment falls
+   * back to one shared bucket rather than to a header anyone can set.
+   */
+  peer?: string | null;
+}
+
+const trimmed = (value: string | null | undefined): string => (value ?? '').trim();
+
 /**
- * The rate limit key for a login attempt. Behind a proxy the client address is the first
- * x-forwarded-for hop; with no header every attempt shares the `unknown` bucket, which is the
- * safe direction (it limits harder, never less).
+ * The rate limit key for a login attempt.
+ *
+ * TRUST NOTHING UNLESS CONFIGURED. `x-forwarded-for` is a request header: a client talking to
+ * the dashboard directly can put anything in it, and keying the limiter on the FIRST hop let
+ * one attacker have an unlimited number of buckets - which is the same as no rate limit at all.
+ * `trustedHops` (0 by default, TRUST_PROXY / TRUSTED_PROXY_HOPS - lib/env.ts) says how many
+ * proxies really sit in front of this process:
+ *
+ *   0  the header is ignored entirely. The platform peer address is used when there is one, and
+ *      otherwise every attempt shares one bucket. That limits harder, never less.
+ *   n  the client is the hop the outermost trusted proxy appended: the nth entry from the RIGHT.
+ *      With one proxy and `spoofed, 203.0.113.7` that is 203.0.113.7, and the value the client
+ *      injected is skipped. A shorter list than expected clamps to the leftmost entry.
  */
-export const clientKey = (forwardedFor: string | null, realIp: string | null): string => {
-  const first = (forwardedFor ?? '').split(',')[0]?.trim() ?? '';
-  if (first !== '') {
-    return first;
+export const clientKey = (address: ClientAddress, trustedHops: number): string => {
+  const peer = trimmed(address.peer);
+  const fallback = peer === '' ? SHARED_BUCKET : peer;
+  if (trustedHops <= 0) {
+    return fallback;
   }
-  const real = (realIp ?? '').trim();
-  return real === '' ? 'unknown' : real;
+  const hops = trimmed(address.forwardedFor)
+    .split(',')
+    .map((hop) => hop.trim())
+    .filter((hop) => hop !== '');
+  const client = hops[Math.max(0, hops.length - trustedHops)];
+  if (client !== undefined) {
+    return client;
+  }
+  const real = trimmed(address.realIp);
+  return real === '' ? fallback : real;
 };

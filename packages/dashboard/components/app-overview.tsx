@@ -46,7 +46,9 @@ const overviewMetrics = (metrics: AppMetrics): Metric[] => [
   {
     label: 'Impressions',
     value: formatCount(metrics.impressions),
-    hint: 'attested renders',
+    // NOT "attested renders": an impression is an `impression` event the SDK reported after the
+    // turn (POST /v1/events), which is not signed and not the separation attestation.
+    hint: 'impression events reported by the SDK',
     testId: 'metric-impressions',
   },
   { label: 'Clicks', value: formatCount(metrics.clicks), testId: 'metric-clicks' },
@@ -59,7 +61,9 @@ const overviewMetrics = (metrics: AppMetrics): Metric[] => [
   {
     label: 'Est. revenue',
     value: formatAmount(metrics.estimatedRevenue),
-    hint: 'sum of ecpm / 1000 per impression',
+    // The ecpm is read from the creative NOW, not as it was when the ad was served: editing a
+    // creative's ecpm changes this number for past days too. Said out loud rather than implied.
+    hint: 'sum of the creative’s current ecpm / 1000 per impression',
     testId: 'metric-revenue',
   },
   {

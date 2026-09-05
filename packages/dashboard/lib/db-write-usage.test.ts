@@ -33,11 +33,13 @@ const ALLOWED = new Set([
 ]);
 
 /**
- * An import of the module, by either the alias or the relative path - not a mention of the
+ * An import of the module, matched on the BASENAME of the specifier so no spelling of the same
+ * import slips past: '@/lib/db-write', './db-write', '../lib/db-write' and either of those with
+ * the '.js' extension NodeNext users reach for. It is still an import and not a mention of the
  * file name in prose. (This test's own source is skipped below; the pattern would match the
  * pattern.)
  */
-const IMPORTS_DB_WRITE = /from\s+'(?:@\/lib|\.)\/db-write'/;
+const IMPORTS_DB_WRITE = /from\s+'(?:[^']*\/)?db-write(?:\.js)?'/;
 
 const SELF = 'lib/db-write-usage.test.ts';
 
@@ -66,6 +68,25 @@ describe('the read-write database handle', () => {
       .sort();
 
     expect(new Set(importers)).toEqual(ALLOWED);
+  });
+
+  it('recognises every spelling of the import, and nothing else', () => {
+    for (const specifier of [
+      "import { dashboardWriteDb } from '@/lib/db-write';",
+      "import { dashboardWriteDb } from './db-write';",
+      "import { dashboardWriteDb } from '../lib/db-write';",
+      "import { dashboardWriteDb } from '@/lib/db-write.js';",
+      "import { dashboardWriteDb } from '../../dashboard/lib/db-write.js';",
+    ]) {
+      expect(IMPORTS_DB_WRITE.test(specifier), specifier).toBe(true);
+    }
+    for (const other of [
+      "import { x } from '@/lib/db-write-usage';",
+      "import { dashboardDb } from '@/lib/db';",
+      '// lib/db-write.ts is the only read-write handle',
+    ]) {
+      expect(IMPORTS_DB_WRITE.test(other), other).toBe(false);
+    }
   });
 
   it('finds the files it is supposed to be searching', () => {

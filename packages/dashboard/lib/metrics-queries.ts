@@ -1,5 +1,16 @@
 import { apps, auditRecords, creatives, events, reports } from '@adgate/gateway/schema';
-import { and, count, countDistinct, eq, exists, gte, lt, sql, type SQLWrapper } from 'drizzle-orm';
+import {
+  and,
+  count,
+  countDistinct,
+  eq,
+  exists,
+  gte,
+  lt,
+  max,
+  sql,
+  type SQLWrapper,
+} from 'drizzle-orm';
 
 import { type DashboardDb, dashboardDb } from './db';
 import {
@@ -47,7 +58,14 @@ const inWindow = (appId: string | SQLWrapper, window: MetricsWindow) =>
     eq(auditRecords.isLatest, true),
   );
 
-/** Sum of the ecpm of the creative each event's record served; 0 when the creative is gone. */
+/**
+ * Sum of the ecpm of the creative each event's record served; 0 when the creative is gone.
+ *
+ * THE CURRENT ECPM, not the one that applied when the ad was served: the audit record names the
+ * creative, and the rate lives on the catalog row, so editing a creative's ecpm rewrites the
+ * estimated revenue of every past day it ran on. The overview says so in the metric's hint
+ * (components/app-overview.tsx); capturing the rate at serve time would be a schema change.
+ */
 const ecpmTotal = sql<number>`coalesce(sum(${creatives.ecpm}), 0)::float8`;
 
 /* -------------------------------------------------------------------------- one app --- */
@@ -188,6 +206,45 @@ export const appsIntegratedQuery = (db: DashboardDb) =>
           .where(eq(auditRecords.appId, apps.id)),
       ),
     );
+
+/* --------------------------------------------------------------- the app list columns --- */
+
+/**
+ * The two per-app numbers the /apps table shows. They live here, with the other audit_records
+ * readers, because they carry the same obligation: `select app_id, count(*) ... group by app_id`
+ * answers the same question but can only be answered by reading the whole table, and it was
+ * doing exactly that. Same shape as the laterals above - one aggregating subquery per app, which
+ * Postgres cannot pull up - so the plan is a nested loop of index scans, and the EXPLAIN test
+ * covers them by name.
+ */
+
+/** One app's turns in the window: the lateral of the app list's count column. */
+const appWindowCountSlice = (db: DashboardDb, window: MetricsWindow) =>
+  db
+    .select({ turns: count().as('turns') })
+    .from(auditRecords)
+    .where(inWindow(apps.id, window))
+    .as('app_window_turns');
+
+/** Turns per app in the window, counting each turn once. One row per app, 0 included. */
+export const appWindowCountsQuery = (db: DashboardDb, window: MetricsWindow) => {
+  const slice = appWindowCountSlice(db, window);
+  return db.select({ appId: apps.id, turns: slice.turns }).from(apps).crossJoinLateral(slice);
+};
+
+/** One app's most recent record, ever: max() is an aggregate, so it is a fence like the rest. */
+const appLastTurnSlice = (db: DashboardDb) =>
+  db
+    .select({ lastTs: max(auditRecords.ts).as('last_ts') })
+    .from(auditRecords)
+    .where(and(eq(auditRecords.appId, apps.id), eq(auditRecords.isLatest, true)))
+    .as('app_last_turn');
+
+/** The timestamp of each app's most recent audit record, or null when it has none. */
+export const appLastTurnsQuery = (db: DashboardDb) => {
+  const slice = appLastTurnSlice(db);
+  return db.select({ appId: apps.id, lastTs: slice.lastTs }).from(apps).crossJoinLateral(slice);
+};
 
 /** Advertisers with at least one generated verification report. S35 writes the rows. */
 export const advertisersWithReportQuery = (db: DashboardDb) =>

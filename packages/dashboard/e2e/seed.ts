@@ -342,6 +342,22 @@ export const seedReportTrail = async (
   }
 };
 
+/**
+ * How many verification reports exist. e2e/session.spec.ts asserts a refused server action left
+ * the database exactly as it was: "the request was refused" and "nothing was written" are two
+ * different claims, and only the second one is about the data.
+ */
+export const countReports = async (): Promise<number> => {
+  const url = requireTestDatabaseUrl();
+  const sql = postgres(url, { max: 1, connect_timeout: 5, onnotice: () => undefined });
+  try {
+    const [row] = await sql<{ total: number }[]>`select count(*)::int as total from reports`;
+    return row?.total ?? 0;
+  } finally {
+    await sql.end({ timeout: 5 });
+  }
+};
+
 /** Rewrites a stored record underneath the gateway, the way an attacker with SQL access would. */
 export const tamperRecord = async (recordHash: string): Promise<void> => {
   const url = requireTestDatabaseUrl();

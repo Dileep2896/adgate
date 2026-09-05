@@ -47,8 +47,17 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     throw error;
   }
 
+  // The client address is only as trustworthy as the deployment says it is: with TRUST_PROXY
+  // unset the forwarded headers are ignored and every attempt shares one bucket, because a
+  // client that reaches this process directly can put anything in them (lib/rate-limit.ts).
   const limit = loginRateLimiter().check(
-    clientKey(request.headers.get('x-forwarded-for'), request.headers.get('x-real-ip')),
+    clientKey(
+      {
+        forwardedFor: request.headers.get('x-forwarded-for'),
+        realIp: request.headers.get('x-real-ip'),
+      },
+      env.trustedProxyHops,
+    ),
     new Date(),
   );
   if (!limit.allowed) {

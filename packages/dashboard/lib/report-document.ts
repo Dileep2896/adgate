@@ -25,6 +25,15 @@ import { VERIFY_CHECK_NAMES } from './verify-labels';
  *
  * records      Audit records referencing the advertiser's creatives in the period, counting each
  *              turn once (the generator selects is_latest rows, as lib/metrics.ts does).
+ *
+ *              WHICH RECORDS THAT IS, EXACTLY: the gateway stamps audit_records.advertiser_id
+ *              only when a creative was actually served, so the report set is the SERVE records
+ *              (and their attestations) that name one of this advertiser's creatives. A
+ *              suppressed turn carries no advertiser, so it cannot enter anyone's report - a
+ *              turn suppressed for a sensitive category is nobody's, which is why
+ *              sensitive_exposures can honestly be 0 while the app suppressed such a turn.
+ *              Every rule below is therefore stated over "every record in the report", and today
+ *              that set contains serves only.
  * serves       Records whose signed decision is `serve`.
  * impressions  `impression` events on those turns. clicks: `click` events. ctr = clicks /
  *              impressions, null when there were no impressions.
@@ -34,9 +43,12 @@ import { VERIFY_CHECK_NAMES } from './verify-labels';
  * sensitive    Records whose classification.sensitive is NOT empty: an ad that ran on a turn the
  *              classifier flagged. This MUST be zero for a healthy advertiser; the report states
  *              the actual number and flags it rather than hiding a non-zero count.
- * disclosure   Records whose disclosure label is non-empty AND position is `after_answer`
- *   compliance (docs/audit.md's disclosure_present check), over EVERY record in the report -
- *              suppressions carry a disclosure block too.
+ * disclosure   Records whose disclosure label is non-empty, whose position is `after_answer` and
+ *   compliance whose style is `separate_block` (docs/audit.md's disclosure_present check, all
+ *              three conditions - lib/report.ts asserts the agreement), over EVERY record in the
+ *              report. Since the report set is the serve records (see `records` above), that
+ *              denominator is the serves; a suppression would count too if one could ever be
+ *              attributed to an advertiser, and the fixture keeps that case for the day it can.
  * separation   Records with separation_attestation true, over the SERVE records only: a
  *   attestation suppressed turn rendered nothing and has nothing to attest.
  * chain        core verify() over every record: `all`, `partial`, `none` (or `empty` when the
@@ -154,9 +166,26 @@ export interface ReportChainIntegrity {
   failures_omitted: number;
 }
 
+/**
+ * WHAT THE SIGNATURE CHECK WAS ABLE TO DO. The `signature` check needs the deployment's public
+ * keys (lib/verify-keys.ts), and a dashboard with none configured fails it on EVERY record -
+ * which makes chain_integrity say BROKEN for a reason that has nothing to do with the records.
+ * The report refuses to be quiet about that: it states where the keys came from and what was
+ * wrong, and /reports/[id] puts it in a banner above the numbers.
+ *
+ * Optional because a document stored before this field existed is rendered as it was written.
+ */
+export interface ReportVerifier {
+  /** `environment` when a key ring was configured and usable, `none` when it was empty. */
+  key_source: 'environment' | 'none';
+  /** What is wrong with the ring, naming variables and never key material; null when it is fine. */
+  issue: string | null;
+}
+
 export interface ReportDocument {
   version: number;
   generated_at: string;
+  verifier?: ReportVerifier;
   advertiser: ReportAdvertiser;
   period: ReportPeriod;
   totals: ReportTotals;

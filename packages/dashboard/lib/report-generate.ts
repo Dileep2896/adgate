@@ -14,8 +14,15 @@ import {
   type ReportDocument,
   type ReportPeriod,
   type ReportRecordInput,
+  type ReportVerifier,
 } from './report';
-import { type BundleRecord, buildReportBundle, type ReportBundle } from './report-bundle';
+import {
+  type BundleRecord,
+  buildReportBundle,
+  type ReportBundle,
+  type SupportingRecord,
+  type SupportingRole,
+} from './report-bundle';
 import {
   countReportRecords,
   listReportCreatives,
@@ -25,6 +32,7 @@ import {
   reportRecordsQuery,
   type StoredReport,
 } from './report-queries';
+import { cachedReader, mapLimited } from './report-reader';
 import type { ReportWriter } from './report-store';
 import { type VerifyKeys, verifyKeys } from './verify-keys';
 
@@ -49,12 +57,15 @@ export interface ReportContext {
   db?: DashboardDb;
   /** Injected by the tests so they verify against the ring their fixture signed with. */
   keys?: VerifyKeys;
+  /** The clock, for the bundle's collected_at. Passed in so a test can pin it. */
+  now?: Date;
 }
 
 export interface ReportData {
   records: ReportRecordInput[];
   bundleRecords: BundleRecord[];
-  supportingRecords: BundleRecord[];
+  /** Each carries WHY it is here; the bundle reduces the predecessor-only ones. */
+  supportingRecords: SupportingRecord[];
   creativeIds: string[];
   truncated: boolean;
   matched: number;
@@ -71,73 +82,28 @@ const bundleRecordOf = (row: AuditRecordRow): BundleRecord => ({
 });
 
 /**
- * The reader, with every lookup remembered for the life of one generation. buildVerifyContext
- * asks for the predecessor of every record and the bundle asks for the same rows again, and in a
- * chain of consecutive records most of those are each other - so without this a 2 000 record
- * report would run several thousand redundant single-row queries.
+ * The records around one record that its checks read, each with the ROLE that says how much of
+ * it the bundle may carry: the positional predecessor at seq - 1 (usually another advertiser's
+ * turn - a chain reference only), any superseded version of this same record (this advertiser's
+ * own turn - the whole document), and that version's own predecessor (a reference again).
  */
-const cachedReader = (reader: AuditReader): AuditReader => {
-  const bySeq = new Map<string, Promise<AuditRecordRow | null>>();
-  const byHash = new Map<string, Promise<AuditRecordRow | null>>();
-  const latest = new Map<string, Promise<AuditRecordRow | null>>();
-  const creativeHashes = new Map<string, Promise<string | null>>();
-  const memo = <T>(cache: Map<string, Promise<T>>, key: string, load: () => Promise<T>) => {
-    const existing = cache.get(key);
-    if (existing !== undefined) {
-      return existing;
-    }
-    const loaded = load();
-    cache.set(key, loaded);
-    return loaded;
-  };
-  return {
-    findVersion: (query) => reader.findVersion(query),
-    findLatest: (auditId) => memo(latest, auditId, () => reader.findLatest(auditId)),
-    findByHash: (recordHash) => memo(byHash, recordHash, () => reader.findByHash(recordHash)),
-    findBySeq: (appId, seq) =>
-      memo(bySeq, `${appId}#${String(seq)}`, () => reader.findBySeq(appId, seq)),
-    creativeHash: (creativeId) =>
-      memo(creativeHashes, creativeId, () => reader.creativeHash(creativeId)),
-  };
-};
-
-/** Runs `work` over the items, at most `limit` at a time, keeping the input order. */
-const mapLimited = async <T, R>(
-  items: readonly T[],
-  limit: number,
-  work: (item: T) => Promise<R>,
-): Promise<R[]> => {
-  const results: R[] = new Array<R>(items.length);
-  let next = 0;
-  const worker = async (): Promise<void> => {
-    while (next < items.length) {
-      const index = next;
-      next += 1;
-      results[index] = await work(items[index] as T);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
-};
-
-/** The records around one record that its checks read: seq - 1, and any superseded version. */
 const supportingOf = async (
   reader: AuditReader,
   row: AuditRecordRow,
-): Promise<AuditRecordRow[]> => {
-  const found: AuditRecordRow[] = [];
+): Promise<{ row: AuditRecordRow; role: SupportingRole }[]> => {
+  const found: { row: AuditRecordRow; role: SupportingRole }[] = [];
   const previous = row.seq > 1 ? await reader.findBySeq(row.appId, row.seq - 1) : null;
   if (previous !== null) {
-    found.push(previous);
+    found.push({ row: previous, role: 'predecessor' });
   }
   if (row.supersedesHash !== null) {
     const superseded = await reader.findByHash(row.supersedesHash);
     if (superseded !== null) {
-      found.push(superseded);
+      found.push({ row: superseded, role: 'superseded' });
       const before =
         superseded.seq > 1 ? await reader.findBySeq(superseded.appId, superseded.seq - 1) : null;
       if (before !== null) {
-        found.push(before);
+        found.push({ row: before, role: 'predecessor' });
       }
     }
   }
@@ -146,6 +112,20 @@ const supportingOf = async (
 
 const creativeIdOfRecord = (record: unknown): string | null =>
   AuditRecord.safeParse(record).data?.creative?.id ?? null;
+
+/**
+ * What the stored document says about the keys the `signature` check ran against.
+ *
+ * verifyKeys() never throws and reports an unusable or missing ring as `issue` instead
+ * (lib/verify-keys.ts). Generation goes ahead either way - refusing would leave an operator with
+ * no report and no explanation - but the reason is carried INTO the document, because with an
+ * empty ring every record fails `signature` and chain_integrity reads BROKEN for a reason that
+ * is about this deployment's configuration and not about the records.
+ */
+export const reportVerifier = (keys: VerifyKeys): ReportVerifier => ({
+  key_source: keys.ring.key_ids.length === 0 ? 'none' : 'environment',
+  issue: keys.issue,
+});
 
 /**
  * Everything a report and its bundle are built from, for one advertiser and period. Verifies
@@ -188,7 +168,9 @@ export const collectReportData = async (
   return {
     records: verified.map((entry) => entry.input),
     bundleRecords: verified.map((entry) => bundleRecordOf(entry.row)),
-    supportingRecords: verified.flatMap((entry) => entry.supporting.map(bundleRecordOf)),
+    supportingRecords: verified.flatMap((entry) =>
+      entry.supporting.map(({ row, role }) => ({ ...bundleRecordOf(row), role })),
+    ),
     creativeIds: verified.flatMap((entry) => {
       const id = creativeIdOfRecord(entry.row.record);
       return id === null ? [] : [id];
@@ -234,7 +216,10 @@ export const generateReport = async (
     since: input.since,
     until: input.until,
   };
-  const data = await collectReportData(range, context);
+  // Resolved here so the document can SAY which keys graded it, rather than leaving a reader to
+  // guess why every record failed `signature` (see reportVerifier).
+  const keys = context.keys ?? verifyKeys();
+  const data = await collectReportData(range, { ...context, keys });
   const document = computeReport({
     advertiser: input.advertiser,
     period: periodOf(input.since, input.until),
@@ -242,6 +227,7 @@ export const generateReport = async (
     records: data.records,
     truncated: data.truncated,
     recordLimit: MAX_REPORT_RECORDS,
+    verifier: reportVerifier(keys),
   });
   const id = await writer.save({
     advertiserId: input.advertiser.id,
@@ -260,6 +246,10 @@ export const generateReport = async (
  * database is what makes the download worth checking. If a record has been edited since the
  * report was generated, the bundle carries the edited record and fails to verify offline -
  * which is exactly the fact an auditor wants to learn.
+ *
+ * That is why the bundle carries TWO timestamps: `generated_at` is the report's, `collected_at`
+ * is this read. They are days apart on a report downloaded twice, and a reader comparing the
+ * document with the evidence has to know which date belongs to which.
  */
 export const loadReportBundle = async (
   report: StoredReport,
@@ -280,6 +270,7 @@ export const loadReportBundle = async (
   return buildReportBundle({
     reportId: report.id,
     generatedAt: report.createdAt.toISOString(),
+    collectedAt: (context.now ?? new Date()).toISOString(),
     advertiser,
     period: periodOf(report.periodStart, report.periodEnd),
     report: report.document,

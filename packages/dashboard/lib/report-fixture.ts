@@ -15,7 +15,18 @@ import { VERIFY_CHECK_NAMES } from './verify-labels';
  * is handed. Records that really verify are the integration test's job.
  */
 
-const hash = (value: string): string => `sha256:${value.padStart(64, '0')}`;
+/**
+ * A distinct, WELL FORMED sha256 hash per label: the hex of the label's code points, padded to
+ * 64 digits. It has to satisfy the schema's `sha256:<64 lowercase hex>` pattern, because
+ * lib/report.test.ts checks the fixture against core's own verify() - a record that failed the
+ * schema check for a cosmetic reason would make every one of those comparisons vacuous.
+ */
+const hash = (value: string): string => {
+  const hex = [...value]
+    .map((character) => character.charCodeAt(0).toString(16).padStart(2, '0'))
+    .join('');
+  return `sha256:${hex.padEnd(64, '0').slice(0, 64)}`;
+};
 
 const classification = (
   categories: readonly string[],
@@ -44,6 +55,8 @@ export interface FixtureRecordOptions {
    * would not parse at all - the option exists so the compliance rule can be pinned directly.
    */
   position?: string;
+  /** Same again for the style: `separate_block` is the only value v1 allows (an ad is never inline). */
+  style?: string;
 }
 
 /** One complete AuditRecord, with only the fields the report reads varying. */
@@ -83,7 +96,7 @@ export const fixtureRecord = (options: FixtureRecordOptions): AuditRecord => {
     disclosure: {
       label: options.label ?? 'Sponsored',
       position: (options.position ?? 'after_answer') as AuditRecord['disclosure']['position'],
-      style: 'separate_block',
+      style: (options.style ?? 'separate_block') as AuditRecord['disclosure']['style'],
     },
     model_output_hash: attested ? hash('output') : null,
     separation_attestation: attested,
@@ -161,6 +174,11 @@ export const FIXTURE_RECORDS: ReportRecordInput[] = [
     impressions: 1,
     clicks: 1,
   }),
+  // R3 is a SHAPE THE CURRENT GATEWAY DOES NOT PRODUCE, kept deliberately: audit_records
+  // .advertiser_id is written on serves only, so a suppression can never be selected into a
+  // real report (lib/report-queries.ts). It stays because the arithmetic must be right the day
+  // a suppressed turn can name the advertiser it would have served, and because it is what
+  // proves the separation denominator is the serves and not every record.
   fixtureInput({
     id: 'aud_r3',
     appId: 'app_alpha',

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { generateReportAction } from '@/app/(dashboard)/reports/actions';
 import { defaultReportForm, reportFormMessage, type ReportFormValues } from '@/lib/report-form';
 import { listReportAdvertisers } from '@/lib/report-queries';
+import { verifyKeys } from '@/lib/verify-keys';
 
 /**
  * Generate a verification report: pick an advertiser and a period.
@@ -28,6 +29,10 @@ const NewReportPage = async ({
 }) => {
   const params = await searchParams;
   const advertisers = await listReportAdvertisers();
+  // Said BEFORE the operator generates: with no public keys every record fails the signature
+  // check and the report reads BROKEN for a configuration reason (lib/verify-keys.ts). The
+  // generated document repeats it, so a report that is sent on carries the caveat with it.
+  const keyIssue = verifyKeys().issue;
   const defaults = defaultReportForm();
   const submitted: ReportFormValues = {
     advertiserId: one(params['advertiser']),
@@ -45,6 +50,16 @@ const NewReportPage = async ({
           verified with the signed chain, and aggregated into one report.
         </p>
       </div>
+
+      {keyIssue === null ? null : (
+        <p
+          data-testid="report-key-issue"
+          className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          Signatures cannot be checked: {keyIssue}. A report generated now will fail the signature
+          check on every record and will say so.
+        </p>
+      )}
 
       {message === null ? null : (
         <p

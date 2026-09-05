@@ -20,6 +20,12 @@ import type { BundleCreative } from './report-bundle';
  * advertiser's creatives between two dates", which is exactly the column pair
  * audit_records_advertiser_id_ts_idx covers, so the slice below is an index range and the events
  * of those turns are reached from it through events_audit_id_idx.
+ *
+ * advertiser_id IS WRITTEN ON SERVES ONLY (packages/gateway/src/evaluate/audit-store.ts: it is
+ * the served creative's advertiser, and a suppressed turn has no creative), so the set below is
+ * the advertiser's serve records and their attestations. A suppression is nobody's record and
+ * can appear in no report; attributing one would mean the gateway recording the advertiser it
+ * WOULD have served, which it does not do.
  * lib/metrics-queries.integration.test.ts EXPLAINs both against 10 000 records and fails on a
  * Seq Scan.
  *

@@ -14,6 +14,7 @@ import {
   type ReportPeriod,
   type ReportSensitiveExposures,
   type ReportTotals,
+  type ReportVerifier,
   REPORT_VERSION,
 } from './report-document';
 import { VERIFY_CHECK_NAMES } from './verify-labels';
@@ -60,6 +61,11 @@ export interface ReportInput {
   truncated: boolean;
   /** The cap that produced `truncated`, stated so a reader knows what was applied. */
   recordLimit: number;
+  /**
+   * Where the keys the `signature` check used came from, when the caller knows. Omitted by the
+   * unit tests, which hand in verify() results directly and have no ring to describe.
+   */
+  verifier?: ReportVerifier;
 }
 
 /** x / y, or null when y is 0: a rate with no denominator is unknown, not zero. */
@@ -85,13 +91,19 @@ const bump = (counts: Map<string, number>, key: string): void => {
 const isServe = (input: ReportRecordInput): boolean => input.record?.decision === 'serve';
 
 /**
- * docs/audit.md's disclosure_present check, applied to the report: a non-empty label in the
- * after_answer position. An unreadable document cannot pass.
+ * docs/audit.md's disclosure_present check, applied to the report: a non-empty label, in the
+ * after_answer position, as a separate_block. An unreadable document cannot pass.
+ *
+ * ALL THREE CONDITIONS, because this must agree with core's checkDisclosure on every record -
+ * a report that called a turn compliant while GET /v1/verify/:id failed it would be worse than
+ * no report. lib/report.test.ts asserts the agreement over the fixture rather than trusting the
+ * two lists to stay in step.
  */
 export const isDisclosureCompliant = (record: AuditRecord | null): boolean =>
   record !== null &&
   record.disclosure.label.trim() !== '' &&
-  record.disclosure.position === 'after_answer';
+  record.disclosure.position === 'after_answer' &&
+  record.disclosure.style === 'separate_block';
 
 /** The integrity checks this record failed, in docs/audit.md order. */
 const failedChecksOf = (input: ReportRecordInput): string[] =>
@@ -226,6 +238,8 @@ export const computeReport = (input: ReportInput): ReportDocument => {
   return {
     version: REPORT_VERSION,
     generated_at: input.generatedAt,
+    // Written only when the caller knows: an absent `verifier` is "not stated", never "fine".
+    ...(input.verifier === undefined ? {} : { verifier: input.verifier }),
     advertiser: input.advertiser,
     period: input.period,
     totals: totalsOf(records),

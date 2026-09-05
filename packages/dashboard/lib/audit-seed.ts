@@ -5,7 +5,6 @@ import {
   type AuditSigningKey,
   buildAuditRecord,
   createKeyRing,
-  creativeContentHash,
   derivePublicPem,
   generateKeypair,
   loadPolicyFromYaml,
@@ -15,7 +14,6 @@ import {
 } from '@adgate/core';
 import type {
   AuditRecord,
-  Candidate,
   Classification,
   DemandTrace,
   PolicyDecision,
@@ -24,6 +22,12 @@ import type {
 } from '@adgate/schemas';
 import type { Sql } from 'postgres';
 
+import {
+  advertiserIdOfCreative,
+  FIXTURE_CANDIDATE,
+  insertFixtureCatalog,
+  OTHER_CANDIDATE,
+} from './audit-fixtures';
 import type { VerifyKeys } from './verify-keys';
 
 /**
@@ -39,34 +43,7 @@ import type { VerifyKeys } from './verify-keys';
  * reason.
  */
 
-export const CREATIVE_ID = 'cr_audit_fixture';
-export const ADVERTISER_ID = 'adv_audit_fixture';
-export const ADVERTISER_NAME = 'Audit Fixture Co';
-export const ADVERTISER_DOMAIN = 'auditfixture.example';
-export const HEADLINE = 'Managed Postgres with a free tier';
-
-/** The catalog row every serve in the fixture points at, as the demand path would hand it over. */
-export const FIXTURE_CANDIDATE: Candidate = {
-  id: CREATIVE_ID,
-  advertiser: ADVERTISER_NAME,
-  advertiser_domain: ADVERTISER_DOMAIN,
-  headline: HEADLINE,
-  body: 'Spin up a database in 30 seconds.',
-  cta: 'Try it free',
-  url_template: `https://${ADVERTISER_DOMAIN}/?ref=adgate`,
-  target_categories: ['software.devtools.database'],
-  target_regions: [],
-  keywords: ['postgres'],
-  ecpm: 20,
-  source: 'direct',
-  active: true,
-  ecpm_estimate: 20,
-  targeting_match: 0.85,
-  resolved_url: `https://${ADVERTISER_DOMAIN}/?ref=adgate`,
-};
-
-/** content_hash of the fixture creative: the value the catalog row and the record both carry. */
-export const FIXTURE_CONTENT_HASH = creativeContentHash(FIXTURE_CANDIDATE);
+export * from './audit-fixtures';
 
 const CLASSIFICATION: Classification = {
   commercial_intent: 0.84,
@@ -75,6 +52,16 @@ const CLASSIFICATION: Classification = {
   confidence: 0.91,
   method: 'rules',
   prompt_version: sha256Prefixed('audit-fixture-prompt'),
+};
+
+/**
+ * The other advertiser's turns are classified differently (a category from the taxonomy that
+ * the fixture advertiser never runs on), so "no category of theirs leaked" is a claim a test
+ * can actually make.
+ */
+const OTHER_CLASSIFICATION: Classification = {
+  ...CLASSIFICATION,
+  categories: ['shopping.sportswear'],
 };
 
 const SURFACE: Surface = { type: 'chat', placement: 'after_answer', max_creatives: 1 };
@@ -111,8 +98,13 @@ const NO_FILL_TRACE: DemandTrace = {
   selected: null,
 };
 
-/** One turn to write: a serve, a no_fill, or a policy suppression with its reason. */
-export type SeedTurn = 'serve' | 'no_fill' | { suppress: SuppressReason; rule?: PolicyRuleName };
+/**
+ * One turn to write: a serve of the fixture advertiser, a serve of the OTHER advertiser
+ * (`serve_other`, which is what makes a chain realistic - the record before yours is usually
+ * somebody else's), a no_fill, or a policy suppression with its reason.
+ */
+export type SeedTurn =
+  'serve' | 'serve_other' | 'no_fill' | { suppress: SuppressReason; rule?: PolicyRuleName };
 
 export interface SeedAuditChainOptions {
   turns: readonly SeedTurn[];
@@ -164,23 +156,7 @@ export const seedAuditChain = async (
     insert into apps (id, name, salt, policy_yaml, policy_hash, policy_version)
     values (${appId}, ${appName}, ${salt}, ${yaml}, ${policy_hash}, 1)
   `;
-  await sql`
-    insert into advertisers (id, name, domain)
-    values (${ADVERTISER_ID}, ${ADVERTISER_NAME}, ${ADVERTISER_DOMAIN})
-    on conflict (id) do nothing
-  `;
-  await sql`
-    insert into creatives (id, advertiser_id, headline, body, cta, url_template,
-      target_categories, target_regions, keywords, ecpm, source, content_hash)
-    values (${CREATIVE_ID}, ${ADVERTISER_ID}, ${FIXTURE_CANDIDATE.headline},
-      ${FIXTURE_CANDIDATE.body}, ${FIXTURE_CANDIDATE.cta}, ${FIXTURE_CANDIDATE.url_template},
-      ${sql.array([...FIXTURE_CANDIDATE.target_categories])},
-      ${sql.array([...FIXTURE_CANDIDATE.target_regions])},
-      ${sql.array([...FIXTURE_CANDIDATE.keywords])},
-      ${FIXTURE_CANDIDATE.ecpm}, 'direct',
-      ${FIXTURE_CONTENT_HASH})
-    on conflict (id) do nothing
-  `;
+  await insertFixtureCatalog(sql);
 
   const start = options.start ?? new Date(Date.now() - options.turns.length * TURN_INTERVAL_MS);
   const records: AuditRecord[] = [];
@@ -195,7 +171,7 @@ export const seedAuditChain = async (
       turn_id: `turn_${index + 1}`,
       ts: ts.toISOString(),
       surface: SURFACE,
-      classification: CLASSIFICATION,
+      classification: turn === 'serve_other' ? OTHER_CLASSIFICATION : CLASSIFICATION,
       policy: { policy_version: 1, policy_hash, disclosure: policy.disclosure },
       ...outcomeOf(turn),
       prev_hash: nextPrevHash(previous),
@@ -210,10 +186,13 @@ export const seedAuditChain = async (
 };
 
 const outcomeOf = (turn: SeedTurn) => {
-  if (turn === 'serve') {
+  if (turn === 'serve' || turn === 'serve_other') {
     return {
       policyResult: { allowed: true, reason: null, decisions: PASS_DECISIONS },
-      mediation: { selected: FIXTURE_CANDIDATE, trace: SERVE_TRACE },
+      mediation: {
+        selected: turn === 'serve' ? FIXTURE_CANDIDATE : OTHER_CANDIDATE,
+        trace: SERVE_TRACE,
+      },
     } as const;
   }
   if (turn === 'no_fill') {
@@ -246,7 +225,7 @@ export const insertRecord = async (
       is_latest, decision, reason, creative_id, advertiser_id, ts, record, attest_rendered)
     values (${record.record_hash}, ${record.id}, ${appId}, ${seq}, ${record.prev_hash},
       ${record.supersedes_hash}, ${options.isLatest ?? true}, ${record.decision}, ${record.reason},
-      ${record.creative?.id ?? null}, ${record.creative === null ? null : ADVERTISER_ID},
+      ${record.creative?.id ?? null}, ${advertiserIdOfCreative(record.creative?.id ?? null)},
       ${ts.toISOString()}, ${sql.json(record)},
       ${options.attestRendered ?? null})
   `;

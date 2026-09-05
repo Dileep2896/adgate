@@ -1,7 +1,9 @@
-import { apiKeys, apps, auditRecords, creatives } from '@adgate/gateway/schema';
-import { and, count, desc, eq, gte, isNotNull, max } from 'drizzle-orm';
+import { apiKeys, apps, creatives } from '@adgate/gateway/schema';
+import { count, desc, eq, isNotNull } from 'drizzle-orm';
 
 import { type DashboardDb, dashboardDb } from './db';
+import type { MetricsWindow } from './metrics';
+import { appLastTurnsQuery, appWindowCountsQuery, defaultMetricsWindow } from './metrics-queries';
 
 /**
  * The dashboard's reads. SELECT only (see lib/db.ts): writes go through the admin server
@@ -13,12 +15,6 @@ import { type DashboardDb, dashboardDb } from './db';
  * an index - and an integration test EXPLAINs each. Add a metric query there, not here.
  */
 
-/** The window the app list counts audit records over. */
-export const AUDIT_WINDOW_DAYS = 30;
-
-export const windowStart = (now: Date = new Date(), days = AUDIT_WINDOW_DAYS): Date =>
-  new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-
 export interface AppSummary {
   id: string;
   name: string;
@@ -27,7 +23,12 @@ export interface AppSummary {
   createdAt: Date;
   /** Creatives scoped to this app. The shared global catalog (app_id null) is not counted. */
   creativeCount: number;
-  /** Audit records written in the last AUDIT_WINDOW_DAYS days, counting each turn once. */
+  /**
+   * Audit records in the SAME window the /apps header counts (lib/metrics-queries.ts's
+   * defaultMetricsWindow: whole UTC days), counting each turn once. Two windows on one page
+   * that disagreed - a rolling 30 x 24 h here, whole days above - could never add up, and an
+   * operator has no way to tell which is which.
+   */
   auditCount30d: number;
   /** Timestamp of the app's most recent audit record, or null when it has none yet. */
   lastTurnAt: Date | null;
@@ -37,12 +38,15 @@ export interface AppSummary {
  * Apps with their catalog and audit counts, newest first. Four plain SELECTs joined in memory
  * rather than one query with two joins: counting through a join fans the rows out and the
  * operator list is small.
+ *
+ * The two audit_records columns come from lib/metrics-queries.ts: `group by app_id` with no
+ * app_id predicate can only be answered by reading the whole chain, so both are a lateral per
+ * app instead, and the EXPLAIN test covers them there.
  */
 export const listAppsWithCounts = async (
+  window: MetricsWindow = defaultMetricsWindow(),
   db: DashboardDb = dashboardDb(),
-  now: Date = new Date(),
 ): Promise<AppSummary[]> => {
-  const since = windowStart(now);
   const [appRows, creativeCounts, recentCounts, lastTurns] = await Promise.all([
     db
       .select({
@@ -59,20 +63,12 @@ export const listAppsWithCounts = async (
       .from(creatives)
       .where(isNotNull(creatives.appId))
       .groupBy(creatives.appId),
-    db
-      .select({ appId: auditRecords.appId, total: count() })
-      .from(auditRecords)
-      .where(and(eq(auditRecords.isLatest, true), gte(auditRecords.ts, since)))
-      .groupBy(auditRecords.appId),
-    db
-      .select({ appId: auditRecords.appId, lastTs: max(auditRecords.ts) })
-      .from(auditRecords)
-      .where(eq(auditRecords.isLatest, true))
-      .groupBy(auditRecords.appId),
+    appWindowCountsQuery(db, window),
+    appLastTurnsQuery(db),
   ]);
 
   const creativesByApp = new Map(creativeCounts.map((row) => [row.appId, row.total]));
-  const recentByApp = new Map(recentCounts.map((row) => [row.appId, row.total]));
+  const recentByApp = new Map(recentCounts.map((row) => [row.appId, row.turns]));
   const lastTurnByApp = new Map(lastTurns.map((row) => [row.appId, row.lastTs]));
 
   return appRows.map((app) => ({
