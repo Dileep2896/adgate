@@ -4,7 +4,7 @@ The operator dashboard. A Next.js App Router app that reads the gateway's Postgr
 with Drizzle and shows what the gateway has been doing. It is private to this repo and is
 never published.
 
-## What it does today (S30, S31, S32)
+## What it does today (S30 - S34)
 
 - `/login` - one admin password, a signed cookie session.
 - `/apps` - the five gateway-wide numbers (apps integrated, turns in the last 30 days, ad
@@ -17,7 +17,43 @@ never published.
   impressions, clicks, CTR, estimated revenue, RPM) with a decisions-per-day chart and a
   suppress-reason breakdown, then the policy YAML in an editor with inline schema errors, and
   the API keys with a Revoke button.
-- `/creatives`, `/audit`, `/reports` - placeholders filled in by S33, S34 and S35.
+- `/creatives`, `/creatives/new`, `/creatives/[id]` - the catalog the demand path serves from.
+- `/audit` - search the signed records by app, date range, decision and reason, with keyset
+  pagination; `/audit/[id]` shows one record, its chain neighbours and its other version, and
+  runs `verify()` live over it.
+- `/reports` - a placeholder filled in by S35.
+
+## The audit view
+
+`/audit` is a plain GET form: every filter and the page position are query parameters
+(`lib/audit-filters.ts`), so the view is a URL an operator can bookmark or send to an auditor.
+The reason select is built from the reasons the records in range actually carry, sensitive
+categories included, rather than a hardcoded list.
+
+Paging is **keyset**, not `OFFSET`: a page is "the records strictly older than
+`(ts, record_hash)`". `record_hash` is the primary key, so the pair totally orders the log and
+each record lands on exactly one page whatever the gateway writes while an operator is reading.
+`lib/audit-pagination.integration.test.ts` seeds 1 200 records in groups that SHARE a timestamp
+and walks every page forwards and backwards, asserting no row is seen twice, none is missed and
+the walk adds up to 1 200. The search query reaches `audit_records` through
+`audit_records_app_id_ts_idx` - with no app selected it walks `apps` with a `CROSS JOIN LATERAL`
+whose `ORDER BY ... LIMIT` is the optimisation fence - and
+`lib/metrics-queries.integration.test.ts` EXPLAINs it alongside the metric queries.
+
+`/audit/[id]` runs core's `verify()` **on this request**, over the record exactly as stored,
+using the gateway's own loader and `buildVerifyContext` through the `@adgate/gateway/audit`
+subpath rather than a second copy that could drift: the positional predecessor at `seq - 1`,
+the content hash recomputed from the creatives row, the superseded version with its own
+predecessor, and the superseding attestation of an older version. All eight docs/audit.md
+checks are listed with their `ok` state and detail, and a failing one is spelled out - the word
+`FAILED`, a warning glyph and a filled band - because red text alone is invisible in a
+screenshot, to a colour-blind operator and to anyone scanning quickly.
+
+`?version=<record_hash>` selects one stored version, the same parameter the gateway's
+`GET /v1/audit/:id` takes; attestation writes a second record, so an id with two versions gets a
+switcher. `lib/audit-verify.integration.test.ts` writes real signed records, tampers them with
+SQL and asserts WHICH check fails: a rewritten classification fails `record_hash` alone, an
+edited creatives row fails `creative_hash`, a deleted predecessor fails `chain`.
 
 ## The metrics
 
@@ -105,14 +141,16 @@ not. The signature and expiry are verified in the Node runtime by `requireSessio
 
 Read from the repo-root `.env` (see `.env.example`) or from the real environment, which wins:
 
-| Variable                   | Required | Meaning                                             |
-| -------------------------- | -------- | --------------------------------------------------- |
-| `DATABASE_URL`             | yes      | The gateway's Postgres. Read only from here.         |
-| `ADMIN_PASSWORD`           | yes      | The dashboard login.                                 |
-| `DASHBOARD_SESSION_SECRET` | no       | Session HMAC key; derived from the password if unset. |
-| `DASHBOARD_PORT`           | no       | `pnpm dev` port, default 3000.                       |
-| `DASHBOARD_E2E_PORT`       | no       | Playwright port, default 3210.                       |
-| `DATABASE_URL_TEST`        | tests    | Playwright's database. The metrics integration test creates and uses `<that database>_dashboard`, so `turbo run test` cannot have it and the gateway's suites truncating the same tables at once. |
+| Variable                   | Required | Meaning                                                                                                                                                                                                                                                |
+| -------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`             | yes      | The gateway's Postgres. Read only from here.                                                                                                                                                                                                           |
+| `ADMIN_PASSWORD`           | yes      | The dashboard login.                                                                                                                                                                                                                                   |
+| `DASHBOARD_SESSION_SECRET` | no       | Session HMAC key; derived from the password if unset.                                                                                                                                                                                                  |
+| `DASHBOARD_PORT`           | no       | `pnpm dev` port, default 3000.                                                                                                                                                                                                                         |
+| `DASHBOARD_E2E_PORT`       | no       | Playwright port, default 3210.                                                                                                                                                                                                                         |
+| `ADGATE_PUBLIC_KEYS_JSON`  | no       | Public keys `/audit` verifies signatures with. Unset or `{}` with `ADGATE_SIGNING_KEY_PEM` present derives the signing key's public half under `ADGATE_SIGNING_KEY_ID`; with neither, `/audit` still renders and says the signature cannot be checked. |
+| `ADGATE_SIGNING_KEY_ID`    | no       | The key id the derived public key is filed under.                                                                                                                                                                                                      |
+| `DATABASE_URL_TEST`        | tests    | Playwright's database. The metrics integration test creates and uses `<that database>_dashboard`, so `turbo run test` cannot have it and the gateway's suites truncating the same tables at once.                                                      |
 
 ## Commands
 
@@ -120,9 +158,9 @@ Read from the repo-root `.env` (see `.env.example`) or from the real environment
 pnpm dev                                  # gateway on :8787 and the dashboard on :3000
 pnpm --filter @adgate/dashboard dev       # dashboard alone
 pnpm --filter @adgate/dashboard build
-pnpm --filter @adgate/dashboard test      # vitest (128): the pure unit tests, the chart
-                                          # components in jsdom, and the metrics integration
-                                          # test, which needs docker Postgres
+pnpm --filter @adgate/dashboard test      # vitest (202): the pure unit tests, the chart
+                                          # components in jsdom, and the three integration
+                                          # tests, which need docker Postgres
 pnpm --filter @adgate/dashboard typecheck
 pnpm --filter @adgate/dashboard lint
 ```
@@ -145,6 +183,13 @@ table and inserts one app row.
 `e2e/metrics.spec.ts` seeds a second app with ten known turns and asserts the rendered overview
 matches the numbers computed by hand in `e2e/seed.ts`, that the app with no traffic renders
 zeros, dashes and two EMPTY charts with nothing thrown, and that the `/apps` header agrees.
+
+`e2e/audit.spec.ts` seeds an app whose whole chain is real - built with `buildAuditRecord`,
+signed with the gateway's own key, chained `seq` 1..6 - filters `/audit` by decision, opens a
+detail page and asserts all eight checks pass, then rewrites one record with SQL and asserts the
+page shows `INVALID` with `record_hash` marked `FAILED` and every other check still `OK`.
+`playwright.config.ts` hands the server under test the PUBLIC half of `ADGATE_SIGNING_KEY_PEM`,
+never the private key.
 
 `e2e/smoke.spec.ts` checks that `/apps` redirects an anonymous visitor to `/login`, that a
 forged cookie does not get past the layout, that a wrong password is refused, and that logging

@@ -359,7 +359,7 @@
       ]
     },
     {
-      "id": "S34", "priority": 34, "dependsOn": ["S30"], "passes": false,
+      "id": "S34", "priority": 34, "dependsOn": ["S30"], "passes": true,
       "title": "Audit search and detail with live verify",
       "description": "/audit: filter by app, date range, decision, reason; detail page shows the record, the chain neighbors, and runs verify() live listing every check.",
       "acceptanceCriteria": [

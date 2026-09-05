@@ -2,11 +2,13 @@ import { randomBytes } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { loadPolicyFromYaml, prefixedUlid } from '@adgate/core';
+import { type AuditSigningKey, loadPolicyFromYaml, prefixedUlid } from '@adgate/core';
 import { apps, TABLE_NAMES } from '@adgate/gateway/schema';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
+
+import { seedAuditChain, type SeedTurn } from '../lib/audit-seed';
 
 /**
  * Test-database setup for the Playwright smoke test. This is the only place in the dashboard
@@ -180,6 +182,88 @@ export const seedTraffic = async (name = 'Playwright metrics app'): Promise<Seed
       }
     }
     return { id, name };
+  } finally {
+    await sql.end({ timeout: 5 });
+  }
+};
+
+/* ---------------------------------------------------------------------- audit trail --- */
+
+/**
+ * The gateway's OWN signing key, from the repo-root .env that playwright.config.ts loads.
+ *
+ * The audit spec needs records that really verify, which means the dashboard under test and
+ * this fixture must use the same key: playwright.config.ts hands the server the PUBLIC half
+ * (ADGATE_PUBLIC_KEYS_JSON) derived from exactly this PEM. A generated-per-run keypair could
+ * not work - the server process is started before the specs run and would never see it.
+ */
+export const auditSigningKey = (): AuditSigningKey => {
+  const keyId = process.env['ADGATE_SIGNING_KEY_ID'] ?? '';
+  const pem = (process.env['ADGATE_SIGNING_KEY_PEM'] ?? '').replace(/\\n/g, '\n');
+  if (keyId === '' || pem === '') {
+    throw new Error(
+      'ADGATE_SIGNING_KEY_ID and ADGATE_SIGNING_KEY_PEM must be set for the audit e2e run; generate them with `pnpm --filter @adgate/gateway keygen`',
+    );
+  }
+  return { key_id: keyId, private_pem: pem };
+};
+
+/** The turns the audit spec looks for: three suppressions, two serves and a no_fill. */
+const AUDIT_TURNS: SeedTurn[] = [
+  'serve',
+  { suppress: 'paid_user', rule: 'serve_to_tiers' },
+  'no_fill',
+  'serve',
+  { suppress: 'frequency_cap', rule: 'frequency_caps' },
+  { suppress: 'sensitive_category:health' },
+];
+
+export interface SeededAuditTrail {
+  appId: string;
+  appName: string;
+  /** The stored records in chain order (seq = index + 1). */
+  records: { id: string; recordHash: string; decision: string; reason: string | null }[];
+}
+
+/**
+ * One app whose whole chain is REAL: built with core's buildAuditRecord, signed with the
+ * gateway's key and chained seq 1..n, so /audit/[id] verifies it for real rather than reporting
+ * eight failures against a placeholder document.
+ */
+export const seedAuditTrail = async (name = 'Playwright audit app'): Promise<SeededAuditTrail> => {
+  const url = requireTestDatabaseUrl();
+  const sql = postgres(url, { max: 1, connect_timeout: 5, onnotice: () => undefined });
+  try {
+    const chain = await seedAuditChain(sql, {
+      turns: AUDIT_TURNS,
+      appName: name,
+      signing: auditSigningKey(),
+    });
+    return {
+      appId: chain.appId,
+      appName: name,
+      records: chain.records.map((record) => ({
+        id: record.id,
+        recordHash: record.record_hash,
+        decision: record.decision,
+        reason: record.reason,
+      })),
+    };
+  } finally {
+    await sql.end({ timeout: 5 });
+  }
+};
+
+/** Rewrites a stored record underneath the gateway, the way an attacker with SQL access would. */
+export const tamperRecord = async (recordHash: string): Promise<void> => {
+  const url = requireTestDatabaseUrl();
+  const sql = postgres(url, { max: 1, connect_timeout: 5, onnotice: () => undefined });
+  try {
+    await sql`
+      update audit_records
+      set record = jsonb_set(record, '{classification,commercial_intent}', '0.01'::jsonb)
+      where record_hash = ${recordHash}
+    `;
   } finally {
     await sql.end({ timeout: 5 });
   }

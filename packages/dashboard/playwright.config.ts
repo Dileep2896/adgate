@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { derivePublicPem } from '@adgate/core';
 import { defineConfig, devices } from '@playwright/test';
 
 /**
@@ -30,6 +31,20 @@ const baseURL = `http://127.0.0.1:${port}`;
 const adminPassword = process.env['ADMIN_PASSWORD'] ?? '';
 const databaseUrl = process.env['DATABASE_URL_TEST'] ?? '';
 
+/**
+ * The dashboard verifies audit records with PUBLIC keys only (lib/verify-keys.ts). The audit
+ * spec signs its fixture with the gateway's own ADGATE_SIGNING_KEY_PEM, so the server under
+ * test is handed the public half of exactly that key - never the private one. An environment
+ * without a signing key still starts the server; the audit spec is the one that then fails,
+ * with a message telling you to run keygen.
+ */
+const signingKeyId = process.env['ADGATE_SIGNING_KEY_ID'] ?? '';
+const signingKeyPem = (process.env['ADGATE_SIGNING_KEY_PEM'] ?? '').replace(/\\n/g, '\n');
+const publicKeysJson =
+  signingKeyId === '' || signingKeyPem === ''
+    ? '{}'
+    : JSON.stringify({ [signingKeyId]: derivePublicPem(signingKeyPem) });
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -54,6 +69,8 @@ export default defineConfig({
       ADMIN_PASSWORD: adminPassword,
       DASHBOARD_SESSION_SECRET:
         process.env['DASHBOARD_SESSION_SECRET'] ?? 'playwright-e2e-session-secret',
+      ADGATE_SIGNING_KEY_ID: signingKeyId,
+      ADGATE_PUBLIC_KEYS_JSON: publicKeysJson,
     },
   },
 });

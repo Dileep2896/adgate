@@ -2,6 +2,16 @@ import { sql, type SQLWrapper } from 'drizzle-orm';
 import type { Sql } from 'postgres';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import {
+  ALL_APPS,
+  ANY_DECISION,
+  ANY_REASON,
+  type AuditCursor,
+  type AuditFilters,
+  AUDIT_PAGE_SIZE,
+  utcDay,
+} from './audit-filters';
+import { auditPageQuery, auditReasonsQuery } from './audit-queries';
 import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
 import { computeMetrics, computeGlobalMetrics, metricsWindow, suppressBreakdown } from './metrics';
 import {
@@ -38,6 +48,13 @@ import {
  *    when someone drops the app_id filter from a query "just for the global view".
  * 2. THE SQL. That the grouped rows Postgres returns really are the shape lib/metrics.ts
  *    computes from, with the hand written app's numbers coming out as computed by hand.
+ *
+ * S34 added the /audit search to the plan list. It reads the same table under the same rule,
+ * and it is the query most likely to lose the index: it has no GROUP BY to hold the lateral
+ * down (an ORDER BY ... LIMIT does that instead) and it is the one an operator runs with no app
+ * selected. Its correctness - no row seen twice, none skipped, past 1 000 records - is
+ * lib/audit-pagination.integration.test.ts; its PLAN is here, where the fixture is big enough
+ * for a plan to mean anything.
  */
 
 const url = metricsTestDatabaseUrl();
@@ -66,13 +83,61 @@ const planOf = async (query: SQLWrapper): Promise<string> => {
   return [...rows].map((row) => row['QUERY PLAN']).join('\n');
 };
 
-/** Every query in lib/metrics-queries.ts that reads audit_records, by name. */
+/** The whole span the bulk fixture covers (400 days back), as the /audit filters express it. */
+const auditFilters = (patch: Partial<AuditFilters> = {}): AuditFilters => ({
+  appId: BULK_APP_ID,
+  from: utcDay(new Date(Date.now() - 500 * 24 * 60 * 60 * 1000)),
+  to: utcDay(new Date()),
+  decision: ANY_DECISION,
+  reason: ANY_REASON,
+  ...patch,
+});
+
+/** Deep in the result set: the page an OFFSET based search would be slowest on. */
+const DEEP_CURSOR: AuditCursor = {
+  direction: 'older',
+  ts: new Date(Date.now() - 100 * 24 * 60 * 60 * 1000),
+  recordHash: `sha256:${'5'.repeat(64)}`,
+};
+
+/** Every query that reads audit_records, by name. */
 const AUDIT_QUERIES: [string, (db: DashboardDb) => SQLWrapper][] = [
   ['app decision counts', (handle) => appDecisionCountsQuery(handle, BULK_APP_ID, WINDOW)],
   ['app event counts', (handle) => appEventCountsQuery(handle, BULK_APP_ID, WINDOW)],
   ['global decision counts', (handle) => globalDecisionCountsQuery(handle, WINDOW)],
   ['global event counts', (handle) => globalEventCountsQuery(handle, WINDOW)],
   ['apps integrated', (handle) => appsIntegratedQuery(handle)],
+  [
+    'audit search, one app',
+    (handle) =>
+      auditPageQuery(handle, {
+        filters: auditFilters(),
+        cursor: null,
+        limit: AUDIT_PAGE_SIZE + 1,
+      }),
+  ],
+  [
+    'audit search, every app',
+    (handle) =>
+      auditPageQuery(handle, {
+        filters: auditFilters({ appId: ALL_APPS }),
+        cursor: null,
+        limit: AUDIT_PAGE_SIZE + 1,
+      }),
+  ],
+  [
+    'audit search, deep page',
+    (handle) =>
+      auditPageQuery(handle, {
+        filters: auditFilters({ appId: ALL_APPS, decision: 'suppress' }),
+        cursor: DEEP_CURSOR,
+        limit: AUDIT_PAGE_SIZE + 1,
+      }),
+  ],
+  [
+    'audit reason options',
+    (handle) => auditReasonsQuery(handle, auditFilters({ appId: ALL_APPS })),
+  ],
 ];
 
 describe('every query that touches audit_records', () => {
@@ -83,6 +148,19 @@ describe('every query that touches audit_records', () => {
       expect(plan, plan).not.toContain('Seq Scan on audit_records');
     });
   }
+
+  it('reaches the audit search through audit_records_app_id_ts_idx by name', async () => {
+    for (const appId of [BULK_APP_ID, ALL_APPS]) {
+      const plan = await planOf(
+        auditPageQuery(db, {
+          filters: auditFilters({ appId }),
+          cursor: null,
+          limit: AUDIT_PAGE_SIZE + 1,
+        }),
+      );
+      expect(plan, plan).toContain('audit_records_app_id_ts_idx');
+    }
+  });
 
   it('reaches the events of a turn through events_audit_id_idx', async () => {
     const plan = await planOf(appEventCountsQuery(db, BULK_APP_ID, WINDOW));
