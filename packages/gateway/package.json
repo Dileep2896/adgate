@@ -39,6 +39,7 @@
     "create-app": "tsx src/scripts/create-app.ts",
     "create-key": "tsx src/scripts/create-key.ts",
     "seed-creatives": "tsx src/scripts/seed-creatives.ts",
+    "docs:api": "tsx scripts/api-reference.ts",
     "load": "tsx scripts/load.ts",
     "retention": "tsx scripts/retention.ts",
     "lint": "eslint ."

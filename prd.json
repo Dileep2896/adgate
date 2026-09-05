@@ -406,7 +406,7 @@
       ]
     },
     {
-      "id": "S39", "priority": 39, "dependsOn": ["S29", "S37", "S38"], "passes": false,
+      "id": "S39", "priority": 39, "dependsOn": ["S29", "S37", "S38"], "passes": true,
       "title": "Docs and quickstart",
       "description": "README 10 minute quickstart (docker compose up, migrate, create app, seed creatives, run example), CONTRIBUTING.md, regenerate docs/api-reference.md from openapi.json (docs/api.md stays the human written contract and is not modified).",
       "acceptanceCriteria": [

@@ -16,7 +16,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "audit:prod": "pnpm audit --prod --audit-level=high",
-    "db:migrate": "pnpm --filter @adgate/gateway db:migrate"
+    "db:migrate": "pnpm --filter @adgate/gateway db:migrate",
+    "docs:api": "pnpm --filter @adgate/gateway docs:api"
   },
   "pnpm": {
     "overrides": {
