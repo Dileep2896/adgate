@@ -1,7 +1,6 @@
 import type { HealthResponse } from '@adgate/schemas';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { cors } from 'hono/cors';
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import type { Logger } from 'pino';
@@ -25,8 +24,9 @@ import { errorCode, errorResponse } from './http-error.js';
 import { buildOpenApiDocument } from './openapi/document.js';
 import { openApiRoute } from './openapi/route.js';
 import type { RateLimiter } from './rate-limit/limiter.js';
-import { rateLimit, REMAINING_HEADER, RETRY_AFTER_HEADER } from './rate-limit/middleware.js';
-import { REQUEST_ID_HEADER, requestContext } from './request-id.js';
+import { rateLimit } from './rate-limit/middleware.js';
+import { requestContext } from './request-id.js';
+import { corsPolicy, securityHeaders } from './security.js';
 
 export { errorCode, errorResponse } from './http-error.js';
 export { BODY_LIMIT_BYTES } from './body-limit.js';
@@ -40,7 +40,9 @@ export { BODY_LIMIT_BYTES } from './body-limit.js';
  * redirect GET /c/:audit_id, all sharing the evaluate deps' database, keys and clock; a
  * per-key token bucket after bearerAuth on the three write endpoints (429 + Retry-After) when
  * a rate limiter is given; GET /openapi.json built once from the Zod schemas; a body size
- * limit ahead of every route; and the docs/api.md error behaviour: every non-2xx body is
+ * limit ahead of every route; the security.ts response headers and CORS allowlist (an origin
+ * off CORS_ALLOWED_ORIGINS gets no CORS headers and its preflight is 403); and the
+ * docs/api.md error behaviour: every non-2xx body is
  * { error: { code, message } }.
  */
 
@@ -80,15 +82,8 @@ export const createApp = (deps: AppDeps): App => {
   const app = new Hono<AppEnv>();
 
   app.use('*', requestContext(deps.logger));
-  app.use(
-    '*',
-    cors({
-      origin: [...deps.corsAllowedOrigins],
-      allowHeaders: ['Authorization', 'Content-Type', REQUEST_ID_HEADER],
-      exposeHeaders: [REQUEST_ID_HEADER, RETRY_AFTER_HEADER, REMAINING_HEADER],
-      maxAge: 600,
-    }),
-  );
+  app.use('*', securityHeaders());
+  app.use('*', corsPolicy(deps.corsAllowedOrigins));
   app.use('*', bodyLimit({ maxSize: BODY_LIMIT_BYTES, onError: payloadTooLarge }));
 
   app.get('/healthz', (c) => {

@@ -378,7 +378,7 @@
       ]
     },
     {
-      "id": "S36", "priority": 36, "dependsOn": ["S21", "S35"], "passes": false,
+      "id": "S36", "priority": 36, "dependsOn": ["S21", "S35"], "passes": true,
       "title": "Security pass",
       "description": "Body size limits, message truncation confirmed, CORS allowlist from env, helmet style headers, SQL parameterization review, dependency audit script, SECURITY.md with disclosure policy.",
       "acceptanceCriteria": [

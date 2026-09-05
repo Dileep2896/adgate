@@ -41,15 +41,23 @@ export const MessageRole = z.enum(['system', 'user', 'assistant', 'tool']).meta(
 });
 export type MessageRole = z.infer<typeof MessageRole>;
 
+/**
+ * Longest single message the gateway accepts (32 KiB of characters). Only the last 4 messages
+ * and 4,000 characters reach the classifier, so this is eight times what any caller can use;
+ * it exists so one message inside a legal request body cannot carry megabytes of text into
+ * hashing and logging. The 256 KiB request body limit bounds the whole request.
+ */
+export const MESSAGE_CONTENT_MAX_CHARS = 32 * 1024;
+
 export const Message = z
   .object({
     role: MessageRole,
-    content: z.string(),
+    content: z.string().max(MESSAGE_CONTENT_MAX_CHARS),
   })
   .meta({
     title: 'Message',
     description:
-      'One conversation turn. Servers truncate to the last 4 messages and 4,000 characters before classification.',
+      'One conversation turn. Servers truncate to the last 4 messages and 4,000 characters before classification, and reject a single message over 32,768 characters.',
   });
 export type Message = z.infer<typeof Message>;
 

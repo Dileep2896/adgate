@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "One conversation turn. Servers truncate to the last 4 messages and 4,000 characters before classification.",
+  "description": "One conversation turn. Servers truncate to the last 4 messages and 4,000 characters before classification, and reject a single message over 32,768 characters.",
   "properties": {
     "role": {
       "enum": [
@@ -13,6 +13,7 @@
       "type": "string"
     },
     "content": {
+      "maxLength": 32768,
       "type": "string"
     }
   },

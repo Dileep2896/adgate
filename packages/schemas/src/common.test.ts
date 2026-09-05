@@ -8,6 +8,7 @@ import {
   HealthResponse,
   IsoTimestamp,
   Message,
+  MESSAGE_CONTENT_MAX_CHARS,
   SHA256_HASH_PATTERN,
   Sha256Hash,
   Surface,
@@ -66,6 +67,15 @@ describe('Message', () => {
     }
     expect(Message.safeParse({ role: 'bot', content: 'hi' }).success).toBe(false);
     expect(Message.safeParse({ role: 'user' }).success).toBe(false);
+  });
+
+  it('caps content at MESSAGE_CONTENT_MAX_CHARS so one message cannot carry megabytes', () => {
+    expect(MESSAGE_CONTENT_MAX_CHARS).toBe(32 * 1024);
+    const atLimit = 'a'.repeat(MESSAGE_CONTENT_MAX_CHARS);
+    expect(Message.safeParse({ role: 'user', content: atLimit }).success).toBe(true);
+    expect(Message.safeParse({ role: 'user', content: `${atLimit}a` }).success).toBe(false);
+    // Still far above the 4,000 characters the classifier reads (docs/api.md).
+    expect(MESSAGE_CONTENT_MAX_CHARS).toBeGreaterThan(4000);
   });
 });
 

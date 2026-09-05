@@ -70,6 +70,11 @@ scripts/ralph/ralph-once.sh
 scripts/ralph/ralph.sh 40
 ```
 
+## Security
+
+The trust boundaries, the hardening checklist for a deployment and how to report a vulnerability
+privately are in [SECURITY.md](SECURITY.md). Run `pnpm audit:prod` before a release.
+
 ## License
 
 Apache 2.0. See [LICENSE](LICENSE).
