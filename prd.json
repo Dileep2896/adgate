@@ -350,7 +350,7 @@
       ]
     },
     {
-      "id": "S33", "priority": 33, "dependsOn": ["S30"], "passes": false,
+      "id": "S33", "priority": 33, "dependsOn": ["S30"], "passes": true,
       "title": "Creatives CRUD",
       "description": "/creatives: list, create, edit, deactivate direct and affiliate creatives; validation mirrors the DB schema and the Creative schema.",
       "acceptanceCriteria": [

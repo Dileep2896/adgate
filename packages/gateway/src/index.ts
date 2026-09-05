@@ -17,6 +17,7 @@ export * from './auth/keys.js';
 export * from './auth/middleware.js';
 export * from './auth/repository.js';
 export * from './auth/verified-cache.js';
+export * from './catalog/creative-admin.js';
 export * from './catalog/seed.js';
 export * from './click/destination.js';
 export * from './click/route.js';

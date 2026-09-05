@@ -1,3 +1,4 @@
+import type { CreativeFieldIssue, CreativeFormValues } from './creative-issue';
 import type { PolicyIssueView } from './policy-issue';
 
 /**
@@ -35,6 +36,26 @@ export type PolicySaveState =
   | { status: 'saved'; policyVersion: number; policyHash: string };
 
 export const INITIAL_POLICY_SAVE_STATE: PolicySaveState = { status: 'idle' };
+
+/**
+ * The creative editor. There is no 'saved' state: a successful save REDIRECTS to the creative's
+ * own page, which reads the stored row back and shows its new content_hash, so what the operator
+ * sees afterwards is the database and not the form's memory of it.
+ *
+ * A refusal carries the submitted `values` and an `attempt` counter, because React 19 resets an
+ * uncontrolled form once its action has run: the editor re-mounts on each attempt with these
+ * values as the new defaults, so nothing an operator typed is lost by a validation error.
+ */
+export type CreativeSaveState =
+  | { status: 'idle' }
+  | {
+      status: 'invalid';
+      attempt: number;
+      values: CreativeFormValues;
+      issues: CreativeFieldIssue[];
+    };
+
+export const INITIAL_CREATIVE_SAVE_STATE: CreativeSaveState = { status: 'idle' };
 
 /** What a form says when the database, not the operator, is the problem. */
 export const WRITE_FAILED_MESSAGE =

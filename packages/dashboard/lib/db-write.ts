@@ -12,10 +12,11 @@ import postgres, { type Sql } from 'postgres';
  * edit it would defeat the point of signing it. That guarantee is only worth having if it is
  * the default, so admin writes do not loosen it - they use a different connection.
  *
- * This handle is imported by exactly one module, app/(dashboard)/apps/actions.ts, and there is
- * a unit test (lib/db-write-usage.test.ts) that fails if a second one appears. The writes it
- * carries out are not hand written SQL either: they run the gateway's own registerApp /
- * issueApiKey / revokeApiKey (`@adgate/gateway/admin`) plus one UPDATE of apps.policy_yaml.
+ * This handle is imported by the admin server actions and nothing else (lib/db-write-usage.test.ts
+ * holds the list and fails when it grows). The writes they carry out are not hand written SQL
+ * either: they run the gateway's own registerApp / issueApiKey / revokeApiKey / createCreative /
+ * updateCreative / setCreativeActive (`@adgate/gateway/admin`) plus one UPDATE of
+ * apps.policy_yaml.
  *
  * Read paths must keep using dashboardDb() from lib/db.ts.
  */

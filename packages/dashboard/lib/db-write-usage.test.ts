@@ -19,8 +19,16 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SEARCHED_DIRS = ['app', 'components', 'lib', 'e2e'] as const;
 const SOURCE_SUFFIXES = ['.ts', '.tsx'] as const;
 
-/** The only module allowed to import the read-write handle. */
-const ALLOWED = new Set(['app/(dashboard)/apps/actions.ts']);
+/**
+ * The only modules allowed to import the read-write handle: the admin server actions, and the
+ * integration test that exercises the creative writes against the dashboard's test database
+ * (it must use THIS handle rather than opening a second writable client of its own).
+ */
+const ALLOWED = new Set([
+  'app/(dashboard)/apps/actions.ts',
+  'app/(dashboard)/creatives/actions.ts',
+  'lib/creative-write.integration.test.ts',
+]);
 
 /**
  * An import of the module, by either the alias or the relative path - not a mention of the

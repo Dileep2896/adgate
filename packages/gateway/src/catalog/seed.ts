@@ -33,8 +33,9 @@ export interface SeedOptions {
   ulid?: UlidOptions | undefined;
 }
 
-type CreativeValues = Omit<typeof creatives.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>;
-type CreativeRow = typeof creatives.$inferSelect;
+/** Every column of a creatives row that a seed entry decides. Exported for creative-admin.ts. */
+export type CreativeValues = Omit<typeof creatives.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>;
+export type CreativeRow = typeof creatives.$inferSelect;
 
 const emptyCounts = (): SeedCounts => ({ inserted: 0, updated: 0, unchanged: 0 });
 
@@ -80,7 +81,12 @@ const upsertAdvertisers = async (
   return ids;
 };
 
-const creativeValues = (
+/**
+ * The row one seed entry describes, content_hash included. The dashboard's creative editor
+ * (creative-admin.ts) writes rows through this same function, so a creative created by an
+ * operator is byte for byte the row `seed-creatives` would have written.
+ */
+export const creativeValues = (
   seed: SeedCreative,
   advertiserId: string,
   appId: string | null,
