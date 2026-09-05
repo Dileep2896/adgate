@@ -388,7 +388,7 @@
       ]
     },
     {
-      "id": "S37", "priority": 37, "dependsOn": ["S36"], "passes": false,
+      "id": "S37", "priority": 37, "dependsOn": ["S36"], "passes": true,
       "title": "Privacy: retention job and docs",
       "description": "scripts/retention.ts deletes audit records, events, and raw_text older than each app's privacy.retain_days (chain integrity note: deletion is from the oldest end only). docs/privacy.md lists every stored field and its purpose.",
       "acceptanceCriteria": [

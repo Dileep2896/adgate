@@ -138,7 +138,9 @@ const TOOLING_ALLOWED: Readonly<Record<string, string>> = {
   'packages/gateway/src/db/test-support.ts':
     'TRUNCATE of TABLE_NAMES between integration tests; the identifier list is the schema constant, quoted.',
   'packages/gateway/src/evaluate/test-support.ts':
-    'The harness truncates a constant table list and reads row_to_json from each TABLE_NAMES entry; test-only, no request input.',
+    'The harness truncates a constant table list between evaluations; test-only, no request input.',
+  'packages/gateway/src/test-support/table-scan.ts':
+    'The privacy scan reads row_to_json from each TABLE_NAMES entry and probes every information_schema column; identifiers are quoted with doubled quotes and the needle is a $1 bind parameter. Test-only, no request input.',
   'packages/gateway/src/db/migrate.integration.test.ts':
     'Applies and breaks migration SQL read from packages/gateway/drizzle to prove migrations run and fail loudly.',
   'packages/gateway/src/audit-api/audit-chain.integration.test.ts':
@@ -201,10 +203,12 @@ describe('SQL parameterization audit', () => {
     for (const [file, reason] of Object.entries(ALLOWED)) {
       expect(reason.length, file).toBeGreaterThan(40);
     }
-    // Everything else is test, seed or migration tooling by its path.
+    // Everything else is test, seed or migration tooling by its path: a *.test.ts, a
+    // test-support module (the file itself or anything inside a test-support/ directory), a
+    // fixture seeder, or a test database helper.
     for (const file of Object.keys(TOOLING_ALLOWED)) {
       expect(file, file).toMatch(
-        /(\.test\.ts$|test-support\.ts$|seed\.ts$|-seed\.ts$|-test-db\.ts$)/,
+        /(\.test\.ts$|test-support\.ts$|\/test-support\/[^/]+\.ts$|seed\.ts$|-seed\.ts$|-test-db\.ts$)/,
       );
     }
   });

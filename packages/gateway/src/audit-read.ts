@@ -16,6 +16,11 @@
 
 export type { AuditRecordRow } from './attest/store.js';
 export { createAuditReader } from './audit-api/loader.js';
-export type { AuditReader, AuditVersion, AuditVersionQuery } from './audit-api/loader.js';
+export type {
+  AuditReader,
+  AuditVersion,
+  AuditVersionQuery,
+  RetentionWatermark,
+} from './audit-api/loader.js';
 export { buildVerifyContext, creativeIdOf, supersedesHashOf } from './audit-api/verify-context.js';
 export type { Db, DbOrTx } from './db/client.js';

@@ -48,7 +48,7 @@ packages/sdk        @adgate/sdk (+ react, + ai entries)
 packages/sdk-python adgate on PyPI
 packages/dashboard  Next.js admin and verification reports
 examples/           nextjs-chat, fastapi-chat
-docs/               api.md, policy.md, audit.md are the contract
+docs/               api.md, policy.md, audit.md are the contract; privacy.md is the data inventory
 fixtures/           classifier golden set
 scripts/db/         Postgres init script (creates adgate_test)
 scripts/ralph/      the build loop

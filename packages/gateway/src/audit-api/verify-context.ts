@@ -1,5 +1,4 @@
-import type { VerifyContext } from '@adgate/core';
-import type { AuditRecord } from '@adgate/schemas';
+import type { PreviousRecord, VerifyContext } from '@adgate/core';
 
 import type { AuditRecordRow } from '../attest/store.js';
 import type { AuditReader } from './loader.js';
@@ -10,7 +9,8 @@ import type { AuditReader } from './loader.js';
  *   prevRecord        the POSITIONAL predecessor, the app's row at seq - 1 (null at seq 1 or when
  *                     that row is gone, so a non-genesis record then fails 'previous record
  *                     missing' and a genesis record in mid-chain fails against the row that is
- *                     there; retention pruning, S37, will pass { pruned, retain_cutoff } instead);
+ *                     there; { pruned: true, retain_cutoff } when the retention job deleted it,
+ *                     which verifies as `chain` ok with detail 'pruned');
  *   storedCreativeHash creativeContentHash of the creatives row the record names (null when the
  *                     row is gone, so creative_hash fails 'stored creative missing');
  *   supersededRecord  the row whose record_hash is the record's supersedes_hash, with its own
@@ -37,16 +37,32 @@ export const creativeIdOf = (record: unknown): string | null =>
 export const supersedesHashOf = (record: unknown): string | null =>
   stringField(record, 'supersedes_hash');
 
-/** The record at seq - 1 of the same app, or null. */
-const predecessorOf = async (
-  reader: AuditReader,
-  row: AuditRecordRow,
-): Promise<AuditRecord | null> => {
+/**
+ * The record at seq - 1 of the same app; null when there is none.
+ *
+ * A predecessor that is not there is only sometimes innocent. The retention job (S37) deletes a
+ * PREFIX of the chain and records how far it got in retention_state, so a gap at or below that
+ * position is the policy working as documented and this returns the pruned marker core's
+ * `chain` check accepts (it still requires the record itself to post-date the cutoff). A gap
+ * ABOVE the watermark, or in an app the job has never touched, stays null and fails
+ * 'previous record missing' - which is the whole point of keeping the two apart.
+ *
+ * The extra read happens only when the row is actually missing, so an intact chain pays nothing.
+ */
+const predecessorOf = async (reader: AuditReader, row: AuditRecordRow): Promise<PreviousRecord> => {
   if (row.seq <= 1) {
     return null;
   }
-  const previous = await reader.findBySeq(row.appId, row.seq - 1);
-  return previous?.record ?? null;
+  const previousSeq = row.seq - 1;
+  const previous = await reader.findBySeq(row.appId, previousSeq);
+  if (previous !== null) {
+    return previous.record;
+  }
+  const watermark = await reader.retentionWatermark(row.appId);
+  if (watermark === null || previousSeq > watermark.prunedThroughSeq) {
+    return null;
+  }
+  return { pruned: true, retain_cutoff: watermark.prunedBefore.toISOString() };
 };
 
 export const buildVerifyContext = async (

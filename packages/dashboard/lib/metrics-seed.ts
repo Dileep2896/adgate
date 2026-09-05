@@ -46,7 +46,7 @@ const FIXTURE_TURNS: [string, string | null, 'none' | 'impression' | 'click', nu
 
 export const truncateAll = async (sql: Sql): Promise<void> => {
   await sql.unsafe(
-    'truncate table events, audit_records, reports, creatives, advertisers, api_keys, apps restart identity cascade',
+    'truncate table events, audit_records, retention_state, reports, creatives, advertisers, api_keys, apps restart identity cascade',
   );
 };
 

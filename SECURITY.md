@@ -92,7 +92,8 @@ What adgate trusts, and what it does not.
   TLS.
 - **Conversation text.** Raw text is not stored unless the app's policy sets
   `privacy.store_raw_text: true`; hashes and categories are stored instead, and message content is
-  never written to a log line.
+  never written to a log line. `docs/privacy.md` inventories every stored field, says which ones
+  can hold user-derived data, and documents the retention job that enforces `retain_days`.
 
 ### The dashboard is an admin surface, not a public site
 
@@ -163,5 +164,7 @@ is not an accepted finding, it is an unread one.
   secret store, never in the repository or an image layer.
 - Ship the structured logs somewhere you can search by `req_id`. They carry ids, statuses and
   durations, never message content and never key material.
-- Run `pnpm audit:prod` in CI, and once the retention job lands, run it on a schedule so stored
-  records do not outlive each app's `privacy.retain_days`.
+- Run `pnpm audit:prod` in CI, and run the retention job on a schedule so stored records do not
+  outlive each app's `privacy.retain_days`:
+  `pnpm --filter @adgate/gateway retention` (see `docs/privacy.md` for the crontab line, and use
+  `--dry-run` first).

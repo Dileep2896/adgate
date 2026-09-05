@@ -1,4 +1,4 @@
-import type { AuditReader, AuditRecordRow } from '@adgate/gateway/audit';
+import type { AuditReader, AuditRecordRow, RetentionWatermark } from '@adgate/gateway/audit';
 
 /**
  * The plumbing one report generation runs on: a memoising wrapper around the gateway's
@@ -17,6 +17,9 @@ export const cachedReader = (reader: AuditReader): AuditReader => {
   const byHash = new Map<string, Promise<AuditRecordRow | null>>();
   const latest = new Map<string, Promise<AuditRecordRow | null>>();
   const creativeHashes = new Map<string, Promise<string | null>>();
+  // One row per app, and a report is usually one app or a handful: asking once per record whose
+  // predecessor retention pruned would be the same answer several hundred times.
+  const watermarks = new Map<string, Promise<RetentionWatermark | null>>();
   const memo = <T>(cache: Map<string, Promise<T>>, key: string, load: () => Promise<T>) => {
     const existing = cache.get(key);
     if (existing !== undefined) {
@@ -34,6 +37,7 @@ export const cachedReader = (reader: AuditReader): AuditReader => {
       memo(bySeq, `${appId}#${String(seq)}`, () => reader.findBySeq(appId, seq)),
     creativeHash: (creativeId) =>
       memo(creativeHashes, creativeId, () => reader.creativeHash(creativeId)),
+    retentionWatermark: (appId) => memo(watermarks, appId, () => reader.retentionWatermark(appId)),
   };
 };
 

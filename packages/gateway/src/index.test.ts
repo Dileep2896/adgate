@@ -16,6 +16,6 @@ describe('@adgate/gateway', () => {
 
   it('names every table exactly once', () => {
     expect(new Set(gateway.TABLE_NAMES).size).toBe(gateway.TABLE_NAMES.length);
-    expect(gateway.TABLE_NAMES).toHaveLength(12);
+    expect(gateway.TABLE_NAMES).toHaveLength(13);
   });
 });

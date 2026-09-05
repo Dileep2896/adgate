@@ -49,4 +49,6 @@ export * from './rate-limit/middleware.js';
 export * from './rate-limit/pg.js';
 export * from './request-body.js';
 export * from './request-id.js';
+export * from './retention/queries.js';
+export * from './retention/run.js';
 export * from './signing.js';

@@ -20,7 +20,7 @@ import { seedCreatives } from '../catalog/seed.js';
 import { type GatewayConfig, loadConfig } from '../config.js';
 import { createDb, type DbHandle, type DbOptions } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
-import { advertisers, auditRecords, creatives, TABLE_NAMES } from '../db/schema.js';
+import { advertisers, auditRecords, creatives } from '../db/schema.js';
 import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { findRepoRoot } from '../env-file.js';
 import { createLogger, type LogLevel } from '../logger.js';
@@ -278,16 +278,6 @@ export const expectChecks = (result: VerifyResponse, failing: readonly string[] 
   expect(result.valid).toBe(failing.length === 0);
 };
 
-/** The tables whose rows, serialised as JSON, contain `needle` anywhere. */
-export const tablesContaining = async (handle: DbHandle, needle: string): Promise<string[]> => {
-  const hits: string[] = [];
-  for (const name of TABLE_NAMES) {
-    const rows = await handle.sql.unsafe<{ row: string }[]>(
-      `select row_to_json(t)::text as row from "${name}" t`,
-    );
-    if (rows.some((row) => row.row.includes(needle))) {
-      hits.push(name);
-    }
-  }
-  return hits;
-};
+// tablesContaining moved to test-support/table-scan.ts, next to the column-level scan the
+// privacy test uses; re-exported here so its callers keep one import.
+export { columnsContaining, tablesContaining } from '../test-support/table-scan.js';

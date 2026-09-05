@@ -6,6 +6,7 @@ import type { Db } from '../db/client.js';
 import { advertisers } from '../db/tables/apps.js';
 import { auditRecords } from '../db/tables/audit.js';
 import { creatives } from '../db/tables/catalog.js';
+import { readRetentionState } from '../retention/queries.js';
 
 /**
  * The reads behind GET /v1/audit/:id and GET /v1/verify/:id (docs/api.md): one version of an
@@ -30,6 +31,16 @@ export interface AuditVersionQuery {
   version?: string | undefined;
 }
 
+/**
+ * How far the retention job (S37) has pruned an app's chain: every position at or below
+ * `prunedThroughSeq` was deleted on purpose, and every record it kept post-dates `prunedBefore`.
+ * verify-context.ts needs both to tell a pruned predecessor from a missing one.
+ */
+export interface RetentionWatermark {
+  prunedBefore: Date;
+  prunedThroughSeq: number;
+}
+
 export interface AuditReader {
   findVersion(query: AuditVersionQuery): Promise<AuditVersion | null>;
   /** The is_latest row of an id, whichever app owns it. */
@@ -39,6 +50,8 @@ export interface AuditReader {
   findBySeq(appId: string, seq: number): Promise<AuditRecordRow | null>;
   /** creativeContentHash over the stored creatives row joined with its advertiser; null when gone. */
   creativeHash(creativeId: string): Promise<string | null>;
+  /** The app's retention watermark, or null when the job has never pruned it. */
+  retentionWatermark(appId: string): Promise<RetentionWatermark | null>;
 }
 
 export const createAuditReader = (db: Db): AuditReader => {
@@ -64,6 +77,12 @@ export const createAuditReader = (db: Db): AuditReader => {
       one(and(eq(auditRecords.id, auditId), eq(auditRecords.isLatest, true))),
     findByHash: (recordHash) => one(eq(auditRecords.recordHash, recordHash)),
     findBySeq: (appId, seq) => one(and(eq(auditRecords.appId, appId), eq(auditRecords.seq, seq))),
+    retentionWatermark: async (appId) => {
+      const row = await readRetentionState(db, appId);
+      return row === null
+        ? null
+        : { prunedBefore: row.prunedBefore, prunedThroughSeq: row.prunedThroughSeq };
+    },
     creativeHash: async (creativeId) => {
       const [row] = await db
         .select({ creative: creatives, advertiser: advertisers })
