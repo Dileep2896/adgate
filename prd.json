@@ -368,7 +368,7 @@
       ]
     },
     {
-      "id": "S35", "priority": 35, "dependsOn": ["S32", "S34"], "passes": false,
+      "id": "S35", "priority": 35, "dependsOn": ["S32", "S34"], "passes": true,
       "title": "Verification report generator",
       "description": "/reports/new: pick advertiser and date range; generate a report with impressions and clicks by app, category distribution, sensitive exposures (must be zero), disclosure compliance percent, separation attestation percent, chain integrity result; downloadable JSON bundle of underlying records and a printable HTML view.",
       "acceptanceCriteria": [

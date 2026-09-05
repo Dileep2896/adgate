@@ -27,7 +27,9 @@ const SOURCE_SUFFIXES = ['.ts', '.tsx'] as const;
 const ALLOWED = new Set([
   'app/(dashboard)/apps/actions.ts',
   'app/(dashboard)/creatives/actions.ts',
+  'app/(dashboard)/reports/actions.ts',
   'lib/creative-write.integration.test.ts',
+  'lib/report-generate.integration.test.ts',
 ]);
 
 /**

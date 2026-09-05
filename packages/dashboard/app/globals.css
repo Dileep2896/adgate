@@ -26,3 +26,35 @@
     @apply px-4 py-2 text-left text-xs font-semibold tracking-wide text-stone-500 uppercase;
   }
 }
+
+/*
+ * PRINTING. A verification report (S35) is an artifact an advertiser forwards or files, so
+ * Cmd+P has to produce the document and nothing around it: anything marked `no-print` - the
+ * nav, the footer, every button and link that only works in a browser - is removed, and the
+ * page uses the full sheet. Nothing else on the dashboard cares, and nothing is hidden on
+ * screen: this block only ever applies to the print medium.
+ */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  main {
+    max-width: none;
+    padding: 0;
+  }
+
+  .card {
+    box-shadow: none;
+  }
+
+  /* Never split a table row or a headline number across two sheets. */
+  tr,
+  .card {
+    break-inside: avoid;
+  }
+}

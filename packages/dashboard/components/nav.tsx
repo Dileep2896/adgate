@@ -26,7 +26,7 @@ const isActive = (pathname: string, href: string): boolean =>
 export const Nav = () => {
   const pathname = usePathname();
   return (
-    <header className="border-b border-stone-200 bg-white">
+    <header className="no-print border-b border-stone-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-3">
         <Link href="/apps" className="text-sm font-semibold tracking-tight text-stone-900">
           adgate

@@ -77,7 +77,8 @@ test('the /apps header shows the gateway wide numbers', async ({ page }) => {
   await expect(page.getByTestId('global-turns')).toHaveText(TRAFFIC_EXPECTED.turns);
   await expect(page.getByTestId('global-eligible-rate')).toHaveText(TRAFFIC_EXPECTED.eligibleRate);
   await expect(page.getByTestId('global-rpm')).toHaveText(TRAFFIC_EXPECTED.rpm);
-  // S35 generates the reports; until it does, honestly zero.
+  // No report has been generated against this fixture; e2e/reports.spec.ts is where the
+  // number moves.
   await expect(page.getByTestId('global-reports')).toHaveText('0');
   await expect(page.getByTestId('app-row')).toHaveCount(2);
 });

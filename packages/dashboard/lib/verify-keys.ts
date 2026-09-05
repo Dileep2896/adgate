@@ -28,6 +28,12 @@ export interface VerifyKeys {
   ring: PublicKeyRing;
   /** Human-readable reason the ring is empty or incomplete, or null when it is fine. */
   issue: string | null;
+  /**
+   * The key_id -> SPKI PEM map the ring was built from. PUBLIC halves only. The verification
+   * report bundle (S35) carries these so an advertiser can check the signatures offline; the
+   * ring itself only answers yes or no and cannot hand its keys back.
+   */
+  pems: Record<string, string>;
 }
 
 const NO_KEYS =
@@ -67,11 +73,12 @@ export const loadVerifyKeys = (
     const ring = createKeyRing(keys);
     const issue =
       issues.length > 0 ? issues.join('; ') : ring.key_ids.length === 0 ? NO_KEYS : null;
-    return { ring, issue };
+    return { ring, issue, pems: keys };
   } catch (error) {
     return {
       ring: createKeyRing({}),
       issue: `ADGATE_PUBLIC_KEYS_JSON: ${reason(error)}`,
+      pems: {},
     };
   }
 };

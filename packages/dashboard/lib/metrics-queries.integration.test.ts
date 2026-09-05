@@ -29,6 +29,7 @@ import {
 import {
   BULK_APP_ID,
   BULK_APPS,
+  FIXTURE_ADVERTISER_ID,
   FIXTURE_APP_ID,
   seedMetricsFixture,
   seedReport,
@@ -38,6 +39,7 @@ import {
   openSeedClient,
   prepareMetricsTestDatabase,
 } from './metrics-test-db';
+import { type ReportRange, reportEventCountsQuery, reportRecordsQuery } from './report-queries';
 
 /**
  * The metric queries against a real Postgres, for the two things a unit test cannot check:
@@ -48,6 +50,11 @@ import {
  *    when someone drops the app_id filter from a query "just for the global view".
  * 2. THE SQL. That the grouped rows Postgres returns really are the shape lib/metrics.ts
  *    computes from, with the hand written app's numbers coming out as computed by hand.
+ *
+ * S35 added the two report queries. A verification report is "every record referencing this
+ * advertiser's creatives between two dates", which audit_records_advertiser_id_ts_idx covers
+ * exactly; the assertion by index NAME below is what stops that filter from quietly becoming a
+ * post-scan filter.
  *
  * S34 added the /audit search to the plan list. It reads the same table under the same rule,
  * and it is the query most likely to lose the index: it has no GROUP BY to hold the lateral
@@ -100,6 +107,13 @@ const DEEP_CURSOR: AuditCursor = {
   recordHash: `sha256:${'5'.repeat(64)}`,
 };
 
+/** The whole seeded span for the advertiser every serve in the fixture points at. */
+const REPORT_RANGE: ReportRange = {
+  advertiserId: FIXTURE_ADVERTISER_ID,
+  since: new Date(Date.now() - 500 * 24 * 60 * 60 * 1000),
+  until: new Date(Date.now() + 24 * 60 * 60 * 1000),
+};
+
 /** Every query that reads audit_records, by name. */
 const AUDIT_QUERIES: [string, (db: DashboardDb) => SQLWrapper][] = [
   ['app decision counts', (handle) => appDecisionCountsQuery(handle, BULK_APP_ID, WINDOW)],
@@ -138,6 +152,8 @@ const AUDIT_QUERIES: [string, (db: DashboardDb) => SQLWrapper][] = [
     'audit reason options',
     (handle) => auditReasonsQuery(handle, auditFilters({ appId: ALL_APPS })),
   ],
+  ['report records', (handle) => reportRecordsQuery(handle, REPORT_RANGE)],
+  ['report event counts', (handle) => reportEventCountsQuery(handle, REPORT_RANGE)],
 ];
 
 describe('every query that touches audit_records', () => {
@@ -159,6 +175,13 @@ describe('every query that touches audit_records', () => {
         }),
       );
       expect(plan, plan).toContain('audit_records_app_id_ts_idx');
+    }
+  });
+
+  it('reaches a report through audit_records_advertiser_id_ts_idx by name', async () => {
+    for (const build of [reportRecordsQuery, reportEventCountsQuery]) {
+      const plan = await planOf(build(db, REPORT_RANGE));
+      expect(plan, plan).toContain('audit_records_advertiser_id_ts_idx');
     }
   });
 

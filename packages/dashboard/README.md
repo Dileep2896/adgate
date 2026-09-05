@@ -4,7 +4,7 @@ The operator dashboard. A Next.js App Router app that reads the gateway's Postgr
 with Drizzle and shows what the gateway has been doing. It is private to this repo and is
 never published.
 
-## What it does today (S30 - S34)
+## What it does today (S30 - S35)
 
 - `/login` - one admin password, a signed cookie session.
 - `/apps` - the five gateway-wide numbers (apps integrated, turns in the last 30 days, ad
@@ -21,7 +21,11 @@ never published.
 - `/audit` - search the signed records by app, date range, decision and reason, with keyset
   pagination; `/audit/[id]` shows one record, its chain neighbours and its other version, and
   runs `verify()` live over it.
-- `/reports` - a placeholder filled in by S35.
+- `/reports`, `/reports/new`, `/reports/[id]` - verification reports for an advertiser over a
+  date range: impressions and clicks by app, the category distribution of the turns their
+  creatives appeared on, sensitive exposures (which must be zero), disclosure compliance and
+  separation attestation as percentages, and chain integrity - in a printable view, with a JSON
+  bundle that re-verifies offline.
 
 ## The audit view
 
@@ -54,6 +58,66 @@ screenshot, to a colour-blind operator and to anyone scanning quickly.
 switcher. `lib/audit-verify.integration.test.ts` writes real signed records, tampers them with
 SQL and asserts WHICH check fails: a rewritten classification fails `record_hash` alone, an
 edited creatives row fails `creative_hash`, a deleted predecessor fails `chain`.
+
+## The verification report
+
+`/reports/new` picks an advertiser and a period; generation runs on the server and stores the
+document in the gateway's `reports` table under a `rep_` id, which is what moves the
+"advertisers with a generated report" number in the `/apps` header.
+
+`lib/report.ts` is a PURE module (no database, no React, no environment, no clock) and, like
+`lib/metrics.ts`, is the only place that defines what a number means. Read its header. Two
+rules are worth repeating here:
+
+- **The signed document is the only source.** Decision, classification, disclosure and
+  attestation are read from the signed JSON, never from the indexed column copies beside it,
+  which `record_hash` does not cover. A record whose document no longer parses is counted, is
+  reported as unreadable, and can satisfy no rule. Impressions and clicks are the stated
+  exception: events arrive after the turn and are not signed.
+- **Chain integrity is the six checks that decide whether a record is AUTHENTIC** - `schema`,
+  `record_hash`, `chain`, `signature`, `creative_hash`, `supersedes`. `disclosure_present` and
+  `separation_attested` are the report's other two headline percentages; counting them inside
+  chain integrity as well would report the same gap twice and would call an untouched chain
+  "broken" merely because an integrator never attested. The document names the checks its
+  number is over, so nothing is hidden.
+
+`lib/report.test.ts` computes every figure by hand from a six-record fixture holding an
+attested record, three unattested ones, a suppression and a record whose document does not
+parse. `lib/report-generate.ts` does the reading: the records come from
+`audit_records_advertiser_id_ts_idx` (`(advertiser_id, ts)`, `is_latest` only, so an attested
+turn counts once) and each one is verified with the GATEWAY's own `createAuditReader` and
+`buildVerifyContext` through `@adgate/gateway/audit`, exactly as `/audit/[id]` does - a report
+that graded records more leniently than the audit API would be worse than no report.
+
+### The JSON bundle re-verifies offline
+
+`/reports/[id]` offers a JSON bundle carrying the report, the audit records, **the neighbours
+those checks read** (each record's positional predecessor, the version an attestation
+supersedes and that record's own predecessor), the six content fields of every creative the
+records name, and the public keys. That is everything the eight checks need, so:
+
+```sh
+pnpm --filter @adgate/dashboard verify:bundle path/to/rep_....json
+```
+
+rebuilds each record's `VerifyContext` from the bundle itself, runs `@adgate/core`'s `verify()`
+and prints a pass/fail line per record - with no database, no network and no adgate deployment
+(`scripts/verify-bundle.ts`, `lib/report-bundle.ts`). Exit code 0 when every record verifies, 1
+when one does not, 2 when the file is not a bundle.
+`lib/report-generate.integration.test.ts` generates a real bundle, writes it to a temp file and
+runs that script in a separate process, then rewrites one record with SQL and asserts the same
+script reports `FAIL`.
+
+The bundle carries PUBLIC keys only, and the records are re-read at download time rather than
+frozen at generation: if a record was edited after the report was generated, the bundle fails to
+verify, which is exactly what an auditor wants to learn.
+
+### Printing
+
+A report is an artifact that gets forwarded and filed, so `Cmd+P` has to produce the document
+and nothing else. The nav, the footer and every button carry `no-print`, and one `@media print`
+block in `app/globals.css` removes them; `e2e/reports.spec.ts` emulates print media and asserts
+the nav and the download button are hidden while the report is still there.
 
 ## The metrics
 
@@ -93,12 +157,13 @@ charts, grew (107 kB -> 220 kB).
 the gateway's database. Every query lives in `lib/queries.ts` and is a `SELECT`. The gateway
 owns the audit chain; a dashboard that could edit it would defeat the point of signing it.
 
-The admin actions need to write, so they use a SECOND handle, `lib/db-write.ts`, which only
-`app/(dashboard)/apps/actions.ts` imports - `lib/db-write-usage.test.ts` fails if a second
-module ever imports it. The writes themselves are not hand written: creating an app, issuing a
-key and revoking one are the gateway's own functions, imported from the `./admin` subpath
-export (`@adgate/gateway/admin`). The only SQL this package owns is one `UPDATE apps` that
-stores an edited policy (`lib/admin-store.ts`).
+The admin actions need to write, so they use a SECOND handle, `lib/db-write.ts`, which only the
+server actions under `app/(dashboard)/{apps,creatives,reports}/actions.ts` import -
+`lib/db-write-usage.test.ts` holds that list and fails when it grows. The writes themselves are
+mostly not hand written: creating an app, issuing a key, revoking one and the whole creative
+catalog are the gateway's own functions, imported from the `./admin` subpath export
+(`@adgate/gateway/admin`). The only SQL this package owns is one `UPDATE apps` that stores an
+edited policy (`lib/admin-store.ts`) and one `INSERT` into `reports` (`lib/report-store.ts`).
 
 The Drizzle table definitions are not duplicated here either: they come from the gateway's
 `./schema` subpath export (`@adgate/gateway/schema`), built from
@@ -158,8 +223,8 @@ Read from the repo-root `.env` (see `.env.example`) or from the real environment
 pnpm dev                                  # gateway on :8787 and the dashboard on :3000
 pnpm --filter @adgate/dashboard dev       # dashboard alone
 pnpm --filter @adgate/dashboard build
-pnpm --filter @adgate/dashboard test      # vitest (202): the pure unit tests, the chart
-                                          # components in jsdom, and the three integration
+pnpm --filter @adgate/dashboard test      # vitest (246): the pure unit tests, the chart
+                                          # components in jsdom, and the four integration
                                           # tests, which need docker Postgres
 pnpm --filter @adgate/dashboard typecheck
 pnpm --filter @adgate/dashboard lint
@@ -190,6 +255,12 @@ detail page and asserts all eight checks pass, then rewrites one record with SQL
 page shows `INVALID` with `record_hash` marked `FAILED` and every other check still `OK`.
 `playwright.config.ts` hands the server under test the PUBLIC half of `ADGATE_SIGNING_KEY_PEM`,
 never the private key.
+
+`e2e/reports.spec.ts` seeds three served turns with impressions, a click and one attestation,
+generates a report from the form, asserts the numbers on screen and the `/apps` header moving to
+one advertiser with a report, downloads the JSON bundle and checks it carries the records and
+the public keys (and no private one), and emulates print media to assert the nav and the buttons
+are gone while the report is not.
 
 `e2e/smoke.spec.ts` checks that `/apps` redirects an anonymous visitor to `/login`, that a
 forged cookie does not get past the layout, that a wrong password is refused, and that logging

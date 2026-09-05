@@ -25,6 +25,8 @@ export const BULK_APP_ID = `app_${pad('1')}`;
 export const FIXTURE_APP_ID = `app_${pad('99')}`;
 /** Every serve in the fixture points at this creative. 3 impressions * 20 / 1000 = 0.06. */
 export const FIXTURE_ECPM = 20;
+/** The one advertiser both populations serve, so the report queries have volume to plan over. */
+export const FIXTURE_ADVERTISER_ID = 'adv_metrics';
 
 const HASH = (value: string): string => `sha256:${value.padStart(64, '0')}`;
 

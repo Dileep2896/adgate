@@ -8,7 +8,14 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 
-import { seedAuditChain, type SeedTurn } from '../lib/audit-seed';
+import {
+  ADVERTISER_DOMAIN,
+  ADVERTISER_NAME,
+  attestRecord,
+  insertEvent,
+  seedAuditChain,
+  type SeedTurn,
+} from '../lib/audit-seed';
 
 /**
  * Test-database setup for the Playwright smoke test. This is the only place in the dashboard
@@ -248,6 +255,87 @@ export const seedAuditTrail = async (name = 'Playwright audit app'): Promise<See
         decision: record.decision,
         reason: record.reason,
       })),
+    };
+  } finally {
+    await sql.end({ timeout: 5 });
+  }
+};
+
+/* ------------------------------------------------------------------ report fixture --- */
+
+/**
+ * The turns e2e/reports.spec.ts reports on: three serves for the fixture advertiser, one
+ * suppression on a sensitive turn (which is exactly why no ad was exposed to it) and a no_fill.
+ */
+const REPORT_TURNS: SeedTurn[] = [
+  'serve',
+  'serve',
+  { suppress: 'sensitive_category:health' },
+  'serve',
+  'no_fill',
+];
+
+/**
+ * The numbers the generated report must show for the fixture below.
+ *
+ *   records   3 serves of this advertiser (the suppression and the no_fill are nobody's)
+ *   events    an impression on each serve, a click on the first -> CTR 1/3
+ *   attested  turn 1 only                                       -> 1 of 3 serves
+ *   sensitive 0: the flagged turn was SUPPRESSED, so no ad ran on it
+ */
+export const REPORT_EXPECTED = {
+  records: '3',
+  impressions: '3',
+  clicks: '1',
+  ctr: '33.3%',
+  disclosure: '100.0%',
+  separation: '33.3%',
+  sensitive: '0',
+  chain: 'INTACT',
+} as const;
+
+/** The advertiser option as /reports/new renders it: exactly what selectOption must match. */
+export const REPORT_ADVERTISER_LABEL = `${ADVERTISER_NAME} (${ADVERTISER_DOMAIN})`;
+
+export interface SeededReportTrail {
+  appId: string;
+  appName: string;
+  advertiserName: string;
+  recordCount: number;
+}
+
+/**
+ * One app whose chain is real (signed with the gateway's own key, like seedAuditTrail) plus the
+ * impression and click events a report counts, and one attestation - so /reports/new produces a
+ * document with every number non-trivial.
+ */
+export const seedReportTrail = async (
+  name = 'Playwright report app',
+): Promise<SeededReportTrail> => {
+  const url = requireTestDatabaseUrl();
+  const sql = postgres(url, { max: 1, connect_timeout: 5, onnotice: () => undefined });
+  try {
+    const chain = await seedAuditChain(sql, {
+      turns: REPORT_TURNS,
+      appName: name,
+      signing: auditSigningKey(),
+    });
+    for (const [index, position] of [0, 1, 3].entries()) {
+      const record = chain.records[position];
+      if (record === undefined) {
+        throw new Error(`the report fixture has no record at ${String(position)}`);
+      }
+      await insertEvent(sql, chain.appId, record.id, 'impression');
+      if (index === 0) {
+        await insertEvent(sql, chain.appId, record.id, 'click');
+      }
+    }
+    await attestRecord(sql, chain, 1);
+    return {
+      appId: chain.appId,
+      appName: name,
+      advertiserName: ADVERTISER_NAME,
+      recordCount: 3,
     };
   } finally {
     await sql.end({ timeout: 5 });

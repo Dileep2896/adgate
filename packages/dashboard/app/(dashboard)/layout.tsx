@@ -15,7 +15,7 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
     <div className="flex min-h-screen flex-col">
       <Nav />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">{children}</main>
-      <footer className="mx-auto w-full max-w-6xl px-6 pb-8 text-xs text-stone-400">
+      <footer className="no-print mx-auto w-full max-w-6xl px-6 pb-8 text-xs text-stone-400">
         adgate dashboard - read only view of the gateway database
       </footer>
     </div>

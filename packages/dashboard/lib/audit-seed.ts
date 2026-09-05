@@ -157,7 +157,8 @@ export const seedAuditChain = async (
   const yaml = policyYaml(appId);
   const { policy, policy_hash } = loadPolicyFromYaml(yaml);
   const signing = options.signing ?? generatedKey();
-  const ring = createKeyRing({ [signing.key_id]: derivePublicPem(signing.private_pem) });
+  const pems = { [signing.key_id]: derivePublicPem(signing.private_pem) };
+  const ring = createKeyRing(pems);
 
   await sql`
     insert into apps (id, name, salt, policy_yaml, policy_hash, policy_version)
@@ -205,7 +206,7 @@ export const seedAuditChain = async (
     previous = record;
   }
 
-  return { appId, appName, signing, keys: { ring, issue: null }, records };
+  return { appId, appName, signing, keys: { ring, issue: null, pems }, records };
 };
 
 const outcomeOf = (turn: SeedTurn) => {
@@ -248,6 +249,23 @@ export const insertRecord = async (
       ${record.creative?.id ?? null}, ${record.creative === null ? null : ADVERTISER_ID},
       ${ts.toISOString()}, ${sql.json(record)},
       ${options.attestRendered ?? null})
+  `;
+};
+
+/**
+ * One event against a seeded turn, the way POST /v1/event writes it (S19). Events are keyed by
+ * the AUDIT ID, so an attested turn's impression stays attached to it through attestation.
+ */
+export const insertEvent = async (
+  sql: Sql,
+  appId: string,
+  auditId: string,
+  type: 'impression' | 'click' | 'dismiss' | 'conversion',
+  ts: Date = new Date(),
+): Promise<void> => {
+  await sql`
+    insert into events (id, audit_id, app_id, type, ts)
+    values (${prefixedUlid('ev_')}, ${auditId}, ${appId}, ${type}, ${ts.toISOString()})
   `;
 };
 
