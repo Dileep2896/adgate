@@ -100,7 +100,13 @@ time so a documentation edit fails the build rather than drifting from it.
 They change only by an explicit human decision, recorded in `progress.txt`. If a change seems to
 require editing one of them, stop and raise it instead — that is a design discussion, not a
 patch. Everything else under `docs/` (`integration.md`, `privacy.md`, `performance.md`,
-`architecture.md`, `decisions.md`) is ordinary documentation you are welcome to improve.
+`deploy.md`, `architecture.md`, `decisions.md`) is ordinary documentation you are welcome to
+improve.
+
+`docs/deploy.md` is the hosted-deployment walkthrough: managed Postgres, the gateway container,
+the dashboard on Vercel, and the complete environment table for both. A change that adds an
+environment variable or moves a production boot check belongs there as well as in
+`.env.example` — the table is what an operator reads before a first deploy.
 
 `docs/integration.md` is executable: its `ts`/`tsx` blocks are typechecked by
 `packages/sdk/src/docs-snippets.test.ts` in `pnpm test`, and its `python` blocks are compiled by

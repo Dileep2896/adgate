@@ -1,6 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
-import { ConfigError, loadConfig } from './config.js';
+import {
+  ConfigError,
+  configWarnings,
+  EXAMPLE_VALUES,
+  type GatewayConfig,
+  loadConfig,
+  productionIssues,
+} from './config.js';
 
 const PRIVATE_PEM =
   '-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIA==\n-----END PRIVATE KEY-----\n';
@@ -10,6 +21,15 @@ const MINIMAL = {
   ADGATE_SIGNING_KEY_ID: 'k_test',
   ADGATE_SIGNING_KEY_PEM: PRIVATE_PEM,
 };
+
+/** MINIMAL plus everything a production boot additionally insists on. */
+const PRODUCTION = {
+  ...MINIMAL,
+  NODE_ENV: 'production',
+  PUBLIC_BASE_URL: 'https://ads.example.com',
+};
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 const failure = (env: Record<string, string | undefined>): ConfigError => {
   try {
@@ -100,6 +120,19 @@ describe('loadConfig', () => {
     expect(config.koah).toEqual({ enabled: false });
     expect(config.gravity).toEqual({ enabled: false });
     expect(config.rateLimit).toEqual({ rps: 20, burst: 40 });
+    expect(config.retentionIntervalHours).toBe(0);
+  });
+
+  it('reads the retention interval and rejects a negative or fractional one', () => {
+    expect(loadConfig({ ...MINIMAL, RETENTION_INTERVAL_HOURS: '24' }).retentionIntervalHours).toBe(
+      24,
+    );
+    expect(failure({ ...MINIMAL, RETENTION_INTERVAL_HOURS: '-1' }).message).toContain(
+      'RETENTION_INTERVAL_HOURS',
+    );
+    expect(failure({ ...MINIMAL, RETENTION_INTERVAL_HOURS: '1.5' }).message).toContain(
+      'RETENTION_INTERVAL_HOURS',
+    );
   });
 
   it('reads the rate limit and rejects a zero rate or a fractional burst', () => {
@@ -196,5 +229,147 @@ describe('loadConfig', () => {
 
   it('ignores unrelated variables', () => {
     expect(() => loadConfig({ ...MINIMAL, PATH: '/usr/bin', HOME: '/home' })).not.toThrow();
+  });
+});
+
+/**
+ * The production-only checks. Each one is a value that is perfectly fine on a laptop and fails
+ * SILENTLY once deployed - a click URL pointing at the container, an admin password that is the
+ * word in the example file - so the boot refuses instead of serving something broken. Every test
+ * here has a development twin below proving the same value still starts a dev server.
+ */
+describe('loadConfig in production', () => {
+  it('accepts a properly configured production environment', () => {
+    const config = loadConfig({
+      ...PRODUCTION,
+      ADMIN_PASSWORD: 'a-long-random-admin-password',
+      METRICS_TOKEN: 'a-random-metrics-token',
+    });
+    expect(config.nodeEnv).toBe('production');
+    expect(config.publicBaseUrl).toBe('https://ads.example.com');
+  });
+
+  it('refuses a PUBLIC_BASE_URL pointing at this machine', () => {
+    for (const host of ['localhost', '127.0.0.1', '0.0.0.0', '[::1]']) {
+      const error = failure({ ...PRODUCTION, PUBLIC_BASE_URL: `https://${host}:8787` });
+      expect(error.message, host).toContain('PUBLIC_BASE_URL');
+      expect(error.message, host).toContain('this machine');
+    }
+  });
+
+  it('refuses the default PUBLIC_BASE_URL, which is the local one', () => {
+    // Nothing sets it: the schema default (http://localhost:8787) is what production sees.
+    const error = failure({ ...PRODUCTION, PUBLIC_BASE_URL: undefined });
+    expect(error.message).toContain('PUBLIC_BASE_URL');
+    expect(error.message).toContain('this machine');
+  });
+
+  it('refuses a PUBLIC_BASE_URL that is not https', () => {
+    const error = failure({ ...PRODUCTION, PUBLIC_BASE_URL: 'http://ads.example.com' });
+    expect(error.issues).toHaveLength(1);
+    expect(error.message).toContain('must be https in production');
+  });
+
+  it('refuses the .env.example ADMIN_PASSWORD', () => {
+    const error = failure({ ...PRODUCTION, ADMIN_PASSWORD: EXAMPLE_VALUES['ADMIN_PASSWORD'] });
+    expect(error.message).toContain('ADMIN_PASSWORD');
+    expect(error.message).toContain('placeholder');
+  });
+
+  it('refuses the .env.example METRICS_TOKEN', () => {
+    const error = failure({ ...PRODUCTION, METRICS_TOKEN: EXAMPLE_VALUES['METRICS_TOKEN'] });
+    expect(error.message).toContain('METRICS_TOKEN');
+    expect(error.message).toContain('placeholder');
+  });
+
+  it('refuses the .env.example ADGATE_SIGNING_KEY_PEM', () => {
+    // The example file ships it EMPTY, which the required-variable check already rejects, so the
+    // comparison is exercised directly here: it is what keeps working if the example ever gains
+    // a real placeholder key.
+    const config = loadConfig(PRODUCTION);
+    const issues = productionIssues({
+      ...config,
+      signing: { ...config.signing, privatePem: EXAMPLE_VALUES['ADGATE_SIGNING_KEY_PEM'] ?? '' },
+    });
+    expect(issues.join('\n')).toContain('ADGATE_SIGNING_KEY_PEM');
+    expect(failure({ ...PRODUCTION, ADGATE_SIGNING_KEY_PEM: '' }).message).toContain(
+      'ADGATE_SIGNING_KEY_PEM',
+    );
+  });
+
+  it('lists every production problem at once', () => {
+    const error = failure({
+      ...PRODUCTION,
+      PUBLIC_BASE_URL: 'http://localhost:8787',
+      ADMIN_PASSWORD: 'change-me',
+      METRICS_TOKEN: 'change-me',
+    });
+    expect(error.issues).toHaveLength(4);
+    for (const name of ['PUBLIC_BASE_URL', 'ADMIN_PASSWORD', 'METRICS_TOKEN']) {
+      expect(error.message, name).toContain(name);
+    }
+  });
+
+  it('leaves development and test completely alone', () => {
+    const offending = {
+      ...MINIMAL,
+      PUBLIC_BASE_URL: 'http://localhost:8787',
+      ADMIN_PASSWORD: 'change-me',
+      METRICS_TOKEN: 'change-me',
+    };
+    for (const nodeEnv of ['development', 'test']) {
+      const config = loadConfig({ ...offending, NODE_ENV: nodeEnv });
+      expect(config.adminPassword, nodeEnv).toBe('change-me');
+      expect(config.publicBaseUrl, nodeEnv).toBe('http://localhost:8787');
+    }
+    // The checks themselves only ever describe production, whoever calls them.
+    expect(productionIssues(loadConfig(offending))).not.toHaveLength(0);
+  });
+
+  it('checks the placeholders it compares against are still the ones in .env.example', () => {
+    const example = readFileSync(join(REPO_ROOT, '.env.example'), 'utf8');
+    for (const [name, value] of Object.entries(EXAMPLE_VALUES)) {
+      expect(example, name).toContain(`\n${name}=${value}\n`);
+    }
+  });
+});
+
+/**
+ * Warnings are LOGGED, never fatal: a server-to-server deployment really has no browser origin
+ * and a deployment with no LLM key really does run rules only. Both are worth one line in a
+ * deploy log and neither is worth refusing to start over.
+ */
+describe('configWarnings', () => {
+  const production = (extra: Record<string, string> = {}): GatewayConfig =>
+    loadConfig({ ...PRODUCTION, ...extra });
+
+  it('warns when no browser origin may call the gateway', () => {
+    const warnings = configWarnings(production());
+    expect(warnings.join('\n')).toContain('CORS_ALLOWED_ORIGINS');
+    expect(configWarnings(production({ CORS_ALLOWED_ORIGINS: 'https://app.example.com' }))).toEqual(
+      configWarnings(production()).filter((line) => !line.includes('CORS_ALLOWED_ORIGINS')),
+    );
+  });
+
+  it('warns when classification is rules only', () => {
+    expect(configWarnings(production()).join('\n')).toContain('no classifier configured');
+    const configured = production({
+      CLASSIFIER_BASE_URL: 'https://api.openai.com/v1',
+      CLASSIFIER_MODEL: 'gpt-4o-mini',
+    });
+    expect(configWarnings(configured).join('\n')).not.toContain('no classifier configured');
+  });
+
+  it('is silent when everything is configured, and outside production', () => {
+    expect(
+      configWarnings(
+        production({
+          CORS_ALLOWED_ORIGINS: 'https://app.example.com',
+          CLASSIFIER_BASE_URL: 'https://api.openai.com/v1',
+          CLASSIFIER_MODEL: 'gpt-4o-mini',
+        }),
+      ),
+    ).toEqual([]);
+    expect(configWarnings(loadConfig(MINIMAL))).toEqual([]);
   });
 });

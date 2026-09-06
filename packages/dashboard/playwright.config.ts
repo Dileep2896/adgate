@@ -28,8 +28,21 @@ if (existsSync(join(repoRoot, '.env'))) {
 
 const port = Number(process.env['DASHBOARD_E2E_PORT'] ?? 3210);
 const baseURL = `http://127.0.0.1:${port}`;
-const adminPassword = process.env['ADMIN_PASSWORD'] ?? '';
 const databaseUrl = process.env['DATABASE_URL_TEST'] ?? '';
+
+/**
+ * THE E2E RUN MINTS ITS OWN ADMIN PASSWORD. The server under test runs with NODE_ENV=production,
+ * and a production dashboard refuses to start on a password under 16 characters or on the
+ * `change-me` the repo's .env ships for local dev (lib/env.ts, SECURITY.md). Taking the repo's
+ * value would therefore make the smoke run depend on whatever a developer happens to have in
+ * .env; this one is fixed, long, and only ever reaches a server bound to 127.0.0.1 talking to
+ * the TEST database.
+ *
+ * It is written back into this process's environment because e2e/login.ts signs in with
+ * process.env.ADMIN_PASSWORD - the runner and the server have to agree.
+ */
+const adminPassword = 'playwright-e2e-admin-password';
+process.env['ADMIN_PASSWORD'] = adminPassword;
 
 /**
  * The dashboard verifies audit records with PUBLIC keys only (lib/verify-keys.ts). The audit
@@ -76,6 +89,9 @@ export default defineConfig({
       // server under test therefore trusts exactly one hop; a real deployment leaves this off
       // unless a proxy it controls rewrites the header.
       TRUST_PROXY: 'true',
+      // Explicitly OFF, whatever the developer's .env says: the specs come from 127.0.0.1 with
+      // an invented x-forwarded-for, and an allowlist would refuse every one of them.
+      DASHBOARD_ALLOWED_IPS: '',
     },
   },
 });

@@ -2,6 +2,7 @@ import {
   type AuditSigningKey,
   createKeyRing,
   derivePublicPem,
+  keyFingerprint,
   loadPrivateKey,
   parsePublicKeysJson,
   type PublicKeyRing,
@@ -20,6 +21,14 @@ import { ConfigError, type GatewayConfig } from './config.js';
 export interface GatewaySigningKeys {
   signing: AuditSigningKey;
   ring: PublicKeyRing;
+  /**
+   * keyFingerprint() of the signing key's PUBLIC half, logged once at boot beside key_id. A
+   * key_id is only a label an operator types: two deployments, or the same deployment after a
+   * restored backup or a re-run key generator, can wear the same one over different key
+   * material and nothing complains until records signed by the second key fail to verify. The
+   * fingerprint makes that visible in a deploy log the moment it happens. Not a secret.
+   */
+  fingerprint: string;
 }
 
 const reason = (error: unknown): string =>
@@ -54,14 +63,19 @@ export const loadSigningKeys = (config: GatewayConfig['signing']): GatewaySignin
     }
   }
 
-  if (issues.length > 0) {
+  if (issues.length > 0 || publicPem === null) {
     throw new ConfigError(issues);
   }
+
+  // Computed from the public half only, and before the ring, so a fingerprint can never come
+  // from a key the loader has not already accepted.
+  const fingerprint = keyFingerprint(publicPem);
 
   try {
     return {
       signing: { key_id: config.keyId, private_pem: config.privatePem },
       ring: createKeyRing(keys),
+      fingerprint,
     };
   } catch (error) {
     throw new ConfigError([`ADGATE_PUBLIC_KEYS_JSON: ${reason(error)}`]);

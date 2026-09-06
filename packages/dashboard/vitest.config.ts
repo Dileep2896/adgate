@@ -15,11 +15,12 @@ export default defineConfig({
     name: '@adgate/dashboard',
     environment: 'node',
     setupFiles: ['./vitest.setup.ts'],
-    // Unit tests, the chart component tests (jsdom, opted into per file with a docblock) and
-    // lib/metrics-queries.integration.test.ts, which needs the docker Postgres. The Playwright
-    // specs under e2e/ need a browser and run through
+    // Unit tests, the chart component tests (jsdom, opted into per file with a docblock),
+    // middleware.test.ts (which lives at the package root, where Next insists middleware.ts
+    // does) and lib/metrics-queries.integration.test.ts, which needs the docker Postgres. The
+    // Playwright specs under e2e/ need a browser and run through
     // `pnpm --filter @adgate/dashboard test:e2e`, never through `pnpm test`.
-    include: ['lib/**/*.test.ts', 'components/**/*.test.tsx'],
+    include: ['lib/**/*.test.ts', 'components/**/*.test.tsx', 'middleware.test.ts'],
     // The integration test owns its own database, but it still seeds ten thousand rows: keep
     // the files one at a time so a laptop is not running four Postgres connections at once.
     fileParallelism: false,

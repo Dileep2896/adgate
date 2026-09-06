@@ -104,7 +104,26 @@ writes the same database as the gateway, so it can create apps, issue API keys a
 Run it on a private network, behind a VPN, an SSO proxy or an IP allowlist. Putting it on the
 public internet with only its password in front is outside the model this repository defends. Use
 a long random `ADMIN_PASSWORD` and a `DASHBOARD_SESSION_SECRET` that is not derived from it, and
-serve it over TLS: the session cookie is a bearer token for the whole admin surface.
+serve it over TLS: the session cookie is a bearer token for the whole admin surface. With
+`NODE_ENV=production` the dashboard **refuses to start** on the `change-me` placeholder or on any
+password shorter than 16 characters, so that mistake is a failed deploy rather than a live one.
+
+`DASHBOARD_ALLOWED_IPS` is the built-in allowlist, for a host where a VPN or an SSO proxy is not
+on offer. Set it to a comma separated list of IPs and CIDR ranges (`203.0.113.7,
+198.51.100.0/24, 2001:db8::/32`) and the Edge middleware answers **403 to everything else before
+`/login` is reachable** — the login form, the login endpoint and every page. Left empty, nothing
+changes. Three things to know before relying on it:
+
+- It needs a client address it can believe, which means **`TRUST_PROXY=true`** (or
+  `TRUSTED_PROXY_HOPS=<n>`) wherever a proxy or a platform sits in front. Without one the address
+  is `unknown`, which is on no allowlist, and every request is refused — the safe half of the
+  mistake, but it will look like an outage. See the trusted-proxy notes in `.env.example`.
+- The list is read **once, when the middleware instance starts**, not per request: a change is a
+  restart when self-hosted and a redeploy on Vercel.
+- It is a second lock, never a replacement for the password: a source address is only as honest
+  as the proxy that wrote it, and an allowlist does nothing about a stolen session cookie.
+
+`docs/deploy.md` walks through setting both on a hosted dashboard.
 
 ### Known limits (by design, for now)
 
@@ -167,4 +186,9 @@ is not an accepted finding, it is an unread one.
 - Run `pnpm audit:prod` in CI, and run the retention job on a schedule so stored records do not
   outlive each app's `privacy.retain_days`:
   `pnpm --filter @adgate/gateway retention` (see `docs/privacy.md` for the crontab line, and use
-  `--dry-run` first).
+  `--dry-run` first). On a host with nowhere to put a crontab, set `RETENTION_INTERVAL_HOURS=24`
+  and the gateway runs it itself, one instance at a time behind a Postgres advisory lock.
+- Deploy the gateway with `NODE_ENV=production` (the image already does). It refuses to start on
+  a `PUBLIC_BASE_URL` that is not https or points at localhost, on the `.env.example` signing
+  key, and on a `change-me` `ADMIN_PASSWORD` or `METRICS_TOKEN`; it warns about an empty
+  `CORS_ALLOWED_ORIGINS` and a missing classifier. `docs/deploy.md` has the full table.

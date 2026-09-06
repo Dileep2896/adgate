@@ -3,10 +3,20 @@ import { dirname, join, resolve } from 'node:path';
 
 import { z } from 'zod';
 
+import {
+  adminPasswordIssues,
+  bootAdminPasswordIssues,
+  MIN_PRODUCTION_ADMIN_PASSWORD,
+  PLACEHOLDER_ADMIN_PASSWORD,
+} from './admin-password';
+import { parseTrustedProxyHops } from './client-address';
+
 /**
  * Dashboard configuration: one Zod schema over the environment, read lazily so `next build`
  * needs no database and no password. Server side only (it touches node:fs and process.env);
- * middleware.ts must never import it, because Next runs middleware in the Edge runtime.
+ * middleware.ts must never import it, because Next runs middleware in the Edge runtime - it
+ * imports lib/client-address.ts instead, which is where parseTrustedProxyHops now lives and is
+ * re-exported from here so this module stays the one place the server reads configuration from.
  *
  * Every variable is documented in the repo-root .env.example. That file is also where a local
  * `pnpm dev` gets its values from: Next only loads .env files inside packages/dashboard, so
@@ -75,26 +85,12 @@ const DashboardEnvSchema = z.object({
   TRUSTED_PROXY_HOPS: optionalNonEmpty,
 });
 
-const TRUTHY = new Set(['1', 'true', 'yes', 'on']);
-
-/**
- * How many proxy hops in front of this process may be believed, from TRUSTED_PROXY_HOPS (an
- * integer, which wins) or TRUST_PROXY (a boolean meaning "exactly one").
- *
- * DEFAULT 0: BELIEVE NOTHING. x-forwarded-for is a request header, so a dashboard reachable
- * directly must not key its login rate limiter on it (lib/rate-limit.ts). Anything unparseable
- * is 0 as well - a typo must not silently hand an attacker a header they control.
- */
-export const parseTrustedProxyHops = (
-  trustProxy: string | undefined,
-  hops: string | undefined,
-): number => {
-  const explicit = (hops ?? '').trim();
-  if (explicit !== '') {
-    const value = Number(explicit);
-    return Number.isInteger(value) && value >= 0 ? value : 0;
-  }
-  return TRUTHY.has((trustProxy ?? '').trim().toLowerCase()) ? 1 : 0;
+export {
+  adminPasswordIssues,
+  bootAdminPasswordIssues,
+  MIN_PRODUCTION_ADMIN_PASSWORD,
+  parseTrustedProxyHops,
+  PLACEHOLDER_ADMIN_PASSWORD,
 };
 
 export interface DashboardEnv {
@@ -142,6 +138,10 @@ export const loadDashboardEnv = (
     throw new DashboardConfigError(
       `dashboard is not configured: set ${missing.join(' and ')} (see .env.example)`,
     );
+  }
+  const passwordIssues = adminPasswordIssues(ADMIN_PASSWORD, NODE_ENV);
+  if (passwordIssues.length > 0) {
+    throw new DashboardConfigError(passwordIssues.join('\n'));
   }
   return {
     nodeEnv: NODE_ENV,

@@ -1,4 +1,4 @@
-import { generateKeypair, sha256Prefixed, sign } from '@adgate/core';
+import { generateKeypair, keyFingerprint, sha256Prefixed, sign } from '@adgate/core';
 import { describe, expect, it } from 'vitest';
 
 import { ConfigError } from './config.js';
@@ -21,6 +21,16 @@ describe('loadSigningKeys', () => {
       ok: true,
       detail: 'key_id=k_test',
     });
+  });
+
+  it('fingerprints the signing key so a deploy log shows a key that silently changed', () => {
+    const load = (privatePem: string) =>
+      loadSigningKeys({ keyId: 'k_test', privatePem, publicKeysJson: '{}' });
+    expect(load(pair.private_pem).fingerprint).toBe(keyFingerprint(pair.public_pem));
+    // Same key_id, different key material: the whole point is that this reads differently.
+    expect(load(other.private_pem).fingerprint).not.toBe(load(pair.private_pem).fingerprint);
+    // It is a public-key digest, never key material.
+    expect(pair.private_pem).not.toContain(load(pair.private_pem).fingerprint);
   });
 
   it('keeps retired keys from the JSON next to the current one', () => {

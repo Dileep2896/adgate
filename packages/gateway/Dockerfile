@@ -7,7 +7,15 @@
 #   docker build -f packages/gateway/Dockerfile -t adgate-gateway .
 #   docker run --rm -p 8787:8787 \
 #     -e DATABASE_URL='postgres://adgate:adgate@host.docker.internal:5432/adgate' \
+#     -e PUBLIC_BASE_URL='https://ads.example.com' \
 #     -e ADGATE_SIGNING_KEY_ID=k_2026_09 -e ADGATE_SIGNING_KEY_PEM="$PEM" adgate-gateway
+#
+# PUBLIC_BASE_URL IS REQUIRED HERE. The runtime stage sets NODE_ENV=production (below), which
+# turns on the production configuration checks in src/config.ts: the base URL every creative
+# click URL is built from may not be https-less and may not be localhost/127.0.0.1/0.0.0.0/::1,
+# and its default is `http://localhost:8787`. Passing nothing therefore exits 1 with that
+# message rather than serving links that point back into the container. To poke at the image
+# locally instead, add `-e NODE_ENV=development` and the checks are off, exactly as on a laptop.
 #
 # Not `--env-file .env`: docker does not strip the quotes around a value, and the repo's .env
 # quotes ADGATE_SIGNING_KEY_PEM, so the gateway would see a PEM starting with `"` and exit 1.
@@ -54,11 +62,17 @@ RUN pnpm deploy --filter=@adgate/gateway --prod /out
 # ---------------------------------------------------------------------------------------------
 FROM node:20-slim AS runtime
 
+# NODE_ENV=production is what makes this an image rather than a laptop: it turns on the
+# production configuration checks (src/config.ts) as well as every library's production mode.
 ENV NODE_ENV=production
-# PORT, DATABASE_URL, ADGATE_SIGNING_KEY_ID and ADGATE_SIGNING_KEY_PEM are required at boot and
-# every other variable is optional; .env.example documents all of them. There is no .env inside
-# the image: pass them with --env-file or -e. The gateway exits 1 with a readable message when
-# one is missing, before it opens a port.
+# DATABASE_URL, PUBLIC_BASE_URL, ADGATE_SIGNING_KEY_ID and ADGATE_SIGNING_KEY_PEM are required
+# at boot and every other variable is optional; .env.example documents all of them, and
+# docs/deploy.md has the full table plus a hosted walkthrough. There is no .env inside the
+# image: pass them with --env-file or -e. The gateway exits 1 with a readable message listing
+# every problem at once, before it opens a port.
+#
+# A hosted runtime (Render, Fly, Railway) INJECTS PORT and expects the process to use it, which
+# this default only covers when the host injects nothing.
 ENV PORT=8787
 
 WORKDIR /app

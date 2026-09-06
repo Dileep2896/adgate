@@ -59,6 +59,7 @@ export const GatewayEnv = z.object({
   GRAVITY_BASE_URL: nonEmpty.optional(),
   RATE_LIMIT_RPS: z.coerce.number().positive().default(20),
   RATE_LIMIT_BURST: positiveInt.default(40),
+  RETENTION_INTERVAL_HOURS: nonNegativeInt.default(0),
 });
 export type GatewayEnv = z.infer<typeof GatewayEnv>;
 
@@ -111,6 +112,12 @@ export const GatewayConfig = GatewayEnv.transform((env) => ({
   ),
   /** Per-API-key token bucket on the write endpoints (rate-limit/pg.ts): TokenBucketOptions. */
   rateLimit: { rps: env.RATE_LIMIT_RPS, burst: env.RATE_LIMIT_BURST },
+  /**
+   * How often the in-process retention scheduler runs (retention/scheduler.ts). 0 = never, and
+   * the timer is not registered at all: run `pnpm --filter @adgate/gateway retention` from cron
+   * instead. A free-tier deployment with nowhere to put a cron entry sets this instead.
+   */
+  retentionIntervalHours: env.RETENTION_INTERVAL_HOURS,
 }));
 export type GatewayConfig = z.infer<typeof GatewayConfig>;
 
@@ -162,6 +169,96 @@ const describeIssue = (issue: z.core.$ZodIssue, present: Record<string, string>)
 };
 
 /**
+ * The values .env.example ships. They are placeholders, not secrets: a deployment still wearing
+ * one is a copied file nobody edited. config.test.ts reads .env.example and fails if this map
+ * drifts from it, so the check always means what it says.
+ */
+export const EXAMPLE_VALUES: Readonly<Record<string, string>> = Object.freeze({
+  ADGATE_SIGNING_KEY_PEM: '',
+  ADMIN_PASSWORD: 'change-me',
+  METRICS_TOKEN: 'change-me',
+});
+
+/** Hosts that mean "this container". None of them is reachable from a user's browser. */
+export const LOCAL_HOSTNAMES: ReadonlySet<string> = new Set([
+  'localhost',
+  '127.0.0.1',
+  '0.0.0.0',
+  '::1',
+  '[::1]',
+]);
+
+/**
+ * PUBLIC_BASE_URL is the origin every creative click URL is built from (click/destination.ts).
+ * A deployment that kept the local default hands every user a link to their own machine, and one
+ * on http sends the audit id of a served ad over the wire in clear: both are silent, and both
+ * only show up as "the ads work but nobody ever arrives".
+ */
+const publicBaseUrlIssues = (value: string): string[] => {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return ['PUBLIC_BASE_URL: not a URL'];
+  }
+  const issues: string[] = [];
+  if (LOCAL_HOSTNAMES.has(url.hostname.toLowerCase())) {
+    issues.push(
+      `PUBLIC_BASE_URL: ${url.hostname} is this machine, so every click URL points nowhere; set the externally reachable origin`,
+    );
+  }
+  if (url.protocol !== 'https:') {
+    issues.push(`PUBLIC_BASE_URL: must be https in production (got ${url.protocol.slice(0, -1)})`);
+  }
+  return issues;
+};
+
+/**
+ * The checks that only apply to NODE_ENV=production, collected like every other configuration
+ * problem: one ConfigError listing all of them, so a first deployment is fixed in one pass
+ * instead of one restart per mistake. Everything here is a value that works locally and fails
+ * silently in production, which is exactly the class of mistake a boot check is worth having.
+ */
+export const productionIssues = (config: GatewayConfig): string[] => {
+  const issues = publicBaseUrlIssues(config.publicBaseUrl);
+  if (config.signing.privatePem === EXAMPLE_VALUES['ADGATE_SIGNING_KEY_PEM']) {
+    issues.push(`ADGATE_SIGNING_KEY_PEM: still the .env.example value (run \`${KEYGEN_COMMAND}\`)`);
+  }
+  if (config.adminPassword === EXAMPLE_VALUES['ADMIN_PASSWORD']) {
+    issues.push('ADMIN_PASSWORD: still the .env.example placeholder; set a long random password');
+  }
+  if (config.metricsToken === EXAMPLE_VALUES['METRICS_TOKEN']) {
+    issues.push(
+      'METRICS_TOKEN: still the .env.example placeholder; set a random token or unset it',
+    );
+  }
+  return issues;
+};
+
+/**
+ * Production settings that are legitimate but usually not what the operator meant. Logged at
+ * warn by server.ts and never fatal: a server-to-server deployment really has no browser origin,
+ * and a deployment with no classifier key really does run rules only.
+ */
+export const configWarnings = (config: GatewayConfig): string[] => {
+  if (config.nodeEnv !== 'production') {
+    return [];
+  }
+  const warnings: string[] = [];
+  if (config.corsAllowedOrigins.length === 0) {
+    warnings.push(
+      'CORS_ALLOWED_ORIGINS is empty: no browser may call the gateway directly, and a browser integration will fail with no CORS headers. Server-to-server callers are unaffected.',
+    );
+  }
+  if (config.classifier === null) {
+    warnings.push(
+      'no classifier configured (CLASSIFIER_BASE_URL / CLASSIFIER_MODEL): classification is rules only, so intent is recognised from the keyword dictionary alone and fill will be narrower.',
+    );
+  }
+  return warnings;
+};
+
+/**
  * Parses the environment into a GatewayConfig. Pass an object to parse something other than
  * process.env (tests never touch the real environment). Throws ConfigError.
  */
@@ -170,6 +267,12 @@ export const loadConfig = (env: EnvSource = process.env): GatewayConfig => {
   const result = GatewayConfig.safeParse(present);
   if (!result.success) {
     throw new ConfigError(result.error.issues.map((issue) => describeIssue(issue, present)));
+  }
+  if (result.data.nodeEnv === 'production') {
+    const issues = productionIssues(result.data);
+    if (issues.length > 0) {
+      throw new ConfigError(issues);
+    }
   }
   return result.data;
 };

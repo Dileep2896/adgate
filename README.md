@@ -196,6 +196,7 @@ set `DASHBOARD_PORT` (`DASHBOARD_PORT=3020 pnpm --filter @adgate/dashboard dev`)
 | The audit record and how to verify it yourself | [docs/audit.md](docs/audit.md) |
 | The HTTP contract | [docs/api.md](docs/api.md), with a generated reference in [docs/api-reference.md](docs/api-reference.md) |
 | What is stored, and for how long | [docs/privacy.md](docs/privacy.md) |
+| Putting it on the internet, free tier included | [docs/deploy.md](docs/deploy.md) |
 | Hardening a deployment | [SECURITY.md](SECURITY.md) |
 | Latency, load testing, `/metrics` | [docs/performance.md](docs/performance.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
@@ -225,9 +226,16 @@ The image you can build today, from the repo root (the whole workspace is the bu
 docker build -f packages/gateway/Dockerfile -t adgate-gateway .
 docker run --rm -p 8787:8787 \
   -e DATABASE_URL='postgres://adgate:adgate@host.docker.internal:5432/adgate' \
+  -e PUBLIC_BASE_URL='https://ads.example.com' \
   -e ADGATE_SIGNING_KEY_ID=... -e ADGATE_SIGNING_KEY_PEM='-----BEGIN PRIVATE KEY-----\n...' \
   adgate-gateway
 ```
+
+The image sets `NODE_ENV=production`, which turns on the production configuration checks, so
+`PUBLIC_BASE_URL` is **required** there and must be an https URL that is not localhost — the
+default (`http://localhost:8787`) would hand every user a click link back into the container.
+Add `-e NODE_ENV=development` to poke at the image locally without them.
+[docs/deploy.md](docs/deploy.md) has the complete environment table and a hosted walkthrough.
 
 `@adgate/core`, `@adgate/gateway`, `@adgate/dashboard` and the examples are private and are never
 published; the SDK's only runtime dependency is `@adgate/schemas`.
