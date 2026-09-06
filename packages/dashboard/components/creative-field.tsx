@@ -16,9 +16,8 @@ import {
  * it renders are produced on the server by lib/creative-fields.ts.
  */
 
-export const INPUT =
-  'mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-900';
-export const MONO_INPUT = `${INPUT} font-mono text-xs`;
+export const INPUT = 'ag-input mt-1';
+export const MONO_INPUT = `${INPUT} ag-input-mono`;
 
 export interface FieldProps {
   id: string;
@@ -31,22 +30,29 @@ export interface FieldProps {
 
 export const Field = ({ id, label, field, issues, hint, children }: FieldProps) => {
   const mine = issuesForField(issues, field);
+  const invalid = mine.length > 0;
   return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-stone-700">
+    // data-invalid is set on the WRAPPER and the [data-invalid] .ag-input selector in
+    // app/globals.css colours whatever control is inside it, so every kind of field - input,
+    // textarea, select - picks up the error border without each call site passing a flag.
+    <div data-invalid={invalid ? 'true' : undefined}>
+      <label htmlFor={id} className="ag-label-plain">
         {label}
       </label>
       {children}
-      {hint === undefined ? null : <p className="mt-1 text-xs text-stone-500">{hint}</p>}
-      {mine.map((issue) => (
-        <p
-          key={issue.message}
-          data-testid={`issue-${field}`}
-          className="mt-1 text-xs font-medium text-red-700"
-        >
-          {issue.message}
-        </p>
-      ))}
+      {/* ONE note slot, and it keeps a line of height whether or not anything is in it. The
+          error REPLACES the hint rather than sitting beside it: two lines of guidance under
+          one input is where a form starts jumping around while it is being corrected, and a
+          slot that appears from nothing moves every field below it. */}
+      <div className="ag-field-note">
+        {invalid
+          ? mine.map((issue) => (
+              <p key={issue.message} data-testid={`issue-${field}`} className="ag-field-error">
+                <span aria-hidden="true">&#9888;&#xFE0E;</span> {issue.message}
+              </p>
+            ))
+          : hint}
+      </div>
     </div>
   );
 };

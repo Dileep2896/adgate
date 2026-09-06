@@ -1,6 +1,9 @@
 import Link from 'next/link';
 
 import { generateReportAction } from '@/app/(dashboard)/reports/actions';
+import { DocRef } from '@/components/doc-ref';
+import { EmptyState } from '@/components/empty-state';
+import { PageHeader } from '@/components/page-header';
 import { defaultReportForm, reportFormMessage, type ReportFormValues } from '@/lib/report-form';
 import { listReportAdvertisers } from '@/lib/report-queries';
 import { verifyKeys } from '@/lib/verify-keys';
@@ -14,10 +17,6 @@ import { verifyKeys } from '@/lib/verify-keys';
  */
 
 export const dynamic = 'force-dynamic';
-
-const CONTROL =
-  'rounded-md border border-stone-300 px-2 py-1.5 text-sm outline-none focus:border-stone-900';
-const LABEL = 'block text-xs font-medium text-stone-500 uppercase';
 
 const one = (value: string | string[] | undefined): string =>
   (Array.isArray(value) ? value[0] : value) ?? '';
@@ -43,52 +42,52 @@ const NewReportPage = async ({
 
   return (
     <section className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New verification report</h1>
-        <p className="mt-1 text-sm text-stone-500">
-          Every audit record referencing this advertiser&apos;s creatives in the period is loaded,
-          verified with the signed chain, and aggregated into one report.
-        </p>
-      </div>
+      <PageHeader
+        title="New verification report"
+        back={{ href: '/reports', label: 'All reports' }}
+        lede="Every audit record referencing this advertiser’s creatives in the period is loaded, verified against the signed chain, and aggregated into one document."
+      />
 
       {keyIssue === null ? null : (
-        <p
-          data-testid="report-key-issue"
-          className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-        >
-          Signatures cannot be checked: {keyIssue}. A report generated now will fail the signature
-          check on every record and will say so.
+        <p data-testid="report-key-issue" className="ag-note ag-note-warn">
+          <span className="ag-badge ag-badge-warn">Keys</span>{' '}
+          <strong className="ag-note-strong">Signatures cannot be checked</strong>: {keyIssue}. A
+          report generated now will fail the signature check on every record and will say so.
+          Configuring the public keys is in <DocRef doc="deploy" />.
         </p>
       )}
 
       {message === null ? null : (
-        <p
-          data-testid="report-form-error"
-          className="rounded-md border border-stone-900 bg-stone-900 px-4 py-3 text-sm text-white"
-        >
+        <p data-testid="report-form-error" role="alert" className="ag-note ag-note-danger">
           {message}
         </p>
       )}
 
       {advertisers.length === 0 ? (
-        <p data-testid="no-advertisers" className="card text-sm text-stone-500">
-          There are no advertisers yet. Add a creative on{' '}
-          <Link href="/creatives/new" className="underline underline-offset-2">
-            /creatives
-          </Link>{' '}
-          first.
-        </p>
+        <EmptyState
+          title="There are no advertisers yet."
+          testId="no-advertisers"
+          actions={
+            <Link href="/creatives/new" className="ag-btn ag-btn-primary">
+              Add a creative
+            </Link>
+          }
+        >
+          An advertiser is created by the first creative that names it, and a report is always about
+          one advertiser: their creatives, their records, their period. Add a creative first and
+          this form will have something to report on.
+        </EmptyState>
       ) : (
-        <form action={generateReportAction} className="card flex flex-wrap items-end gap-4">
+        <form action={generateReportAction} className="card ag-filters">
           <div>
-            <label htmlFor="advertiser" className={LABEL}>
+            <label htmlFor="advertiser" className="ag-label">
               Advertiser
             </label>
             <select
               id="advertiser"
               name="advertiser"
               defaultValue={submitted.advertiserId}
-              className={`mt-1 ${CONTROL}`}
+              className="ag-input ag-input-auto mt-1"
             >
               <option value="">Choose an advertiser</option>
               {advertisers.map((advertiser) => (
@@ -100,7 +99,7 @@ const NewReportPage = async ({
           </div>
 
           <div>
-            <label htmlFor="from" className={LABEL}>
+            <label htmlFor="from" className="ag-label">
               From (UTC)
             </label>
             <input
@@ -108,12 +107,12 @@ const NewReportPage = async ({
               name="from"
               type="date"
               defaultValue={submitted.from}
-              className={`mt-1 ${CONTROL}`}
+              className="ag-input ag-input-auto mt-1"
             />
           </div>
 
           <div>
-            <label htmlFor="to" className={LABEL}>
+            <label htmlFor="to" className="ag-label">
               To (UTC, inclusive)
             </label>
             <input
@@ -121,23 +120,18 @@ const NewReportPage = async ({
               name="to"
               type="date"
               defaultValue={submitted.to}
-              className={`mt-1 ${CONTROL}`}
+              className="ag-input ag-input-auto mt-1"
             />
           </div>
 
-          <button
-            type="submit"
-            data-testid="generate-report"
-            className="rounded-md bg-stone-900 px-3 py-2 text-sm font-medium text-white hover:bg-stone-800"
-          >
-            Generate
-          </button>
-          <Link
-            href="/reports"
-            className="pb-2 text-sm text-stone-600 underline-offset-2 hover:underline"
-          >
-            Cancel
-          </Link>
+          <div className="ag-filters-actions">
+            <button type="submit" data-testid="generate-report" className="ag-btn ag-btn-primary">
+              Generate
+            </button>
+            <Link href="/reports" className="ag-link-quiet text-xs">
+              Cancel
+            </Link>
+          </div>
         </form>
       )}
     </section>

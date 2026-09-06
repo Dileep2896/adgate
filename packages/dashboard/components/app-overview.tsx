@@ -14,6 +14,11 @@ import type { AppMetrics, DailyDecisions, SuppressBreakdown } from '@/lib/metric
  * Every rate can be `-`, which means its denominator was 0 (lib/metrics.ts). The hints say what
  * each rate is over, because "66.7% fill" over six eligible turns is not the same claim as
  * 66.7% over six thousand.
+ *
+ * BOTH CHARTS STILL RENDER WHEN THERE IS NOTHING TO DRAW - that is the state every app is in on
+ * the day it is registered, and an axis with no bars is the honest picture of it. The line
+ * underneath each one says so in words, because an empty chart on its own is indistinguishable
+ * from a broken one.
  */
 
 export interface AppOverviewProps {
@@ -76,9 +81,9 @@ const overviewMetrics = (metrics: AppMetrics): Metric[] => [
 
 export const AppOverview = ({ metrics, daily, breakdown, days }: AppOverviewProps) => (
   <section data-testid="app-overview" className="space-y-4">
-    <div className="flex items-baseline justify-between gap-4">
-      <h2 className="text-sm font-semibold text-stone-900">Last {days} days</h2>
-      <p className="text-xs text-stone-500">
+    <div className="ag-section-head">
+      <h2 className="ag-section-title">Last {days} days</h2>
+      <p className="ag-section-hint">
         Eligible = the policy allowed an ad and demand was asked (served or no_fill).
       </p>
     </div>
@@ -87,20 +92,24 @@ export const AppOverview = ({ metrics, daily, breakdown, days }: AppOverviewProp
 
     <div className="grid gap-4 lg:grid-cols-2">
       <div className="card">
-        <h3 className="mb-2 text-sm font-semibold text-stone-900">Decisions per day</h3>
+        <h3 className="ag-section-title mb-2">Decisions per day</h3>
         <DecisionsChart data={daily} />
         {metrics.turnsEvaluated === 0 ? (
-          <p data-testid="no-decisions" className="mt-2 text-xs text-stone-400">
-            No turns evaluated in this window yet.
+          <p data-testid="no-decisions" className="ag-hint">
+            No turns evaluated in this window yet. Every bucket of the window is drawn, so the flat
+            axis above is the whole picture rather than a chart that failed to load.
           </p>
         ) : null}
       </div>
       <div className="card">
-        <h3 className="mb-2 text-sm font-semibold text-stone-900">Why turns were suppressed</h3>
+        <h3 className="ag-section-title mb-2">Why turns were suppressed</h3>
         <ReasonsChart data={breakdown.reasons} />
-        <p data-testid="sensitive-total" className="mt-2 text-xs text-stone-500">
+        <p data-testid="sensitive-total" className="ag-hint">
           {formatCount(breakdown.sensitiveTotal)} of {formatCount(breakdown.total)} suppressions
           were a sensitive category.
+          {breakdown.total === 0
+            ? ' Nothing has been suppressed in this window, so there is nothing to break down.'
+            : ''}
         </p>
       </div>
     </div>

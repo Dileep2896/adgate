@@ -7,17 +7,18 @@ import { getReport } from '@/lib/report-queries';
 /**
  * One stored verification report, in a form that prints.
  *
- * Everything that is not the report itself - the nav, the footer, this toolbar - carries
- * `no-print` (app/globals.css), so Cmd+P produces the document and nothing else. The JSON bundle
- * is a plain link to a route handler rather than a button: it works with JavaScript disabled and
- * the browser saves it as a file (Content-Disposition), which is what an auditor is going to
- * feed to scripts/verify-bundle.ts.
+ * Everything that is not the report itself - the rail, the footer, this toolbar - carries
+ * `no-print` (app/globals.css), so Cmd+P produces the document and nothing else, and
+ * tokens.css forces the palette back to ink on white for the print medium so an operator
+ * working in dark mode still prints a readable sheet. There is no page header here on
+ * purpose: the report carries its own, and two <h1>s on one document is one too many.
+ *
+ * The JSON bundle is a plain link to a route handler rather than a button: it works with
+ * JavaScript disabled and the browser saves it as a file (Content-Disposition), which is what
+ * an auditor is going to feed to scripts/verify-bundle.ts.
  */
 
 export const dynamic = 'force-dynamic';
-
-const BUTTON =
-  'rounded-md border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:border-stone-900 hover:text-stone-900';
 
 const ReportPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
@@ -28,16 +29,17 @@ const ReportPage = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <section className="space-y-4">
-      <div className="no-print flex flex-wrap items-center gap-3">
-        <Link href="/reports" className="text-sm text-stone-500 underline-offset-2 hover:underline">
-          &larr; All reports
+      <div className="ag-pageheader no-print">
+        <Link href="/reports" className="ag-back">
+          <span aria-hidden="true">&larr;</span>
+          All reports
         </Link>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ag-pageheader-actions">
           <a
             href={`/api/reports/${report.id}/bundle`}
             download={`${report.id}.json`}
             data-testid="download-bundle"
-            className={BUTTON}
+            className="ag-btn"
           >
             Download JSON bundle
           </a>
@@ -46,15 +48,15 @@ const ReportPage = async ({ params }: { params: Promise<{ id: string }> }) => {
 
       <ReportView report={report.document} reportId={report.id} />
 
-      <p className="no-print text-xs text-stone-400">
+      <p className="ag-hint no-print">
         The JSON bundle contains this report, the underlying audit records with the neighbours their
         checks read (a predecessor that belongs to another advertiser is carried as its record_hash
         and app_id only), the creative content behind every content_hash, and the public keys.
         Re-verify it offline with{' '}
-        <code className="font-mono">tsx scripts/verify-bundle.ts &lt;file&gt;</code>. Run on its own
+        <span className="ag-code">tsx scripts/verify-bundle.ts &lt;file&gt;</span>. Run on its own
         that recomputes every hash and signature against the keys the bundle carries, which shows
         the file is internally consistent - it is not proof that adgate produced it. Add{' '}
-        <code className="font-mono">--keys &lt;file&gt;</code> with the operator&apos;s published
+        <span className="ag-code">--keys &lt;file&gt;</span> with the operator&apos;s published
         public keys to check that too.
       </p>
     </section>

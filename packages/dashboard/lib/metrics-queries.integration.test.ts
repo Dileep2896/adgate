@@ -20,6 +20,8 @@ import {
   appDecisionCountsQuery,
   appEventCounts,
   appEventCountsQuery,
+  appLastTurn,
+  appLastTurnQuery,
   appLastTurnsQuery,
   appsIntegratedQuery,
   appWindowCountsQuery,
@@ -128,6 +130,8 @@ const AUDIT_QUERIES: [string, (db: DashboardDb) => SQLWrapper][] = [
   // predicate, which is a full scan of the chain by construction.
   ['app list turn counts', (handle) => appWindowCountsQuery(handle, WINDOW)],
   ['app list last turn', (handle) => appLastTurnsQuery(handle)],
+  // The /apps/[id] Integration section's "has a turn ever arrived" line.
+  ['app detail last turn', (handle) => appLastTurnQuery(handle, BULK_APP_ID)],
   [
     'audit search, one app',
     (handle) =>
@@ -283,6 +287,18 @@ describe('the app list', () => {
     const rows = await listAppsWithCounts(WINDOW, db);
     expect(rows).toHaveLength(BULK_APPS + 1);
     expect(rows.every((row) => row.auditCount30d >= 0)).toBe(true);
+  });
+
+  /**
+   * The app page's "No turns yet" line is a claim about the whole chain, not about the
+   * 30 day window, so it must agree with the list's last-turn column for the same app and
+   * be null - not an epoch, not a throw - for an app that has never evaluated anything.
+   */
+  it('agrees with the list about one app, and is null for an app with no records', async () => {
+    const rows = await listAppsWithCounts(WINDOW, db);
+    const fixture = rows.find((row) => row.id === FIXTURE_APP_ID);
+    expect(await appLastTurn(FIXTURE_APP_ID, db)).toEqual(fixture?.lastTurnAt);
+    expect(await appLastTurn('app_00000000000000000000000000', db)).toBeNull();
   });
 });
 

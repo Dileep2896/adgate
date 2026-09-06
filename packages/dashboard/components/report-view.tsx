@@ -87,16 +87,23 @@ const headlineMetrics = (report: ReportDocument): Metric[] => [
   },
 ];
 
+/**
+ * A finding, stated. A failing banner is never colour alone: it carries the word WARNING or
+ * BROKEN in the sentence itself, a warning glyph, a 2px danger border and a filled ground - so
+ * it survives a colour-blind reader, a fast scan and, most importantly here, the black and
+ * white printout this document will most often be read as.
+ */
 const Banner = ({ ok, children, testId }: { ok: boolean; children: ReactNode; testId: string }) => (
   <p
     data-testid={testId}
     data-ok={String(ok)}
-    className={`rounded-md border px-4 py-3 text-sm ${
-      ok
-        ? 'border-stone-200 bg-stone-50 text-stone-700'
-        : 'border-stone-900 bg-stone-900 text-white'
-    }`}
+    className={ok ? 'ag-note' : 'ag-note ag-note-danger'}
   >
+    {ok ? null : (
+      <>
+        <span aria-hidden="true">&#9888;&#xFE0E;</span>{' '}
+      </>
+    )}
     {children}
   </p>
 );
@@ -109,18 +116,19 @@ export interface ReportViewProps {
 
 export const ReportView = ({ report, reportId }: ReportViewProps) => (
   <article data-testid="report-view" className="space-y-6">
-    <header className="space-y-1 border-b border-stone-200 pb-4">
-      <h1 className="text-2xl font-semibold tracking-tight" data-testid="report-advertiser">
+    <header className="space-y-1 border-b border-rule pb-4">
+      <p className="ag-label">Verification report</p>
+      <h1 className="ag-pageheader-title" data-testid="report-advertiser">
         {report.advertiser.name}
       </h1>
-      <p className="text-sm text-stone-500">
-        Verification report for {report.advertiser.domain} -{' '}
+      <p className="text-sm">
+        {report.advertiser.domain} -{' '}
         <span data-testid="report-period">
           {formatTimestamp(new Date(report.period.start))} to{' '}
           {formatTimestamp(new Date(report.period.end))}
         </span>
       </p>
-      <p className="font-mono text-xs text-stone-400">
+      <p className="ag-mono-2xs text-ink-3">
         {reportId} - generated {formatTimestamp(new Date(report.generated_at))} by adgate
       </p>
     </header>
@@ -154,7 +162,7 @@ export const ReportView = ({ report, reportId }: ReportViewProps) => (
 
     <ReportTables report={report} />
 
-    <footer className="border-t border-stone-200 pt-4 text-xs text-stone-500">
+    <footer className="border-t border-rule pt-4 text-xs text-ink-3">
       <p>
         Every figure above is read from the signed audit records (docs/audit.md), never from a
         summary table. Impressions and clicks are the exception and are reported by the SDK after

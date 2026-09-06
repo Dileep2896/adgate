@@ -9,8 +9,7 @@ import { ALL_FILTER, type CreativeFilters, GLOBAL_SCOPE } from '@/lib/creative-q
  * filtered view is a URL an operator can bookmark or paste into a ticket.
  */
 
-const SELECT =
-  'rounded-md border border-stone-300 px-2 py-1.5 text-sm outline-none focus:border-stone-900';
+const SELECT = 'ag-input ag-input-auto mt-1';
 
 export interface CreativeFiltersFormProps {
   filters: CreativeFilters;
@@ -18,12 +17,12 @@ export interface CreativeFiltersFormProps {
 }
 
 export const CreativeFiltersForm = ({ filters, apps }: CreativeFiltersFormProps) => (
-  <form method="get" action="/creatives" className="card flex flex-wrap items-end gap-4">
+  <form method="get" action="/creatives" className="card ag-filters">
     <div>
-      <label htmlFor="source" className="block text-xs font-medium text-stone-500 uppercase">
+      <label htmlFor="source" className="ag-label">
         Source
       </label>
-      <select id="source" name="source" defaultValue={filters.source} className={`mt-1 ${SELECT}`}>
+      <select id="source" name="source" defaultValue={filters.source} className={SELECT}>
         <option value={ALL_FILTER}>All sources</option>
         {CREATIVE_SOURCE_VALUES.map((value) => (
           <option key={value} value={value}>
@@ -34,10 +33,10 @@ export const CreativeFiltersForm = ({ filters, apps }: CreativeFiltersFormProps)
     </div>
 
     <div>
-      <label htmlFor="active" className="block text-xs font-medium text-stone-500 uppercase">
+      <label htmlFor="active" className="ag-label">
         Status
       </label>
-      <select id="active" name="active" defaultValue={filters.active} className={`mt-1 ${SELECT}`}>
+      <select id="active" name="active" defaultValue={filters.active} className={SELECT}>
         <option value={ALL_FILTER}>Active and paused</option>
         <option value="active">Active only</option>
         <option value="inactive">Paused only</option>
@@ -45,10 +44,10 @@ export const CreativeFiltersForm = ({ filters, apps }: CreativeFiltersFormProps)
     </div>
 
     <div>
-      <label htmlFor="scope" className="block text-xs font-medium text-stone-500 uppercase">
+      <label htmlFor="scope" className="ag-label">
         Catalog
       </label>
-      <select id="scope" name="scope" defaultValue={filters.scope} className={`mt-1 ${SELECT}`}>
+      <select id="scope" name="scope" defaultValue={filters.scope} className={SELECT}>
         <option value={ALL_FILTER}>Every catalog</option>
         <option value={GLOBAL_SCOPE}>Global only</option>
         {apps.map((app) => (
@@ -59,18 +58,13 @@ export const CreativeFiltersForm = ({ filters, apps }: CreativeFiltersFormProps)
       </select>
     </div>
 
-    <button
-      type="submit"
-      data-testid="apply-filters"
-      className="rounded-md bg-stone-900 px-3 py-2 text-sm font-medium text-white hover:bg-stone-800"
-    >
-      Filter
-    </button>
-    <Link
-      href="/creatives"
-      className="pb-2 text-sm text-stone-600 underline-offset-2 hover:underline"
-    >
-      Clear
-    </Link>
+    <div className="ag-filters-actions">
+      <button type="submit" data-testid="apply-filters" className="ag-btn ag-btn-primary">
+        Filter
+      </button>
+      <Link href="/creatives" className="ag-link-quiet text-xs">
+        Clear
+      </Link>
+    </div>
   </form>
 );

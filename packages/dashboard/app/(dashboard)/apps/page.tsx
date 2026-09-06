@@ -1,12 +1,15 @@
 import Link from 'next/link';
 
 import { CopyButton } from '@/components/copy-button';
+import { EmptyState } from '@/components/empty-state';
 import { MetricGrid, type Metric } from '@/components/metric-grid';
+import { PageHeader } from '@/components/page-header';
 import {
   formatAmount,
   formatCount,
   formatPercent,
   formatPolicyVersion,
+  formatRelativeTime,
   formatTimestamp,
   truncateHash,
 } from '@/lib/format';
@@ -23,6 +26,12 @@ import { listAppsWithCounts } from '@/lib/queries';
  * are integrated, how many turns they processed, how many of those the policy let reach demand,
  * what those eligible turns earned per thousand, and how many advertisers have taken a
  * verification report. Computed by the pure lib/metrics.ts from grouped counts.
+ *
+ * COLUMN PRIORITY. Name, app id and Last turn are what an operator scans for - which app,
+ * which id do I paste into a snippet, and is it alive - so those three never leave. Created
+ * and the policy hash drop below 80rem, where the row would otherwise start scrolling for
+ * everyone; the table's own scroller carries them the rest of the way and the page body
+ * never moves sideways.
  */
 
 export const dynamic = 'force-dynamic';
@@ -66,89 +75,117 @@ const AppsPage = async () => {
   // are the same 30 whole UTC days, so the column really does add up to the headline.
   const period = defaultMetricsWindow();
   const [apps, rows] = await Promise.all([listAppsWithCounts(period), globalMetricRows(period)]);
+  const now = new Date();
 
   return (
     <section>
-      <div className="mb-6 flex items-baseline justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Apps</h1>
-          <p className="mt-1 text-sm text-stone-500">
-            {apps.length} {apps.length === 1 ? 'app' : 'apps'} registered
-          </p>
-        </div>
-        <Link
-          href="/apps/new"
-          className="rounded-md bg-stone-900 px-3 py-2 text-sm font-medium text-white hover:bg-stone-800"
-        >
-          New app
-        </Link>
-      </div>
+      <PageHeader
+        title="Apps"
+        lede={`${String(apps.length)} ${apps.length === 1 ? 'app' : 'apps'} registered against this gateway.`}
+        actions={
+          <Link href="/apps/new" className="ag-btn ag-btn-primary">
+            New app
+          </Link>
+        }
+      />
 
-      <div className="mb-8">
-        <MetricGrid metrics={headlineMetrics(computeGlobalMetrics(rows))} />
-      </div>
+      <MetricGrid metrics={headlineMetrics(computeGlobalMetrics(rows))} />
 
-      {apps.length === 0 ? (
-        <div className="card text-sm text-stone-600">
-          <p className="font-medium text-stone-900">No apps yet.</p>
-          <p className="mt-1">
-            Register one with <Link href="/apps/new">New app</Link>, or from the command line with{' '}
-            <code className="rounded bg-stone-100 px-1 py-0.5 text-xs">
+      <div className="mt-6">
+        {apps.length === 0 ? (
+          <EmptyState
+            title="No apps yet."
+            testId="apps-empty"
+            actions={
+              <Link href="/apps/new" className="ag-btn ag-btn-primary">
+                Register an app
+              </Link>
+            }
+          >
+            An app is one tenant of this gateway: it owns a policy, a private creative catalog and
+            its own hash chain of audit records. Registering one issues its first API key and gives
+            you the app id the SDK sends on every evaluate call. You can also do it from the command
+            line:{' '}
+            <span className="ag-code">
               pnpm --filter @adgate/gateway create-app --name &quot;My chat app&quot;
-            </code>
+            </span>
             .
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white shadow-sm">
-          <table className="w-full border-collapse">
-            <thead className="border-b border-stone-200 bg-stone-50">
-              <tr>
-                <th className="table-head">Name</th>
-                <th className="table-head">App id</th>
-                <th className="table-head">Policy</th>
-                <th className="table-head">Created</th>
-                <th className="table-head">Creatives</th>
-                <th className="table-head">Turns ({METRICS_WINDOW_DAYS}d)</th>
-                <th className="table-head">Last turn</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {apps.map((app) => (
-                <tr key={app.id} data-testid="app-row">
-                  <td className="table-cell font-medium text-stone-900">
-                    <Link href={`/apps/${app.id}`} className="underline-offset-2 hover:underline">
-                      {app.name}
-                    </Link>
-                  </td>
-                  <td className="table-cell font-mono text-xs">{app.id}</td>
-                  <td className="table-cell">
-                    <span className="flex items-center gap-2">
-                      <span className="font-mono text-xs">
-                        {formatPolicyVersion(app.policyVersion)}
-                      </span>
-                      <span
-                        data-testid="app-policy-hash"
-                        title={app.policyHash}
-                        className="font-mono text-xs text-stone-500"
-                      >
-                        {truncateHash(app.policyHash)}
-                      </span>
-                      <CopyButton value={app.policyHash} label="Copy" />
-                    </span>
-                  </td>
-                  <td className="table-cell font-mono text-xs">{formatTimestamp(app.createdAt)}</td>
-                  <td className="table-cell tabular-nums">{app.creativeCount}</td>
-                  <td className="table-cell tabular-nums">{app.auditCount30d}</td>
-                  <td className="table-cell font-mono text-xs">
-                    {formatTimestamp(app.lastTurnAt)}
-                  </td>
+          </EmptyState>
+        ) : (
+          <div className="ag-table-scroll">
+            <table className="ag-table">
+              <thead>
+                <tr>
+                  <th scope="col" className="table-head">
+                    Name
+                  </th>
+                  <th scope="col" className="table-head">
+                    App id
+                  </th>
+                  <th scope="col" className="table-head max-2xl:hidden">
+                    Policy
+                  </th>
+                  <th scope="col" className="table-head max-lg:hidden">
+                    Created
+                  </th>
+                  <th scope="col" className="table-head">
+                    Creatives
+                  </th>
+                  <th scope="col" className="table-head">
+                    Turns ({METRICS_WINDOW_DAYS}d)
+                  </th>
+                  <th scope="col" className="table-head">
+                    Last turn
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {apps.map((app) => (
+                  <tr key={app.id} data-testid="app-row">
+                    <td className="table-cell table-cell-strong">
+                      <Link href={`/apps/${app.id}`} className="ag-link-quiet">
+                        <span className="ag-truncate" title={app.name}>
+                          {app.name}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="table-cell ag-mono-2xs table-cell-nowrap">{app.id}</td>
+                    <td className="table-cell max-2xl:hidden">
+                      <span className="flex items-center gap-2">
+                        <span className="ag-mono-2xs">
+                          {formatPolicyVersion(app.policyVersion)}
+                        </span>
+                        <span
+                          data-testid="app-policy-hash"
+                          title={app.policyHash}
+                          className="ag-mono-2xs"
+                        >
+                          {truncateHash(app.policyHash)}
+                        </span>
+                        <CopyButton value={app.policyHash} label="Copy" />
+                      </span>
+                    </td>
+                    <td className="table-cell ag-mono-2xs table-cell-nowrap max-lg:hidden">
+                      {formatTimestamp(app.createdAt)}
+                    </td>
+                    <td className="table-cell">{app.creativeCount}</td>
+                    <td className="table-cell">{app.auditCount30d}</td>
+                    <td className="table-cell table-cell-nowrap">
+                      {app.lastTurnAt === null ? (
+                        <span className="ag-badge">No turns yet</span>
+                      ) : (
+                        <span title={formatTimestamp(app.lastTurnAt)}>
+                          {formatRelativeTime(app.lastTurnAt, now)}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </section>
   );
 };

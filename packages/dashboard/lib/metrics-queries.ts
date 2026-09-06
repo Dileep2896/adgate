@@ -246,6 +246,26 @@ export const appLastTurnsQuery = (db: DashboardDb) => {
   return db.select({ appId: apps.id, lastTs: slice.lastTs }).from(apps).crossJoinLateral(slice);
 };
 
+/**
+ * The same question for ONE app, which is what /apps/[id] asks so its Integration section
+ * can say whether the gateway has ever seen a turn from this app and when the last one was.
+ * The same predicate as the lateral above, with the app id given rather than joined, so it
+ * lands on audit_records_app_id_ts_idx too; the integration test EXPLAINs it by name.
+ */
+export const appLastTurnQuery = (db: DashboardDb, appId: string) =>
+  db
+    .select({ lastTs: max(auditRecords.ts) })
+    .from(auditRecords)
+    .where(and(eq(auditRecords.appId, appId), eq(auditRecords.isLatest, true)));
+
+export const appLastTurn = async (
+  appId: string,
+  db: DashboardDb = dashboardDb(),
+): Promise<Date | null> => {
+  const [row] = await appLastTurnQuery(db, appId);
+  return row?.lastTs ?? null;
+};
+
 /** Advertisers with at least one generated verification report. S35 writes the rows. */
 export const advertisersWithReportQuery = (db: DashboardDb) =>
   db.select({ total: countDistinct(reports.advertiserId) }).from(reports);

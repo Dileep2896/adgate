@@ -1,0 +1,15 @@
+[
+  {
+    "date": "2026-09-06",
+    "scope": "app",
+    "macrostructure": "Workbench",
+    "theme": "Cobalt",
+    "theme_axes": "light / grotesk-sans / cool",
+    "genre": "modern-minimal",
+    "nav": "N3 side-rail",
+    "footer": "Ft2 inline single line",
+    "enrichment": "none",
+    "design_system": "design.md",
+    "brief": "adgate operator dashboard - 13 routes, light and dark, integration guidance"
+  }
+]

@@ -3,9 +3,20 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { ThemeToggle } from '@/components/theme-toggle';
+
 /**
- * The dashboard nav. Client component only because it highlights the current section from the
- * pathname; the pages themselves are server components.
+ * The side rail (N3): wordmark, the four sections, the colour theme and sign out.
+ *
+ * ONE NAV ELEMENT AT EVERY WIDTH. Below 60rem the rail lies down as a bar with a
+ * horizontally scrollable link strip; above it, it stands up as a sticky full height column
+ * (app/globals.css). A second, hidden mobile copy would give the page two navigation
+ * landmarks called "Sections" and two links called "Apps", which is wrong for a screen
+ * reader before it is wrong for a test.
+ *
+ * Client component only because it highlights the current section from the pathname; the
+ * pages themselves are server components. It imports nothing that reaches the database or
+ * @adgate/core, because whatever this file pulls in is shipped to every page.
  */
 
 export interface NavItem {
@@ -26,28 +37,29 @@ const isActive = (pathname: string, href: string): boolean =>
 export const Nav = () => {
   const pathname = usePathname();
   return (
-    <header className="no-print border-b border-stone-200 bg-white">
-      <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-3">
-        <Link href="/apps" className="text-sm font-semibold tracking-tight text-stone-900">
-          adgate
-        </Link>
-        <nav aria-label="Sections" className="flex items-center gap-1">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-              className={`nav-link${isActive(pathname, item.href) ? ' nav-link-active' : ''}`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <form action="/api/logout" method="post" className="ml-auto">
-          <button
-            type="submit"
-            className="text-sm text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline"
+    <header className="ag-rail no-print">
+      <Link href="/apps" className="ag-wordmark">
+        adgate<span className="ag-wordmark-mark">.</span>
+      </Link>
+
+      <nav aria-label="Sections" className="ag-rail-nav">
+        {NAV_ITEMS.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+            className={`nav-link${isActive(pathname, item.href) ? ' nav-link-active' : ''}`}
           >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+
+      <div className="ag-rail-aside">
+        <p className="ag-rail-meta">Read only · gateway database</p>
+        <ThemeToggle />
+        <form action="/api/logout" method="post">
+          <button type="submit" className="ag-btn ag-btn-quiet">
             Sign out
           </button>
         </form>

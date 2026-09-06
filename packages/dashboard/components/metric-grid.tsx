@@ -2,6 +2,11 @@
  * A row of headline numbers. Presentational and server rendered: it is handed strings that
  * lib/format.ts has already produced, so it holds no arithmetic and no formatting rules of its
  * own. `-` is a real value here - it is what a rate with no denominator looks like.
+ *
+ * Drawn as ONE bordered instrument panel divided by hairlines rather than as a row of
+ * identical cards: the 1px grid gap is the panel's own background showing through, so no
+ * cell owns a border and the leading figure can be set larger than the rest without the
+ * row falling apart. `auto-fit` means five numbers and eight numbers both fill the strip.
  */
 
 export interface Metric {
@@ -19,21 +24,14 @@ export interface MetricGridProps {
 }
 
 export const MetricGrid = ({ metrics }: MetricGridProps) => (
-  <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <dl className="ag-metrics">
     {metrics.map((metric) => (
-      <div key={metric.label} className="card">
-        <dt className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
-          {metric.label}
-        </dt>
-        <dd
-          data-testid={metric.testId}
-          className="mt-1 text-xl font-semibold tabular-nums text-stone-900"
-        >
+      <div key={metric.label} className="ag-metric">
+        <dt className="ag-metric-label">{metric.label}</dt>
+        <dd data-testid={metric.testId} className="ag-metric-value">
           {metric.value}
         </dd>
-        {metric.hint === undefined ? null : (
-          <dd className="mt-0.5 text-xs text-stone-400">{metric.hint}</dd>
-        )}
+        {metric.hint === undefined ? null : <dd className="ag-metric-hint">{metric.hint}</dd>}
       </div>
     ))}
   </dl>

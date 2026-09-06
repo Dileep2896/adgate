@@ -22,7 +22,7 @@ export const CreativeActiveToggle = ({ id, active, className }: CreativeActiveTo
     <button
       type="submit"
       data-testid={active ? 'deactivate-creative' : 'reactivate-creative'}
-      className="rounded-md border border-stone-300 px-2 py-1 text-xs font-medium text-stone-700 hover:bg-stone-100"
+      className="ag-btn ag-btn-xs"
     >
       {active ? 'Deactivate' : 'Reactivate'}
     </button>

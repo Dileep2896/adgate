@@ -1,5 +1,6 @@
 import { AuditFiltersForm } from '@/components/audit-filters';
 import { AuditTable } from '@/components/audit-table';
+import { PageHeader } from '@/components/page-header';
 import { parseAuditCursor, parseAuditFilters } from '@/lib/audit-filters';
 import { listAuditCreatives } from '@/lib/audit-lookups';
 import { listAuditPage, listAuditReasons } from '@/lib/audit-queries';
@@ -40,12 +41,10 @@ const AuditPage = async ({
 
   return (
     <section>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Audit</h1>
-        <p className="mt-1 text-sm text-stone-500">
-          Signed records for every evaluated turn. Open one to verify it against the chain.
-        </p>
-      </div>
+      <PageHeader
+        title="Audit"
+        lede="One signed record per evaluated turn, suppressions included. Open one to run all eight verification checks against it live."
+      />
 
       <div className="mb-6">
         <AuditFiltersForm filters={filters} apps={apps} reasons={reasons} />

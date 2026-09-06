@@ -1,10 +1,10 @@
 import { CATEGORIES_TAXONOMY } from '@adgate/schemas';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { CopyButton } from '@/components/copy-button';
 import { CreativeActiveToggle } from '@/components/creative-active-toggle';
 import { CreativeForm } from '@/components/creative-form';
+import { PageHeader } from '@/components/page-header';
 import {
   creativeFormValues,
   getCreative,
@@ -46,46 +46,48 @@ const CreativePage = async ({
 
   return (
     <section className="space-y-6">
-      <div>
-        <Link
-          href="/creatives"
-          className="text-sm text-stone-500 underline-offset-2 hover:underline"
-        >
-          &larr; Creatives
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">{creative.headline}</h1>
-        <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-stone-500">
-          <span data-testid="creative-id" className="font-mono text-xs">
-            {creative.id}
-          </span>
-          <span className="text-xs">
-            {creative.advertiser} ({creative.advertiserDomain})
-          </span>
-          <span className="text-xs">updated {formatTimestamp(creative.updatedAt)}</span>
-          <span data-testid="creative-state" className="text-xs font-medium">
-            {creative.active ? 'active' : 'paused'}
-          </span>
-        </p>
-      </div>
+      <PageHeader
+        title={creative.headline}
+        back={{ href: '/creatives', label: 'All creatives' }}
+        actions={<CreativeActiveToggle id={creative.id} active={creative.active} />}
+        meta={
+          <>
+            <span data-testid="creative-id" className="ag-mono-2xs">
+              {creative.id}
+            </span>
+            <span>
+              {creative.advertiser} ({creative.advertiserDomain})
+            </span>
+            <span>updated {formatTimestamp(creative.updatedAt)}</span>
+            <span
+              data-testid="creative-state"
+              className={creative.active ? 'ag-badge ag-badge-ok' : 'ag-badge'}
+            >
+              {creative.active ? 'active' : 'paused'}
+            </span>
+          </>
+        }
+      />
 
       {saved === undefined ? null : (
-        <p
-          data-testid="creative-saved"
-          className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
-        >
+        <p data-testid="creative-saved" className="ag-note ag-note-ok">
           {saved}
         </p>
       )}
 
-      <div className="card flex flex-wrap items-center justify-between gap-3">
-        <p className="flex flex-wrap items-center gap-2 text-xs text-stone-500">
-          <span className="font-semibold text-stone-700">content_hash</span>
-          <code data-testid="creative-content-hash" className="font-mono break-all text-stone-700">
+      <div className="card">
+        <div className="ag-section-head">
+          <h2 className="ag-section-title">content_hash</h2>
+          <p className="ag-section-hint">
+            The value every audit record that served this creative carries.
+          </p>
+        </div>
+        <p className="flex flex-wrap items-center gap-2">
+          <code data-testid="creative-content-hash" className="ag-mono-2xs break-all">
             {creative.contentHash}
           </code>
           <CopyButton value={creative.contentHash} label="Copy hash" />
         </p>
-        <CreativeActiveToggle id={creative.id} active={creative.active} />
       </div>
 
       <CreativeForm

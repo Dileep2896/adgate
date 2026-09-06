@@ -40,13 +40,13 @@ export const PolicyEditor = ({
     <form action={formAction} className="card space-y-4">
       <input type="hidden" name="app_id" value={appId} />
 
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-stone-900">Policy</h2>
-        <p className="flex items-center gap-2 text-xs text-stone-500">
-          <span data-testid="policy-version" className="font-mono">
+      <div className="ag-section-head">
+        <h2 className="ag-section-title">Policy</h2>
+        <p className="ag-meta">
+          <span data-testid="policy-version" className="ag-mono-2xs">
             {formatPolicyVersion(currentVersion)}
           </span>
-          <code data-testid="policy-hash" className="font-mono break-all text-stone-700">
+          <code data-testid="policy-hash" className="ag-mono-2xs break-all">
             {currentHash}
           </code>
           <CopyButton value={currentHash} label="Copy hash" testId="copy-policy-hash" />
@@ -60,31 +60,29 @@ export const PolicyEditor = ({
         rows={22}
         spellCheck={false}
         defaultValue={policyYaml}
-        className="w-full rounded-md border border-stone-300 px-3 py-2 font-mono text-xs outline-none focus:border-stone-900"
+        className="ag-input ag-input-mono"
       />
 
       {state.status === 'invalid' ? (
         <FormIssues errors={state.errors} issues={state.issues} testId="policy-errors" />
       ) : null}
       {state.status === 'saved' ? (
-        <p
-          data-testid="policy-saved"
-          className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
-        >
+        <p data-testid="policy-saved" className="ag-note ag-note-ok">
           Saved as {formatPolicyVersion(state.policyVersion)}. New policy_hash{' '}
-          <span className="font-mono break-all">{state.policyHash}</span>.
+          <span className="ag-mono-2xs break-all">{state.policyHash}</span>.
         </p>
       ) : null}
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-stone-900 px-3 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50"
+          data-state={pending ? 'loading' : undefined}
+          className="ag-btn ag-btn-primary"
         >
-          {pending ? 'Saving...' : 'Save policy'}
+          {pending ? 'Saving…' : 'Save policy'}
         </button>
-        <p className="text-xs text-stone-500">
+        <p className="ag-hint">
           Saving bumps policy_version and rewrites policy_hash. Every audit record written after it
           carries the new hash.
         </p>

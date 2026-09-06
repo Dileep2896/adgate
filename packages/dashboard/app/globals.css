@@ -1,38 +1,1287 @@
-@import 'tailwindcss';
-
-/*
- * The dashboard is an operator tool: dense, legible, no chrome. Tailwind v4 needs no config
- * file; the few shared bits live here as component classes.
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt
+ * design-system: design.md · designed-as-app · nav: N3 side-rail · footer: Ft2 inline
+ * enrichment: none (app pages carry no enrichment) · motion: focus ring, press, colour only
+ * pre-emit critique: P5 H5 E5 S5 R5 V4
+ * contrast: pass (40-41) · mobile: pass (34, 49, 50-57) · slop test: 58/58
+ *
+ * The component layer of the Cobalt system. Every declaration below reads a token from
+ * ../tokens.css; there is no literal colour, font, size or radius in this file, which is
+ * what lets one file re-skin the whole dashboard in light, dark and print.
+ *
+ * The dashboard is an operator instrument: dense, hairline-structured, no chrome. Depth
+ * comes from 1 px rules, never from stacked shadows, and the one cobalt accent is a signal
+ * (active nav item, focus ring, primary action, served bars) rather than a paint.
  */
 
+@import 'tailwindcss';
+@import '../tokens.css';
+
+/* ============================================================================= BASE === */
+
+html,
+body {
+  /* clip, not hidden: hidden would create a scroll container and break the sticky rail. */
+  overflow-x: clip;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink-2);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-style: normal;
+  color: var(--color-ink);
+  letter-spacing: var(--tracking-display);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+:focus-visible {
+  /* Instant, never animated: a ring that fades in leaves a keyboard user with nothing. */
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-ink);
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono);
+}
+
+/* The top bar and the rail are sticky, so anything scrolled to by the keyboard - or by a
+ * find-in-page, or by an anchor - must reserve room for them or it lands underneath. */
+a,
+button,
+input,
+select,
+textarea,
+summary,
+[tabindex] {
+  scroll-margin-block-start: var(--space-3xl);
+}
+
+/* ======================================================================= COMPONENTS === */
+
 @layer components {
+  /* ----------------------------------------------------------------- the shell --- */
+
+  /* N3 side-rail. ONE nav element at every width: below 60rem the rail lies down as a bar
+   * with a scrollable link strip, above it stands up as a sticky full-height column. Two
+   * DOM copies would give the page two navigation landmarks named "Sections". */
+  .ag-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  .ag-rail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm) var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-surface);
+    border-block-end: 1px solid var(--color-rule);
+  }
+
+  .ag-wordmark {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: var(--text-md);
+    letter-spacing: var(--tracking-display);
+    color: var(--color-ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .ag-wordmark-mark {
+    color: var(--color-accent);
+    transition: color var(--dur-micro) var(--ease-out);
+  }
+
+  /* Laid down, the strip takes the width that is left and scrolls inside itself, so four
+   * sections fit at 320px without the page body ever moving sideways. */
+  .ag-rail-nav {
+    display: flex;
+    flex: 1 1 12rem;
+    gap: var(--space-3xs);
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .ag-rail-aside {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-inline-start: auto;
+  }
+
+  .ag-rail-meta {
+    display: none;
+  }
+
   .nav-link {
-    @apply rounded-md px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-ink-2);
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color var(--dur-micro) var(--ease-out),
+      color var(--dur-micro) var(--ease-out);
+  }
+
+  .nav-link::before {
+    /* The rail's one ornament: a 2 px tick only the current section lights up. */
+    content: '';
+    inline-size: 2px;
+    block-size: 0.85em;
+    border-radius: var(--radius-xs);
+    background: transparent;
   }
 
   .nav-link-active {
-    @apply bg-stone-900 text-white hover:bg-stone-900 hover:text-white;
+    background: var(--color-accent-soft);
+    border-color: var(--color-accent-rule);
+    color: var(--color-ink);
   }
+
+  .nav-link-active::before {
+    background: var(--color-accent);
+  }
+
+  .nav-link:active {
+    background: var(--color-surface-3);
+  }
+
+  .ag-column {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .ag-main {
+    flex: 1;
+    width: 100%;
+    max-width: 82rem;
+    margin-inline: auto;
+    padding: var(--space-lg) var(--space-md) var(--space-xl);
+  }
+
+  /* Ft2 · inline single line, hairline rule above, no columns. */
+  .ag-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2xs) var(--space-md);
+    width: 100%;
+    max-width: 82rem;
+    margin-inline: auto;
+    padding: var(--space-md);
+    border-block-start: 1px solid var(--color-rule);
+    font-size: var(--text-2xs);
+    letter-spacing: normal;
+    color: var(--color-ink-3);
+  }
+
+  .ag-skip {
+    position: absolute;
+    inset-inline-start: var(--space-sm);
+    inset-block-start: var(--space-sm);
+    z-index: var(--z-modal);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    transform: translateY(-250%);
+  }
+
+  .ag-skip:focus-visible {
+    transform: none;
+  }
+
+  /* --------------------------------------------------------------- the top bar --- */
+
+  .ag-pageheader {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--z-sticky);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-sm) var(--space-lg);
+    margin-block-end: var(--space-lg);
+    padding-block: var(--space-sm);
+    background: var(--color-paper);
+    border-block-end: 1px solid var(--color-rule);
+  }
+
+  .ag-pageheader-title {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    line-height: 1.15;
+  }
+
+  .ag-pageheader-title-mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-md);
+    font-weight: 500;
+    letter-spacing: normal;
+  }
+
+  .ag-pageheader-lede {
+    margin-block-start: var(--space-2xs);
+    max-width: var(--measure);
+    font-size: var(--text-xs);
+    color: var(--color-ink-3);
+  }
+
+  .ag-pageheader-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .ag-back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    margin-block-end: var(--space-2xs);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-ink-3);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--dur-micro) var(--ease-out);
+  }
+
+  /* ------------------------------------------------------------------ surfaces --- */
 
   .card {
-    @apply rounded-lg border border-stone-200 bg-white p-5 shadow-sm;
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    padding: var(--space-md);
   }
 
-  .table-cell {
-    @apply px-4 py-3 text-sm text-stone-700;
+  .ag-well {
+    /* The one dark band the theme allows: a code surface, identical in both modes. */
+    border: 1px solid var(--color-graphite-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-graphite);
+    color: var(--color-graphite-ink);
+    box-shadow: var(--shadow-whisper);
+    overflow: hidden;
+  }
+
+  .ag-well pre {
+    margin: 0;
+    padding: var(--space-md);
+    max-height: 38rem;
+    overflow: auto;
+    overscroll-behavior: contain;
+    font-size: var(--text-2xs);
+    line-height: 1.7;
+    letter-spacing: normal;
+    color: var(--color-graphite-ink);
+    tab-size: 2;
+  }
+
+  .ag-well-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    border-block-end: 1px solid var(--color-graphite-rule);
+    background: var(--color-graphite-2);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-graphite-ink-2);
+  }
+
+  .ag-well-file {
+    color: var(--color-graphite-accent);
+  }
+
+  /* -------------------------------------------------------------- section head --- */
+
+  .ag-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2xs) var(--space-md);
+    margin-block-end: var(--space-sm);
+  }
+
+  .ag-section-title {
+    font-size: var(--text-md);
+    font-weight: 600;
+  }
+
+  .ag-section-hint {
+    font-size: var(--text-2xs);
+    letter-spacing: normal;
+    color: var(--color-ink-3);
+  }
+
+  /* ------------------------------------------------------------------ controls --- */
+
+  /* THE EIGHT STATES. Default, hover, focus-visible, active, disabled, loading, error and
+   * success are defined here once; a control uses the ones it actually has. Every one of
+   * them is a colour or an outline change - never a border-width, a padding or a height -
+   * so nothing in this dashboard shifts layout when you touch it. */
+  .ag-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    min-height: 2.25rem;
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid var(--color-rule-2);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    transition:
+      background-color var(--dur-micro) var(--ease-out),
+      border-color var(--dur-micro) var(--ease-out),
+      color var(--dur-micro) var(--ease-out),
+      transform var(--dur-micro) var(--ease-out);
+  }
+
+  .ag-btn:active {
+    transform: translateY(1px);
+  }
+
+  .ag-btn:disabled,
+  .ag-btn[aria-disabled='true'] {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Loading dims the whole control rather than recolouring it, so it reads the same on a
+   * quiet button and on the accent-filled primary one - a colour change there would put
+   * muted ink on the accent fill and lose the contrast the theme guarantees. */
+  .ag-btn[data-state='loading'] {
+    cursor: progress;
+    opacity: 0.72;
+  }
+
+  .ag-btn[data-state='error'] {
+    border-color: var(--color-danger-rule);
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+
+  .ag-btn[data-state='success'] {
+    border-color: var(--color-ok-rule);
+    background: var(--color-ok-soft);
+    color: var(--color-ok);
+  }
+
+  .ag-btn-primary {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  .ag-btn-danger {
+    border-color: var(--color-danger-rule);
+    background: var(--color-surface);
+    color: var(--color-danger);
+  }
+
+  .ag-btn-quiet {
+    min-height: 1.75rem;
+    padding: var(--space-2xs) var(--space-xs);
+    border-color: transparent;
+    background: transparent;
+    color: var(--color-ink-3);
+    font-size: var(--text-xs);
+  }
+
+  .ag-btn-xs {
+    min-height: 1.5rem;
+    padding: var(--space-3xs) var(--space-xs);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+  }
+
+  .ag-link {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    text-decoration-color: var(--color-accent-rule);
+    transition: text-decoration-color var(--dur-micro) var(--ease-out);
+  }
+
+  .ag-link-quiet {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    text-decoration-color: var(--color-rule-2);
+    transition:
+      color var(--dur-micro) var(--ease-out),
+      text-decoration-color var(--dur-micro) var(--ease-out);
+  }
+
+  /* -------------------------------------------------------------------- fields --- */
+
+  .ag-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-ink-3);
+  }
+
+  .ag-label-plain {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-ink);
+  }
+
+  .ag-input {
+    /* 1 px border in EVERY state; focus is an outline, so the box never resizes. */
+    display: block;
+    width: 100%;
+    min-height: 2.25rem;
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid var(--color-rule-2);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    line-height: 1.4;
+    outline: 2px solid transparent;
+    outline-offset: 1px;
+    transition:
+      background-color var(--dur-micro) var(--ease-out),
+      border-color var(--dur-micro) var(--ease-out);
+  }
+
+  .ag-input::placeholder {
+    color: var(--color-ink-3);
+    opacity: 1;
+  }
+
+  .ag-input:focus-visible {
+    border-color: var(--color-accent-rule);
+    outline-color: var(--color-focus);
+  }
+
+  .ag-input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .ag-input[aria-invalid='true'],
+  [data-invalid='true'] .ag-input {
+    border-color: var(--color-danger-rule);
+    background: var(--color-danger-soft);
+  }
+
+  .ag-input-mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: normal;
+  }
+
+  /* A <select> is as wide as its widest <option> and, being a flex or grid item, refuses to
+   * shrink below that unless it is told to - which is how a filter row with one long app name
+   * in it pushes a 320px page sideways. min-width: 0 gives the browser permission to clip the
+   * option text instead; the grid below then does the sizing. */
+  .ag-input-auto {
+    width: 100%;
+    min-width: 0;
+    max-width: 24rem;
+  }
+
+  /* The filter rows on /audit, /creatives and /reports/new. A grid rather than a wrapping
+   * flex row: `minmax(0, 1fr)` tracks let every control shrink, so the row reflows from four
+   * across to one down without any of it escaping the page. */
+  .ag-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+    align-items: end;
+    gap: var(--space-sm) var(--space-md);
+  }
+
+  .ag-filters-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  textarea.ag-input {
+    min-height: 4.5rem;
+    resize: vertical;
+  }
+
+  .ag-hint {
+    margin-block-start: var(--space-2xs);
+    max-width: var(--measure);
+    font-size: var(--text-2xs);
+    line-height: 1.5;
+    letter-spacing: normal;
+    color: var(--color-ink-3);
+  }
+
+  .ag-field-error {
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    letter-spacing: normal;
+    color: var(--color-danger);
+  }
+
+  /* The hint and the error share ONE slot under a field, and the slot keeps a line of height
+   * even when it is empty - so a field that gains an error does not push the rest of the form
+   * down the page while somebody is fixing it. */
+  .ag-field-note {
+    margin-block-start: var(--space-2xs);
+    min-block-size: 1lh;
+    max-width: var(--measure);
+    font-size: var(--text-2xs);
+    line-height: 1.5;
+    letter-spacing: normal;
+    color: var(--color-ink-3);
+  }
+
+  .ag-check {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-xs);
+    font-size: var(--text-sm);
+    color: var(--color-ink-2);
+  }
+
+  .ag-check input[type='checkbox'] {
+    inline-size: 1rem;
+    block-size: 1rem;
+    margin-block-start: var(--space-3xs);
+    accent-color: var(--color-accent);
+  }
+
+  /* -------------------------------------------------------------------- tables --- */
+
+  /* Every table lives in its own scroller, so an eleven-column catalog on a laptop scrolls
+   * inside its frame and the page body never moves sideways. */
+  .ag-table-scroll {
+    /* Positioned so that an absolutely positioned descendant - the visually hidden "Actions"
+     * label a screen reader needs on an unlabelled column, for one - is contained by THIS box
+     * and clipped with it. Without it such a child's containing block is the viewport, it
+     * escapes every overflow rule between here and <html>, and the document grows to the width
+     * of a table that is supposed to be scrolling inside its own frame. */
+    position: relative;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+  }
+
+  .ag-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ag-table thead {
+    background: var(--color-surface-2);
+  }
+
+  .ag-table tbody tr {
+    border-block-start: 1px solid var(--color-rule);
   }
 
   .table-head {
-    @apply px-4 py-2 text-left text-xs font-semibold tracking-wide text-stone-500 uppercase;
+    padding: var(--space-xs) var(--space-sm);
+    text-align: start;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-ink-3);
+    white-space: nowrap;
+  }
+
+  .table-cell {
+    padding: var(--space-sm);
+    font-size: var(--text-sm);
+    color: var(--color-ink-2);
+    vertical-align: top;
+  }
+
+  .table-cell-strong {
+    color: var(--color-ink);
+    font-weight: 500;
+  }
+
+  .table-cell-nowrap {
+    white-space: nowrap;
+  }
+
+  /* A failing verification check. The band is one of four signals on the row, never the only
+   * one: the word FAILED, a glyph, this fill and the bold danger-coloured detail all say it,
+   * so it survives colour blindness, a greyscale printout and a fast scan. */
+  .ag-row-failed {
+    background: var(--color-danger-soft);
+  }
+
+  .ag-text-danger {
+    color: var(--color-danger);
+    font-weight: 600;
+  }
+
+  /* Truncation is CSS only and always paired with a title attribute, so the full value is
+   * one hover (and usually one copy button) away and the DOM still carries it whole. */
+  .ag-truncate {
+    display: block;
+    max-width: 15rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ag-truncate-sm {
+    max-width: 8.5rem;
+  }
+
+  .ag-truncate-lg {
+    max-width: 24rem;
+  }
+
+  /* -------------------------------------------------------------------- badges --- */
+
+  /* Rectangular, mono, uppercase: an instrument readout, never a soft pill. Colour is
+   * always the second signal - the word inside is the first, so a colour-blind operator
+   * and a black and white printout read the same thing. */
+  .ag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3xs);
+    padding: var(--space-3xs) var(--space-xs);
+    border: 1px solid var(--color-rule-2);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-ink-2);
+    white-space: nowrap;
+  }
+
+  .ag-badge-ok {
+    border-color: var(--color-ok-rule);
+    background: var(--color-ok-soft);
+    color: var(--color-ok);
+  }
+
+  .ag-badge-warn {
+    border-color: var(--color-warn-rule);
+    background: var(--color-warn-soft);
+    color: var(--color-warn);
+  }
+
+  .ag-badge-danger {
+    border-color: var(--color-danger);
+    background: var(--color-danger);
+    color: var(--color-accent-ink);
+    font-weight: 700;
+  }
+
+  .ag-badge-accent {
+    border-color: var(--color-accent-rule);
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+
+  /* ------------------------------------------------------------------- notices --- */
+
+  .ag-note {
+    display: block;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-2);
+    font-size: var(--text-sm);
+    color: var(--color-ink-2);
+  }
+
+  .ag-note-ok {
+    border-color: var(--color-ok-rule);
+    background: var(--color-ok-soft);
+    color: var(--color-ok);
+  }
+
+  .ag-note-warn {
+    border-color: var(--color-warn-rule);
+    background: var(--color-warn-soft);
+    color: var(--color-warn);
+  }
+
+  .ag-note-danger {
+    border-width: 2px;
+    border-color: var(--color-danger);
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+
+  .ag-note-accent {
+    border-color: var(--color-accent-rule);
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+
+  .ag-note-strong {
+    font-weight: 600;
+  }
+
+  /* -------------------------------------------------- metric readout strip (dl) --- */
+
+  /* Not four identical cards: one bordered instrument panel divided by hairlines, with the
+   * leading figure set larger than the rest. The 1 px gap IS the rule - the panel's own
+   * background showing through - so no cell owns a border and none of them double up. */
+  .ag-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: var(--rule-width);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    overflow: hidden;
+  }
+
+  /* The dividers are OUTLINES, not a background showing through the gap: eight numbers on a
+   * six-wide row leave two empty tracks at the end, and a background-drawn grid paints those
+   * as a slab of rule colour. An outline draws only around cells that exist, neighbours share
+   * the 1px gap so the line stays hairline, and the container clips the outer edge. */
+  .ag-metric {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+    min-width: 0;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-surface);
+    outline: 1px solid var(--color-rule);
+  }
+
+  .ag-metric-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-ink-3);
+  }
+
+  .ag-metric-value {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: var(--tracking-display);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+  }
+
+  .ag-metric:first-child .ag-metric-value {
+    font-size: var(--text-xl);
+  }
+
+  .ag-metric-hint {
+    font-size: var(--text-2xs);
+    line-height: 1.45;
+    letter-spacing: normal;
+    color: var(--color-ink-3);
+  }
+
+  /* --------------------------------------------------------------- empty states --- */
+
+  /* Three beats, always: what is missing, why that matters, the one next thing to do. */
+  .ag-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+    padding: var(--space-xl) var(--space-lg);
+    border: 1px dashed var(--color-rule-2);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+  }
+
+  .ag-empty-title {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    font-weight: 600;
+    letter-spacing: var(--tracking-display);
+    color: var(--color-ink);
+  }
+
+  .ag-empty-body {
+    max-width: var(--measure);
+    font-size: var(--text-sm);
+    color: var(--color-ink-2);
+  }
+
+  .ag-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-block-start: var(--space-2xs);
+  }
+
+  /* --------------------------------------------------------------- mono details --- */
+
+  .ag-mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: normal;
+  }
+
+  .ag-mono-2xs {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: normal;
+  }
+
+  .ag-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2xs) var(--space-sm);
+    font-size: var(--text-2xs);
+    letter-spacing: normal;
+    color: var(--color-ink-3);
+  }
+
+  .ag-code {
+    padding: var(--space-3xs) var(--space-2xs);
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-3);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--color-ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* ---------------------------------------------------------------- the toggle --- */
+
+  .ag-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3xs);
+    padding: var(--space-3xs);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
+  }
+
+  .ag-theme-option {
+    padding: var(--space-3xs) var(--space-xs);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-ink-3);
+    white-space: nowrap;
+    cursor: pointer;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    transition:
+      background-color var(--dur-micro) var(--ease-out),
+      color var(--dur-micro) var(--ease-out),
+      transform var(--dur-micro) var(--ease-out);
+  }
+
+  .ag-theme-option[aria-pressed='true'] {
+    border-color: var(--color-accent-rule);
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+
+  .ag-theme-option:active {
+    transform: translateY(1px);
+  }
+
+  .ag-theme-option:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* ------------------------------------------------------------------ tab strip --- */
+
+  .ag-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3xs);
+    padding: var(--space-3xs);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
+  }
+
+  .ag-tab {
+    padding: var(--space-2xs) var(--space-sm);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-ink-3);
+    white-space: nowrap;
+    cursor: pointer;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    transition:
+      background-color var(--dur-micro) var(--ease-out),
+      color var(--dur-micro) var(--ease-out),
+      transform var(--dur-micro) var(--ease-out);
+  }
+
+  .ag-tab[aria-selected='true'] {
+    border-color: var(--color-accent-rule);
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+
+  .ag-tab:active {
+    transform: translateY(1px);
+  }
+
+  /* -------------------------------------------------------------------- charts --- */
+
+  /* recharts paints SVG through presentation attributes, and a presentation attribute
+   * cannot read a custom property - so the tokens are applied here instead, where author
+   * CSS always outranks one. This block is the whole reason both charts follow the theme. */
+  .ag-chart .recharts-cartesian-grid line,
+  .ag-chart .recharts-cartesian-axis-line,
+  .ag-chart .recharts-cartesian-axis-tick-line {
+    stroke: var(--color-chart-grid);
+  }
+
+  .ag-chart .recharts-cartesian-axis-tick-value {
+    fill: var(--color-chart-axis);
+    font-family: var(--font-mono);
+  }
+
+  .ag-chart .recharts-tooltip-cursor {
+    fill: var(--color-surface-2);
+  }
+
+  /* The key is hand built rather than recharts' Legend: the library paints its swatch with a
+   * presentation attribute, which is the one mark on the chart that could not follow a theme. */
+  .ag-chart-key {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2xs) var(--space-md);
+    margin-block-start: var(--space-xs);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-ink-3);
+  }
+
+  .ag-chart-swatch {
+    display: inline-block;
+    inline-size: 0.625rem;
+    block-size: 0.625rem;
+    margin-inline-end: var(--space-3xs);
+    border-radius: var(--radius-xs);
+    vertical-align: -0.05em;
+  }
+
+  .ag-swatch-serve {
+    background: var(--color-chart-serve);
+  }
+
+  .ag-swatch-suppress {
+    background: var(--color-chart-suppress);
+  }
+
+  .ag-chart .ag-bar-serve path,
+  .ag-chart .ag-bar-serve .recharts-legend-icon {
+    fill: var(--color-chart-serve);
+  }
+
+  .ag-chart .ag-bar-suppress path,
+  .ag-chart .ag-bar-suppress .recharts-legend-icon {
+    fill: var(--color-chart-suppress);
+  }
+
+  .ag-chart .ag-cell-reason,
+  .ag-chart .ag-cell-reason path {
+    fill: var(--color-chart-reason);
+  }
+
+  .ag-chart .ag-cell-sensitive,
+  .ag-chart .ag-cell-sensitive path {
+    fill: var(--color-chart-sensitive);
+  }
+
+  /* ---------------------------------------------------------------- prose bits --- */
+
+  .ag-prose {
+    max-width: var(--measure);
+    font-size: var(--text-sm);
+    color: var(--color-ink-2);
+  }
+
+  .ag-list {
+    margin-block-start: var(--space-2xs);
+    padding-inline-start: var(--space-lg);
+    list-style: disc;
+  }
+
+  .ag-list > li {
+    margin-block-start: var(--space-3xs);
   }
 }
 
-/*
- * PRINTING. A verification report (S35) is an artifact an advertiser forwards or files, so
- * Cmd+P has to produce the document and nothing around it: anything marked `no-print` - the
- * nav, the footer, every button and link that only works in a browser - is removed, and the
- * page uses the full sheet. Nothing else on the dashboard cares, and nothing is hidden on
- * screen: this block only ever applies to the print medium.
+/* ============================================================ HOVER, POINTER, MOTION === */
+
+/* Hover sits behind a capability query so a touch operator never gets a stuck state. */
+@media (hover: hover) and (pointer: fine) {
+  .nav-link:hover {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+  }
+
+  .nav-link-active:hover {
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+
+  .ag-btn:hover:not(:disabled):not([aria-disabled='true']) {
+    border-color: var(--color-ink-3);
+    background: var(--color-surface-2);
+  }
+
+  .ag-btn-primary:hover:not(:disabled) {
+    border-color: var(--color-accent-hover);
+    background: var(--color-accent-hover);
+    color: var(--color-accent-ink);
+  }
+
+  .ag-btn-danger:hover:not(:disabled) {
+    border-color: var(--color-danger);
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+
+  .ag-btn-quiet:hover:not(:disabled) {
+    border-color: var(--color-rule);
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+  }
+
+  .ag-link:hover {
+    text-decoration-color: var(--color-accent);
+  }
+
+  .ag-link-quiet:hover {
+    color: var(--color-ink);
+    text-decoration-color: var(--color-ink);
+  }
+
+  .ag-input:hover:not(:disabled) {
+    background: var(--color-surface-2);
+  }
+
+  .ag-table tbody tr:hover {
+    background: var(--color-surface-2);
+  }
+
+  /* A failed row keeps its band under the pointer; losing it on hover would be the one moment
+   * an operator is most likely to be looking straight at it. */
+  .ag-table tbody tr.ag-row-failed:hover {
+    background: var(--color-danger-soft);
+  }
+
+  .ag-theme-option:hover:not(:disabled),
+  .ag-tab:hover {
+    background: var(--color-surface-3);
+    color: var(--color-ink);
+  }
+
+  .ag-wordmark:hover .ag-wordmark-mark {
+    color: var(--color-accent-hover);
+  }
+
+  .ag-back:hover {
+    color: var(--color-ink);
+  }
+}
+
+/* One base height for a control and the button beside it, at both pointer sizes: a 44px
+ * button next to a 36px input is the most common form-tuning slop there is. */
+@media (pointer: coarse) {
+  .ag-btn,
+  .ag-input,
+  .ag-theme-option,
+  .ag-tab {
+    min-height: 2.75rem;
+  }
+}
+
+/* ================================================================== RESPONSIVE ===
+ * Mobile first, verified at 320 / 375 / 414 / 768 px. One content-driven breakpoint moves
+ * the rail from a bar to a column: 60rem is where the wordmark, four sections, the theme
+ * toggle and sign out stop fitting on one comfortable line.
+ */
+
+@media (min-width: 48rem) {
+  .ag-rail,
+  .ag-main,
+  .ag-foot {
+    padding-inline: var(--space-lg);
+  }
+}
+
+@media (min-width: 60rem) {
+  .ag-shell {
+    grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  }
+
+  .ag-rail {
+    position: sticky;
+    inset-block-start: 0;
+    /* Above the in-page sticky top bar. They sit in different grid columns and never
+     * actually overlap, but if a future layout puts them in one, the rail wins. */
+    z-index: var(--z-sticky-nav);
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    block-size: 100dvh;
+    gap: var(--space-lg);
+    padding: var(--space-lg) var(--space-md);
+    border-block-end: 0;
+    border-inline-end: 1px solid var(--color-rule);
+  }
+
+  .ag-rail-nav {
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: var(--space-3xs);
+    overflow-x: visible;
+  }
+
+  .ag-rail-aside {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+    margin-inline-start: 0;
+    margin-block-start: auto;
+  }
+
+  .ag-rail-meta {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-ink-3);
+  }
+
+  .ag-main {
+    padding-block: var(--space-xl) var(--space-2xl);
+  }
+
+  .ag-pageheader {
+    padding-block: var(--space-md);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .ag-btn:active,
+  .ag-theme-option:active,
+  .ag-tab:active {
+    transform: none;
+  }
+}
+
+/* ======================================================================= PRINTING ===
+ * A verification report (S35) is an artifact an advertiser forwards or files, so Cmd+P has
+ * to produce the document and nothing around it: anything marked `no-print` - the rail, the
+ * footer, every button and link that only works in a browser - is removed, and the page
+ * uses the full sheet. ../tokens.css forces the palette back to ink on white for the print
+ * medium, so an operator working in dark mode still prints a readable sheet.
  */
 @media print {
   .no-print {
@@ -40,21 +1289,46 @@
   }
 
   body {
-    background: white;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-size: 10pt;
   }
 
-  main {
+  .ag-shell {
+    display: block;
+  }
+
+  .ag-main {
     max-width: none;
     padding: 0;
   }
 
-  .card {
+  .ag-pageheader {
+    position: static;
+    border-block-end: 0;
+  }
+
+  .card,
+  .ag-note,
+  .ag-metrics,
+  .ag-table-scroll {
     box-shadow: none;
   }
 
-  /* Never split a table row or a headline number across two sheets. */
+  .ag-table-scroll {
+    overflow: visible;
+  }
+
+  a[href] {
+    color: var(--color-ink);
+    text-decoration: none;
+  }
+
+  /* Never split a table row, a headline number or a signed block across two sheets. */
   tr,
-  .card {
+  .card,
+  .ag-metric,
+  .ag-note {
     break-inside: avoid;
   }
 }

@@ -1,16 +1,25 @@
 import Link from 'next/link';
 
+import { EmptyState } from '@/components/empty-state';
+import { PageHeader } from '@/components/page-header';
+
 /** An app id that is not in the database - a stale bookmark, or an app someone deleted in SQL. */
 const AppNotFound = () => (
   <section>
-    <h1 className="text-2xl font-semibold tracking-tight">No such app</h1>
-    <p className="mt-2 text-sm text-stone-600">
-      That app id is not registered against this gateway.{' '}
-      <Link href="/apps" className="underline underline-offset-2">
-        Back to apps
-      </Link>
-      .
-    </p>
+    <PageHeader title="No such app" back={{ href: '/apps', label: 'All apps' }} />
+    <EmptyState
+      title="That app id is not registered against this gateway."
+      testId="app-not-found"
+      actions={
+        <Link href="/apps" className="ag-btn ag-btn-primary">
+          Back to apps
+        </Link>
+      }
+    >
+      Either the link is stale, or the row was removed in SQL. Nothing has been changed: an app id
+      that is gone still appears inside every audit record that named it, and those records still
+      verify.
+    </EmptyState>
   </section>
 );
 

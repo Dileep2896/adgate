@@ -27,18 +27,18 @@ const Section = ({
   children: ReactNode;
 }) => (
   <section data-testid={testId} className="space-y-2">
-    <div className="flex items-baseline justify-between gap-4">
-      <h2 className="text-sm font-semibold text-stone-900">{title}</h2>
-      {hint === undefined ? null : <p className="text-xs text-stone-500">{hint}</p>}
+    <div className="ag-section-head">
+      <h2 className="ag-section-title">{title}</h2>
+      {hint === undefined ? null : <p className="ag-section-hint">{hint}</p>}
     </div>
     {children}
   </section>
 );
 
 const Table = ({ head, children }: { head: string[]; children: ReactNode }) => (
-  <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white">
-    <table className="min-w-full">
-      <thead className="border-b border-stone-200 bg-stone-50">
+  <div className="ag-table-scroll">
+    <table className="ag-table">
+      <thead>
         <tr>
           {head.map((label) => (
             <th key={label} scope="col" className="table-head">
@@ -47,14 +47,19 @@ const Table = ({ head, children }: { head: string[]; children: ReactNode }) => (
           ))}
         </tr>
       </thead>
-      <tbody className="divide-y divide-stone-100">{children}</tbody>
+      <tbody>{children}</tbody>
     </table>
   </div>
 );
 
+/**
+ * A report's tables keep their empty row rather than being replaced by a panel: this is a
+ * printed document with a fixed shape, and "no records in this period" belongs inside the
+ * table it is about, where a reader comparing two reports will look for it.
+ */
 const Empty = ({ columns, children }: { columns: number; children: ReactNode }) => (
   <tr>
-    <td colSpan={columns} className="table-cell text-stone-400">
+    <td colSpan={columns} className="table-cell">
       {children}
     </td>
   </tr>
@@ -74,8 +79,8 @@ export const ReportTables = ({ report }: { report: ReportDocument }) => (
           report.by_app.map((row) => (
             <tr key={row.app_id} data-testid="report-app-row">
               <td className="table-cell">
-                <span className="font-medium text-stone-900">{row.app_name ?? 'Unknown app'}</span>
-                <span className="ml-2 font-mono text-xs text-stone-400">{row.app_id}</span>
+                <span className="table-cell-strong">{row.app_name ?? 'Unknown app'}</span>
+                <span className="ag-mono-2xs ml-2">{row.app_id}</span>
               </td>
               <td className="table-cell tabular-nums">{formatCount(row.records)}</td>
               <td className="table-cell tabular-nums">{formatCount(row.serves)}</td>
@@ -99,9 +104,9 @@ export const ReportTables = ({ report }: { report: ReportDocument }) => (
         ) : (
           report.category_distribution.categories.map((row) => (
             <tr key={row.category} data-testid="report-category-row">
-              <td className="table-cell font-mono text-xs">{row.category}</td>
-              <td className="table-cell tabular-nums">{formatCount(row.records)}</td>
-              <td className="table-cell tabular-nums">{formatPercent(row.share)}</td>
+              <td className="table-cell ag-mono-2xs">{row.category}</td>
+              <td className="table-cell">{formatCount(row.records)}</td>
+              <td className="table-cell">{formatPercent(row.share)}</td>
             </tr>
           ))
         )}
@@ -119,8 +124,8 @@ export const ReportTables = ({ report }: { report: ReportDocument }) => (
         ) : (
           report.sensitive_exposures.categories.map((row) => (
             <tr key={row.category} data-testid="report-sensitive-row">
-              <td className="table-cell font-mono text-xs">{row.category}</td>
-              <td className="table-cell tabular-nums">{formatCount(row.records)}</td>
+              <td className="table-cell ag-mono-2xs">{row.category}</td>
+              <td className="table-cell">{formatCount(row.records)}</td>
             </tr>
           ))
         )}
@@ -145,17 +150,15 @@ export const ReportTables = ({ report }: { report: ReportDocument }) => (
         ) : (
           report.chain_integrity.failures.map((row) => (
             <tr key={row.record_hash} data-testid="report-failure-row">
-              <td className="table-cell font-mono text-xs">{row.audit_id}</td>
-              <td className="table-cell font-medium text-stone-900">{row.checks.join(', ')}</td>
-              <td className="table-cell text-xs text-stone-500">
-                {describeCheck(row.checks[0] ?? '')}
-              </td>
+              <td className="table-cell ag-mono-2xs">{row.audit_id}</td>
+              <td className="table-cell ag-text-danger">{row.checks.join(', ')}</td>
+              <td className="table-cell text-xs">{describeCheck(row.checks[0] ?? '')}</td>
             </tr>
           ))
         )}
       </Table>
       {report.chain_integrity.failures_omitted > 0 ? (
-        <p className="text-xs text-stone-500">
+        <p className="ag-hint">
           {formatCount(report.chain_integrity.failures_omitted)} further failing records are not
           listed; the JSON bundle carries every record.
         </p>

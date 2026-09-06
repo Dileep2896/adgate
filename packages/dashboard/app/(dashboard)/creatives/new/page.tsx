@@ -1,7 +1,7 @@
 import { CATEGORIES_TAXONOMY } from '@adgate/schemas';
-import Link from 'next/link';
 
 import { CreativeForm } from '@/components/creative-form';
+import { PageHeader } from '@/components/page-header';
 import { EMPTY_CREATIVE_VALUES } from '@/lib/creative-issue';
 import { listAdvertiserOptions, listAppOptions } from '@/lib/creative-queries';
 
@@ -19,13 +19,11 @@ const NewCreativePage = async () => {
 
   return (
     <section>
-      <Link href="/creatives" className="text-sm text-stone-500 underline-offset-2 hover:underline">
-        &larr; Creatives
-      </Link>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">New creative</h1>
-      <p className="mt-1 mb-6 text-sm text-stone-500">
-        Eligible as soon as it is saved: the gateway loads the catalog on every evaluation.
-      </p>
+      <PageHeader
+        title="New creative"
+        back={{ href: '/creatives', label: 'All creatives' }}
+        lede="Eligible as soon as it is saved: the gateway loads the catalog on every evaluation."
+      />
       <CreativeForm
         mode="create"
         values={EMPTY_CREATIVE_VALUES}

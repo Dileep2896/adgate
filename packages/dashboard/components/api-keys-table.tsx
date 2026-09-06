@@ -1,4 +1,5 @@
 import { revokeKeyAction } from '@/app/(dashboard)/apps/actions';
+import { EmptyState } from '@/components/empty-state';
 import { formatTimestamp } from '@/lib/format';
 import type { ApiKeySummary } from '@/lib/queries';
 
@@ -16,40 +17,61 @@ export interface ApiKeysTableProps {
   keys: readonly ApiKeySummary[];
 }
 
-export const ApiKeysTable = ({ appId, keys }: ApiKeysTableProps) => (
-  <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white shadow-sm">
-    <table className="w-full border-collapse">
-      <thead className="border-b border-stone-200 bg-stone-50">
-        <tr>
-          <th className="table-head">Key id</th>
-          <th className="table-head">Role</th>
-          <th className="table-head">Created</th>
-          <th className="table-head">Last used</th>
-          <th className="table-head">Revoked</th>
-          <th className="table-head">
-            <span className="sr-only">Actions</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-stone-100">
-        {keys.length === 0 ? (
+export const ApiKeysTable = ({ appId, keys }: ApiKeysTableProps) => {
+  if (keys.length === 0) {
+    return (
+      <EmptyState title="This app has no API keys." testId="api-keys-empty">
+        Without one the gateway answers 401 on every call from this app: the key is how a request
+        proves which tenant it belongs to. Registering an app issues its first key; issue another
+        from the command line with{' '}
+        <span className="ag-code">
+          pnpm --filter @adgate/gateway create-key --app {appId} --role app
+        </span>
+        . A key is readable exactly once, on the screen that mints it.
+      </EmptyState>
+    );
+  }
+  return (
+    <div className="ag-table-scroll">
+      <table className="ag-table">
+        <thead>
           <tr>
-            <td className="table-cell text-stone-500" colSpan={6}>
-              This app has no API keys. Issue one with{' '}
-              <code className="rounded bg-stone-100 px-1 py-0.5 text-xs">
-                pnpm --filter @adgate/gateway create-key --app {appId} --role app
-              </code>
-              .
-            </td>
+            <th scope="col" className="table-head">
+              Key id
+            </th>
+            <th scope="col" className="table-head">
+              Role
+            </th>
+            <th scope="col" className="table-head">
+              Created
+            </th>
+            <th scope="col" className="table-head">
+              Last used
+            </th>
+            <th scope="col" className="table-head">
+              Revoked
+            </th>
+            <th scope="col" className="table-head">
+              <span className="sr-only">Actions</span>
+            </th>
           </tr>
-        ) : (
-          keys.map((key) => (
+        </thead>
+        <tbody>
+          {keys.map((key) => (
             <tr key={key.keyId} data-testid="api-key-row">
-              <td className="table-cell font-mono text-xs">{key.keyId}</td>
-              <td className="table-cell">{key.role}</td>
-              <td className="table-cell font-mono text-xs">{formatTimestamp(key.createdAt)}</td>
-              <td className="table-cell font-mono text-xs">{formatTimestamp(key.lastUsedAt)}</td>
-              <td className="table-cell font-mono text-xs">{formatTimestamp(key.revokedAt)}</td>
+              <td className="table-cell ag-mono-2xs table-cell-nowrap">{key.keyId}</td>
+              <td className="table-cell">
+                <span className="ag-badge">{key.role}</span>
+              </td>
+              <td className="table-cell ag-mono-2xs table-cell-nowrap">
+                {formatTimestamp(key.createdAt)}
+              </td>
+              <td className="table-cell ag-mono-2xs table-cell-nowrap">
+                {formatTimestamp(key.lastUsedAt)}
+              </td>
+              <td className="table-cell ag-mono-2xs table-cell-nowrap">
+                {formatTimestamp(key.revokedAt)}
+              </td>
               <td className="table-cell text-right">
                 {key.revokedAt === null ? (
                   <form action={revokeKeyAction}>
@@ -58,19 +80,19 @@ export const ApiKeysTable = ({ appId, keys }: ApiKeysTableProps) => (
                     <button
                       type="submit"
                       data-testid="revoke-key"
-                      className="rounded border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                      className="ag-btn ag-btn-xs ag-btn-danger"
                     >
                       Revoke
                     </button>
                   </form>
                 ) : (
-                  <span className="text-xs text-stone-400">revoked</span>
+                  <span className="ag-badge">revoked</span>
                 )}
               </td>
             </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  </div>
-);
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};

@@ -7,6 +7,7 @@ import {
   formatPercent,
   formatReason,
   formatPolicyVersion,
+  formatRelativeTime,
   formatTimestamp,
   HASH_HEAD_LENGTH,
   HASH_TAIL_LENGTH,
@@ -92,5 +93,43 @@ describe('formatReason', () => {
   it('spells out a sensitive category and leaves the fixed reasons alone', () => {
     expect(formatReason('sensitive_category:health')).toBe('sensitive: health');
     expect(formatReason('frequency_cap')).toBe('frequency_cap');
+  });
+});
+
+describe('formatRelativeTime', () => {
+  const now = new Date('2026-09-06T12:00:00.000Z');
+  const ago = (ms: number): string => formatRelativeTime(new Date(now.getTime() - ms), now);
+
+  it('uses the coarsest unit that is still true', () => {
+    expect(ago(4 * 60_000)).toBe('4 minutes ago');
+    expect(ago(60_000)).toBe('1 minute ago');
+    expect(ago(3 * 3_600_000)).toBe('3 hours ago');
+    expect(ago(3 * 86_400_000)).toBe('3 days ago');
+    expect(ago(86_400_000 * 2)).toBe('2 days ago');
+  });
+
+  it('says "just now" under three quarters of a minute', () => {
+    expect(ago(0)).toBe('just now');
+    expect(ago(44_000)).toBe('just now');
+    expect(ago(46_000)).toBe('1 minute ago');
+  });
+
+  it('never renders a negative duration when the two clocks disagree', () => {
+    expect(formatRelativeTime(new Date(now.getTime() + 2_000), now)).toBe('just now');
+    expect(formatRelativeTime(new Date(now.getTime() + 86_400_000), now)).toBe('just now');
+  });
+
+  it('renders a dash for a turn that has never happened', () => {
+    expect(formatRelativeTime(null, now)).toBe('-');
+    expect(formatRelativeTime(undefined, now)).toBe('-');
+  });
+
+  it('crosses each boundary in the right unit', () => {
+    // 59 minutes is still minutes; an hour is an hour, never "60 minutes". 35 hours is still
+    // hours; 37 is days.
+    expect(ago(59 * 60_000)).toBe('59 minutes ago');
+    expect(ago(60 * 60_000)).toBe('1 hour ago');
+    expect(ago(35 * 3_600_000)).toBe('35 hours ago');
+    expect(ago(37 * 3_600_000)).toBe('2 days ago');
   });
 });

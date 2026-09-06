@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { EmptyState } from '@/components/empty-state';
 import { type AuditFilters, auditHref } from '@/lib/audit-filters';
 import type { AuditCreativeSummary } from '@/lib/audit-lookups';
 import type { AuditPage, AuditPageRow } from '@/lib/audit-queries';
@@ -12,6 +13,12 @@ import { formatReason, formatTimestamp, truncateHash } from '@/lib/format';
  * The "latest" column is not decoration: attestation writes a SECOND record for the same audit
  * id (docs/audit.md), and only one of them is the version the API serves. A superseded row is
  * marked so an operator never reads an old version thinking it is the current one.
+ *
+ * COLUMN PRIORITY. Timestamp, decision, reason, the audit id and whether it is the latest
+ * version ARE the search, so those five never leave. The app qualifies it at 48rem; the
+ * creative and the sequence number only at 96rem. The id and the record hash truncate with
+ * the whole value on the title attribute - the detail page is one click away and copies both -
+ * so a row is always one line and the page body never moves sideways.
  */
 
 export interface AuditTableProps {
@@ -20,16 +27,11 @@ export interface AuditTableProps {
   creatives: ReadonlyMap<string, AuditCreativeSummary>;
 }
 
-const decisionBadge = (row: AuditPageRow) =>
-  row.decision === 'serve' ? (
-    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-      serve
-    </span>
-  ) : (
-    <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
-      suppress
-    </span>
-  );
+const decisionBadge = (row: AuditPageRow) => (
+  <span className={row.decision === 'serve' ? 'ag-badge ag-badge-accent' : 'ag-badge'}>
+    {row.decision}
+  </span>
+);
 
 const CreativeCell = ({
   row,
@@ -39,16 +41,20 @@ const CreativeCell = ({
   creative: AuditCreativeSummary | undefined;
 }) => {
   if (row.creativeId === null) {
-    return <span className="text-stone-400">-</span>;
+    return <span aria-hidden="true">-</span>;
   }
   if (creative === undefined) {
     // The creatives row is gone; the record still names it, and verify() will say so.
-    return <span className="font-mono text-xs text-stone-500">{row.creativeId}</span>;
+    return <span className="ag-mono-2xs">{row.creativeId}</span>;
   }
   return (
     <>
-      <span className="font-medium text-stone-900">{creative.advertiser}</span>
-      <span className="block text-xs text-stone-500">{creative.headline}</span>
+      <span className="table-cell-strong ag-truncate" title={creative.advertiser}>
+        {creative.advertiser}
+      </span>
+      <span className="ag-truncate text-xs" title={creative.headline}>
+        {creative.headline}
+      </span>
     </>
   );
 };
@@ -56,45 +62,64 @@ const CreativeCell = ({
 export const AuditTable = ({ page, filters, creatives }: AuditTableProps) => {
   if (page.rows.length === 0) {
     return (
-      <div className="card text-sm text-stone-600" data-testid="audit-empty">
-        <p className="font-medium text-stone-900">No audit records match this search.</p>
-        <p className="mt-1">
-          Widen the date range, or clear the decision and reason filters. Records are written by the
-          gateway on every{' '}
-          <code className="rounded bg-stone-100 px-1 py-0.5 text-xs">POST /v1/evaluate</code>.
-        </p>
-      </div>
+      <EmptyState
+        title="No audit records match this search."
+        testId="audit-empty"
+        actions={
+          <Link href="/audit" className="ag-btn">
+            Clear the filters
+          </Link>
+        }
+      >
+        Widen the date range, or clear the decision and reason filters above. The gateway writes one
+        record on every <span className="ag-code">POST /v1/evaluate</span>, suppressions included -
+        so a range with nothing in it means no turns were evaluated then, not that the records were
+        lost. An app that has never been called has no records at all; its page says so under
+        Integration.
+      </EmptyState>
     );
   }
   return (
     <>
-      <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white shadow-sm">
-        <table className="w-full border-collapse">
-          <thead className="border-b border-stone-200 bg-stone-50">
+      <div className="ag-table-scroll">
+        <table className="ag-table">
+          <thead>
             <tr>
-              <th className="table-head">Timestamp</th>
-              <th className="table-head">App</th>
-              <th className="table-head">Decision</th>
-              <th className="table-head">Reason</th>
-              <th className="table-head">Creative</th>
-              <th className="table-head">Audit id</th>
-              <th className="table-head">Seq</th>
-              <th className="table-head">Version</th>
+              <th scope="col" className="table-head">
+                Timestamp
+              </th>
+              <th scope="col" className="table-head max-md:hidden">
+                App
+              </th>
+              <th scope="col" className="table-head">
+                Decision
+              </th>
+              <th scope="col" className="table-head">
+                Reason
+              </th>
+              <th scope="col" className="table-head max-2xl:hidden">
+                Creative
+              </th>
+              <th scope="col" className="table-head">
+                Audit id
+              </th>
+              <th scope="col" className="table-head max-2xl:hidden">
+                Seq
+              </th>
+              <th scope="col" className="table-head">
+                Version
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-stone-100">
+          <tbody>
             {page.rows.map((row) => (
               <tr key={row.recordHash} data-testid="audit-row">
-                <td className="table-cell whitespace-nowrap tabular-nums">
+                <td className="table-cell ag-mono-2xs table-cell-nowrap">
                   {formatTimestamp(row.ts)}
                 </td>
-                <td className="table-cell">
-                  <Link
-                    href={`/apps/${row.appId}`}
-                    className="underline-offset-2 hover:underline"
-                    title={row.appId}
-                  >
-                    {row.appName ?? row.appId}
+                <td className="table-cell max-md:hidden">
+                  <Link href={`/apps/${row.appId}`} className="ag-link-quiet" title={row.appId}>
+                    <span className="ag-truncate ag-truncate-sm">{row.appName ?? row.appId}</span>
                   </Link>
                 </td>
                 <td className="table-cell" data-testid="audit-decision">
@@ -102,37 +127,39 @@ export const AuditTable = ({ page, filters, creatives }: AuditTableProps) => {
                 </td>
                 <td className="table-cell">
                   {row.reason === null ? (
-                    <span className="text-stone-400">-</span>
+                    <span aria-hidden="true">-</span>
                   ) : (
-                    formatReason(row.reason)
+                    <span className="ag-truncate ag-truncate-sm" title={row.reason}>
+                      {formatReason(row.reason)}
+                    </span>
                   )}
                 </td>
-                <td className="table-cell">
+                <td className="table-cell max-2xl:hidden">
                   <CreativeCell
                     row={row}
                     creative={row.creativeId === null ? undefined : creatives.get(row.creativeId)}
                   />
                 </td>
-                <td className="table-cell font-mono text-xs">
+                <td className="table-cell ag-mono-2xs">
                   <Link
                     href={`/audit/${row.id}?version=${encodeURIComponent(row.recordHash)}`}
-                    className="underline-offset-2 hover:underline"
+                    className="ag-link-quiet"
                     data-testid="audit-link"
                   >
-                    {row.id}
+                    <span className="ag-truncate ag-truncate-sm" title={row.id}>
+                      {row.id}
+                    </span>
                   </Link>
-                  <span className="block text-stone-400" title={row.recordHash}>
+                  <span className="ag-truncate ag-truncate-sm" title={row.recordHash}>
                     {truncateHash(row.recordHash)}
                   </span>
                 </td>
-                <td className="table-cell tabular-nums">{row.seq}</td>
+                <td className="table-cell max-2xl:hidden">{row.seq}</td>
                 <td className="table-cell" data-testid="audit-version">
                   {row.isLatest ? (
-                    <span className="text-xs font-medium text-stone-700">latest</span>
+                    <span className="ag-badge">latest</span>
                   ) : (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
-                      superseded
-                    </span>
+                    <span className="ag-badge ag-badge-warn">superseded</span>
                   )}
                 </td>
               </tr>
@@ -142,31 +169,27 @@ export const AuditTable = ({ page, filters, creatives }: AuditTableProps) => {
       </div>
 
       <nav
-        className="mt-4 flex items-center justify-between text-sm"
+        className="mt-4 flex flex-wrap items-center justify-between gap-3"
         aria-label="Pagination"
         data-testid="audit-pagination"
       >
         {page.newer === null ? (
-          <span className="text-stone-400">Newest records</span>
+          <span className="ag-section-hint">Newest records</span>
         ) : (
           <Link
             href={auditHref(filters, page.newer)}
             data-testid="audit-previous"
-            className="rounded-md border border-stone-300 px-3 py-1.5 hover:bg-stone-50"
+            className="ag-btn"
           >
-            &larr; Newer
+            <span aria-hidden="true">&larr;</span> Newer
           </Link>
         )}
-        <span className="text-xs text-stone-500">{page.rows.length} records on this page</span>
+        <span className="ag-section-hint">{page.rows.length} records on this page</span>
         {page.older === null ? (
-          <span className="text-stone-400">Oldest records</span>
+          <span className="ag-section-hint">Oldest records</span>
         ) : (
-          <Link
-            href={auditHref(filters, page.older)}
-            data-testid="audit-next"
-            className="rounded-md border border-stone-300 px-3 py-1.5 hover:bg-stone-50"
-          >
-            Older &rarr;
+          <Link href={auditHref(filters, page.older)} data-testid="audit-next" className="ag-btn">
+            Older <span aria-hidden="true">&rarr;</span>
           </Link>
         )}
       </nav>

@@ -11,6 +11,10 @@ import { formatTimestamp, truncateHash } from '@/lib/format';
  * GET /v1/audit/:id, so a link copied from here selects the same version through the API.
  * Attestation writes a second record rather than editing the first (docs/audit.md), and both
  * remain in the chain and both verify - so both have to be reachable.
+ *
+ * Both ends of the chain have a real empty state rather than a blank card, because "there is
+ * nothing before this" and "the record before this is missing" mean opposite things: the first
+ * is a healthy genesis record, the second is a hole in the chain.
  */
 
 const versionHref = (auditId: string, recordHash: string): string =>
@@ -25,19 +29,19 @@ const NeighbourCard = ({
   neighbour: ChainNeighbour | null;
   emptyLabel: string;
 }) => (
-  <div className="card flex-1">
-    <h3 className="text-xs font-medium tracking-wide text-stone-500 uppercase">{title}</h3>
+  <div className="card min-w-0 flex-1">
+    <h3 className="ag-label">{title}</h3>
     {neighbour === null ? (
-      <p className="mt-2 text-sm text-stone-500">{emptyLabel}</p>
+      <p className="ag-hint">{emptyLabel}</p>
     ) : (
-      <p className="mt-2 text-sm">
+      <p className="mt-2">
         <Link
           href={versionHref(neighbour.auditId, neighbour.recordHash)}
-          className="font-mono text-xs underline-offset-2 hover:underline"
+          className="ag-link ag-mono-2xs"
         >
           {neighbour.auditId}
         </Link>
-        <span className="mt-1 block text-xs text-stone-500">
+        <span className="ag-hint block">
           seq {neighbour.seq} - {neighbour.decision}
           {neighbour.reason === null ? '' : ` (${neighbour.reason})`} -{' '}
           {formatTimestamp(neighbour.ts)}
@@ -55,10 +59,8 @@ export const AuditChain = ({ detail }: AuditChainProps) => (
   <div className="space-y-4" data-testid="audit-chain">
     {detail.versions.length > 1 ? (
       <div className="card" data-testid="version-switcher">
-        <h3 className="text-xs font-medium tracking-wide text-stone-500 uppercase">
-          Versions of {detail.auditId}
-        </h3>
-        <p className="mt-1 text-xs text-stone-500">
+        <h3 className="ag-label">Versions of {detail.auditId}</h3>
+        <p className="ag-hint">
           Attestation appends a new signed record instead of editing this one. Both stay in the
           chain and both verify.
         </p>
@@ -72,14 +74,10 @@ export const AuditChain = ({ detail }: AuditChainProps) => (
                   aria-current={current ? 'page' : undefined}
                   data-testid="version-option"
                   data-current={current ? 'true' : 'false'}
-                  className={`block rounded-md border px-3 py-2 text-sm ${
-                    current
-                      ? 'border-stone-900 bg-stone-900 text-white'
-                      : 'border-stone-300 hover:bg-stone-50'
-                  }`}
+                  className={`ag-btn w-full justify-start${current ? ' ag-btn-primary' : ''}`}
                 >
-                  <span className="font-mono text-xs">{truncateHash(version.recordHash)}</span>
-                  <span className={`ml-2 text-xs ${current ? 'text-stone-300' : 'text-stone-500'}`}>
+                  <span className="ag-mono-2xs">{truncateHash(version.recordHash)}</span>
+                  <span className="ag-mono-2xs">
                     seq {version.seq} - {formatTimestamp(version.ts)} -{' '}
                     {version.isLatest ? 'latest' : 'superseded'}
                     {version.supersedesHash === null ? '' : ' - attestation'}

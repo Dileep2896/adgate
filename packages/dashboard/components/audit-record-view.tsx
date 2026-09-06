@@ -14,17 +14,15 @@ import { formatPercent, formatReason, truncateHash } from '@/lib/format';
  */
 
 const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="flex flex-wrap items-baseline gap-2 py-1">
-    <span className="w-52 shrink-0 text-xs font-medium tracking-wide text-stone-500 uppercase">
-      {label}
-    </span>
-    <span className="min-w-0 text-sm break-all text-stone-800">{children}</span>
+  <div className="flex flex-wrap items-baseline gap-2 border-t border-rule py-1.5 first:border-t-0">
+    <span className="ag-label w-52 shrink-0">{label}</span>
+    <span className="min-w-0 text-sm break-all text-ink">{children}</span>
   </div>
 );
 
 const Hash = ({ value }: { value: string }) => (
   <span className="inline-flex items-center gap-2">
-    <span className="font-mono text-xs" title={value}>
+    <span className="ag-mono-2xs" title={value}>
       {truncateHash(value)}
     </span>
     <CopyButton value={value} label="Copy" />
@@ -33,15 +31,16 @@ const Hash = ({ value }: { value: string }) => (
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="card">
-    <h2 className="mb-3 text-sm font-semibold text-stone-900">{title}</h2>
+    <h2 className="ag-section-title mb-3">{title}</h2>
     {children}
   </div>
 );
 
+/** pass / fail / pending as badges, so the word carries the state and the colour confirms it. */
 const RESULT_STYLES: Record<string, string> = {
-  pass: 'bg-emerald-50 text-emerald-700',
-  fail: 'bg-red-100 text-red-800',
-  pending: 'bg-amber-50 text-amber-800',
+  pass: 'ag-badge ag-badge-ok',
+  fail: 'ag-badge ag-badge-danger',
+  pending: 'ag-badge ag-badge-warn',
 };
 
 export interface AuditRecordViewProps {
@@ -52,10 +51,10 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
   <div className="space-y-6">
     <Section title="Turn">
       <Row label="audit id">
-        <span className="font-mono text-xs">{record.id}</span>
+        <span className="ag-mono-2xs">{record.id}</span>
       </Row>
       <Row label="app_id">
-        <span className="font-mono text-xs">{record.app_id}</span>
+        <span className="ag-mono-2xs">{record.app_id}</span>
       </Row>
       <Row label="turn_id">{record.turn_id}</Row>
       <Row label="ts">{record.ts}</Row>
@@ -64,7 +63,7 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
       </Row>
       <Row label="user_hash">
         {record.user_hash === null ? (
-          <span className="text-stone-400">null</span>
+          <span className="ag-mono-2xs">null</span>
         ) : (
           <Hash value={record.user_hash} />
         )}
@@ -73,13 +72,7 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
         {record.surface.type} / {record.surface.placement}
       </Row>
       <Row label="decision">
-        <span
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-            record.decision === 'serve'
-              ? 'bg-emerald-50 text-emerald-700'
-              : 'bg-stone-100 text-stone-700'
-          }`}
-        >
+        <span className={record.decision === 'serve' ? 'ag-badge ag-badge-accent' : 'ag-badge'}>
           {record.decision}
         </span>
         {record.reason === null ? null : (
@@ -98,9 +91,9 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
       </Row>
       <Row label="sensitive">
         {record.classification.sensitive.length === 0 ? (
-          <span className="text-stone-500">none</span>
+          <span>none</span>
         ) : (
-          <span className="font-medium text-amber-800">
+          <span className="ag-badge ag-badge-warn">
             {record.classification.sensitive.join(', ')}
           </span>
         )}
@@ -116,34 +109,30 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
       <Row label="policy_hash">
         <Hash value={record.policy_hash} />
       </Row>
-      <table className="mt-3 w-full border-collapse" data-testid="policy-decisions">
-        <thead className="border-b border-stone-200">
+      <table className="ag-table mt-3" data-testid="policy-decisions">
+        <thead>
           <tr>
             <th className="table-head">Rule</th>
             <th className="table-head">Result</th>
             <th className="table-head">Detail</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-stone-100">
+        <tbody>
           {record.policy_decisions.map((decision) => (
             <tr key={decision.rule}>
-              <td className="table-cell font-mono text-xs">{decision.rule}</td>
+              <td className="table-cell ag-mono-2xs">{decision.rule}</td>
               <td className="table-cell">
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    RESULT_STYLES[decision.result] ?? 'bg-stone-100 text-stone-700'
-                  }`}
-                >
+                <span className={RESULT_STYLES[decision.result] ?? 'ag-badge'}>
                   {decision.result}
                 </span>
               </td>
-              <td className="table-cell text-xs text-stone-600">{decision.detail ?? '-'}</td>
+              <td className="table-cell text-xs">{decision.detail ?? '-'}</td>
             </tr>
           ))}
         </tbody>
       </table>
       {record.override_rejected.length === 0 ? null : (
-        <ul className="mt-3 list-disc pl-5 text-xs text-amber-800">
+        <ul className="ag-list text-xs text-warn">
           {record.override_rejected.map((rejection) => (
             <li key={`${rejection.path}:${rejection.reason}`}>
               override rejected: <code>{rejection.path}</code> - {rejection.reason}
@@ -156,15 +145,15 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
     <Section title="Demand">
       <Row label="requested">
         {record.demand.requested.length === 0 ? (
-          <span className="text-stone-500">no source was asked</span>
+          <span>no source was asked</span>
         ) : (
           record.demand.requested.join(', ')
         )}
       </Row>
       <Row label="selected">{record.demand.selected ?? '-'}</Row>
       {record.demand.responses.length === 0 ? null : (
-        <table className="mt-3 w-full border-collapse" data-testid="demand-trace">
-          <thead className="border-b border-stone-200">
+        <table className="ag-table mt-3" data-testid="demand-trace">
+          <thead>
             <tr>
               <th className="table-head">Source</th>
               <th className="table-head">Candidates</th>
@@ -172,20 +161,20 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
               <th className="table-head">Error</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-stone-100">
+          <tbody>
             {record.demand.responses.map((response, index) => (
               <tr key={`${response.source}-${index}`}>
-                <td className="table-cell font-mono text-xs">{response.source}</td>
-                <td className="table-cell tabular-nums">{response.candidates}</td>
-                <td className="table-cell tabular-nums">{response.latency_ms} ms</td>
-                <td className="table-cell text-xs text-stone-600">{response.error ?? '-'}</td>
+                <td className="table-cell ag-mono-2xs">{response.source}</td>
+                <td className="table-cell">{response.candidates}</td>
+                <td className="table-cell">{response.latency_ms} ms</td>
+                <td className="table-cell text-xs">{response.error ?? '-'}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
       {record.demand.excluded.length === 0 ? null : (
-        <ul className="mt-3 list-disc pl-5 text-xs text-stone-600">
+        <ul className="ag-list text-xs">
           {record.demand.excluded.map((excluded) => (
             <li key={excluded.creative_id}>
               {excluded.advertiser_domain} excluded from {excluded.source}: {excluded.reason}
@@ -197,13 +186,11 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
 
     <Section title="Creative and disclosure">
       {record.creative === null ? (
-        <p className="text-sm text-stone-500">
-          Nothing was served, so the record names no creative.
-        </p>
+        <p className="ag-prose">Nothing was served, so the record names no creative.</p>
       ) : (
         <>
           <Row label="creative id">
-            <span className="font-mono text-xs">{record.creative.id}</span>
+            <span className="ag-mono-2xs">{record.creative.id}</span>
           </Row>
           <Row label="advertiser">
             {record.creative.advertiser} ({record.creative.advertiser_domain})
@@ -221,13 +208,9 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
     <Section title="Attestation and chain">
       <Row label="separation_attestation">
         {record.separation_attestation ? (
-          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-            true
-          </span>
+          <span className="ag-badge ag-badge-ok">true</span>
         ) : (
-          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
-            false
-          </span>
+          <span className="ag-badge">false</span>
         )}
       </Row>
       <Row label="attested_at">{record.attested_at ?? '-'}</Row>
@@ -239,7 +222,7 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
       </Row>
       <Row label="prev_hash">
         {record.prev_hash === 'genesis' ? (
-          <span className="font-mono text-xs">genesis</span>
+          <span className="ag-mono-2xs">genesis</span>
         ) : (
           <Hash value={record.prev_hash} />
         )}
@@ -248,7 +231,7 @@ export const AuditRecordView = ({ record }: AuditRecordViewProps) => (
         <Hash value={record.record_hash} />
       </Row>
       <Row label="key_id">
-        <span className="font-mono text-xs">{record.key_id}</span>
+        <span className="ag-mono-2xs">{record.key_id}</span>
       </Row>
       <Row label="signature">
         <Hash value={record.signature} />

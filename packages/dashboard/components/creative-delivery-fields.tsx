@@ -104,14 +104,8 @@ export const CreativeDeliveryFields = ({
       </Field>
 
       <div className="flex items-end">
-        <label htmlFor="active" className="flex items-center gap-2 text-sm text-stone-700">
-          <input
-            id="active"
-            name="active"
-            type="checkbox"
-            defaultChecked={values.active}
-            className="h-4 w-4"
-          />
+        <label htmlFor="active" className="ag-check">
+          <input id="active" name="active" type="checkbox" defaultChecked={values.active} />
           Active (an inactive creative is never returned by any adapter)
         </label>
       </div>

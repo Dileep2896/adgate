@@ -20,19 +20,17 @@ export const FormIssues = ({ errors, issues, testId }: FormIssuesProps) => {
     return null;
   }
   return (
-    <div
-      data-testid={testId}
-      className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-    >
-      <p className="font-medium">
+    <div data-testid={testId} className="ag-note ag-note-danger">
+      <p className="ag-note-strong">
+        <span aria-hidden="true">&#9888;&#xFE0E;</span>{' '}
         {issues.length > 0 ? 'This policy was not saved.' : 'Nothing was saved.'}
       </p>
-      <ul className="mt-1 list-disc space-y-0.5 pl-5">
+      <ul className="ag-list">
         {errors.map((error) => (
           <li key={error}>{error}</li>
         ))}
         {issues.map((issue) => (
-          <li key={`${issue.path}:${issue.message}`} className="font-mono text-xs">
+          <li key={`${issue.path}:${issue.message}`} className="ag-mono-2xs">
             {formatPolicyIssue(issue)}
           </li>
         ))}

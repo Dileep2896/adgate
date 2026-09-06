@@ -19,9 +19,7 @@ import { formatReason } from '@/lib/format';
  * always starts at the newest matching record instead of landing in the middle of the old one.
  */
 
-const CONTROL =
-  'rounded-md border border-stone-300 px-2 py-1.5 text-sm outline-none focus:border-stone-900';
-const LABEL = 'block text-xs font-medium text-stone-500 uppercase';
+const CONTROL = 'ag-input ag-input-auto mt-1';
 
 export interface AuditFiltersFormProps {
   filters: AuditFilters;
@@ -31,12 +29,12 @@ export interface AuditFiltersFormProps {
 }
 
 export const AuditFiltersForm = ({ filters, apps, reasons }: AuditFiltersFormProps) => (
-  <form method="get" action="/audit" className="card flex flex-wrap items-end gap-4">
+  <form method="get" action="/audit" className="card ag-filters">
     <div>
-      <label htmlFor="app" className={LABEL}>
+      <label htmlFor="app" className="ag-label">
         App
       </label>
-      <select id="app" name="app" defaultValue={filters.appId} className={`mt-1 ${CONTROL}`}>
+      <select id="app" name="app" defaultValue={filters.appId} className={CONTROL}>
         <option value={ALL_APPS}>All apps</option>
         {apps.map((app) => (
           <option key={app.id} value={app.id}>
@@ -47,41 +45,24 @@ export const AuditFiltersForm = ({ filters, apps, reasons }: AuditFiltersFormPro
     </div>
 
     <div>
-      <label htmlFor="from" className={LABEL}>
+      <label htmlFor="from" className="ag-label">
         From (UTC)
       </label>
-      <input
-        id="from"
-        name="from"
-        type="date"
-        defaultValue={filters.from}
-        className={`mt-1 ${CONTROL}`}
-      />
+      <input id="from" name="from" type="date" defaultValue={filters.from} className={CONTROL} />
     </div>
 
     <div>
-      <label htmlFor="to" className={LABEL}>
+      <label htmlFor="to" className="ag-label">
         To (UTC)
       </label>
-      <input
-        id="to"
-        name="to"
-        type="date"
-        defaultValue={filters.to}
-        className={`mt-1 ${CONTROL}`}
-      />
+      <input id="to" name="to" type="date" defaultValue={filters.to} className={CONTROL} />
     </div>
 
     <div>
-      <label htmlFor="decision" className={LABEL}>
+      <label htmlFor="decision" className="ag-label">
         Decision
       </label>
-      <select
-        id="decision"
-        name="decision"
-        defaultValue={filters.decision}
-        className={`mt-1 ${CONTROL}`}
-      >
+      <select id="decision" name="decision" defaultValue={filters.decision} className={CONTROL}>
         <option value={ANY_DECISION}>Any decision</option>
         {DECISION_VALUES.map((value) => (
           <option key={value} value={value}>
@@ -92,10 +73,10 @@ export const AuditFiltersForm = ({ filters, apps, reasons }: AuditFiltersFormPro
     </div>
 
     <div>
-      <label htmlFor="reason" className={LABEL}>
+      <label htmlFor="reason" className="ag-label">
         Reason
       </label>
-      <select id="reason" name="reason" defaultValue={filters.reason} className={`mt-1 ${CONTROL}`}>
+      <select id="reason" name="reason" defaultValue={filters.reason} className={CONTROL}>
         <option value={ANY_REASON}>Any reason</option>
         {reasons.map((reason) => (
           <option key={reason} value={reason}>
@@ -110,15 +91,13 @@ export const AuditFiltersForm = ({ filters, apps, reasons }: AuditFiltersFormPro
       </select>
     </div>
 
-    <button
-      type="submit"
-      data-testid="apply-audit-filters"
-      className="rounded-md bg-stone-900 px-3 py-2 text-sm font-medium text-white hover:bg-stone-800"
-    >
-      Search
-    </button>
-    <Link href="/audit" className="pb-2 text-sm text-stone-600 underline-offset-2 hover:underline">
-      Clear
-    </Link>
+    <div className="ag-filters-actions">
+      <button type="submit" data-testid="apply-audit-filters" className="ag-btn ag-btn-primary">
+        Search
+      </button>
+      <Link href="/audit" className="ag-link-quiet text-xs">
+        Clear
+      </Link>
+    </div>
   </form>
 );

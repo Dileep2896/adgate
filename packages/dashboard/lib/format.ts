@@ -60,3 +60,40 @@ export const formatReason = (reason: string): string =>
   reason.startsWith('sensitive_category:')
     ? `sensitive: ${reason.slice('sensitive_category:'.length)}`
     : reason;
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+const ago = (count: number, unit: string): string =>
+  `${String(count)} ${unit}${count === 1 ? '' : 's'} ago`;
+
+/**
+ * `4 minutes ago` - how long ago something happened, in the coarsest unit that is still
+ * true. Only ever shown NEXT TO the absolute UTC timestamp from formatTimestamp(), never
+ * instead of it: "3 days ago" is the right thing to read at a glance and the wrong thing to
+ * paste into a ticket.
+ *
+ * A timestamp in the future is `just now` rather than a negative duration: the gateway and
+ * the dashboard can be on machines whose clocks differ by a second or two, and inventing
+ * "in 2 seconds" out of that would look like a bug in the chain rather than in NTP.
+ */
+export const formatRelativeTime = (
+  value: Date | null | undefined,
+  now: Date = new Date(),
+): string => {
+  if (value === null || value === undefined) {
+    return '-';
+  }
+  const elapsed = now.getTime() - value.getTime();
+  if (Number.isNaN(elapsed) || elapsed < 45_000) {
+    return 'just now';
+  }
+  if (elapsed < 60 * MINUTE_MS) {
+    return ago(Math.round(elapsed / MINUTE_MS), 'minute');
+  }
+  if (elapsed < 36 * HOUR_MS) {
+    return ago(Math.round(elapsed / HOUR_MS), 'hour');
+  }
+  return ago(Math.round(elapsed / DAY_MS), 'day');
+};

@@ -1,0 +1,299 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt
+ * design-system: design.md · designed-as-app · nav: N3 side-rail · footer: Ft2 inline
+ * paper: oklch(97.6% 0.005 250) · accent: oklch(50% 0.19 258) electric cobalt
+ * display: Space Grotesk · body: Inter · mono: JetBrains Mono
+ * axes: paper-band light · display-style grotesk-sans · accent-hue cool
+ * pre-emit critique: P5 H5 E5 S5 R5 V4
+ *
+ * THE ONLY PLACE A COLOUR, A FONT, A SIZE OR A DURATION IS WRITTEN DOWN. Every rule in
+ * app/globals.css and every className in app/ and components/ resolves back to a name here.
+ * A literal hex, a raw oklch() or a bare px radius anywhere else is a bug.
+ *
+ * Tailwind v4 reads `@theme static` and emits BOTH the custom properties below and the
+ * utilities that reference them (`bg-paper`, `text-ink`, `border-rule`, `text-sm`,
+ * `rounded-md`, `ease-out`), so redefining `--color-*` further down re-skins every utility
+ * without touching a single class name. `static` keeps unused tokens in the output, because
+ * the component layer reaches several of them through var() rather than through a utility.
+ */
+
+@theme static {
+  /* ---------------------------------------------------------------- typography --- */
+  /* next/font sets the three --font-*-face variables on <html> (app/layout.tsx). */
+  --font-display: var(--font-face-display), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-face-body), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-face-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* 1.2 ratio anchored on a 16 px body: 11 · 13 · 16 · 19 · 23 · 27 · 33.
+   * `sm` (14) is a deliberate half-step: this is a dense operator table, and 13 is too
+   * small for a cell an operator reads all day while 16 wastes a third of the row. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.45;
+  --text-2xs--letter-spacing: 0.06em;
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1rem;
+  --text-base--line-height: 1.6;
+  --text-md: 1.1875rem;
+  --text-md--line-height: 1.45;
+  --text-lg: 1.4375rem;
+  --text-lg--line-height: 1.3;
+  --text-xl: 1.6875rem;
+  --text-xl--line-height: 1.2;
+  --text-2xl: 2.0625rem;
+  --text-2xl--line-height: 1.12;
+
+  --tracking-display: -0.022em;
+  --tracking-label: 0.07em;
+
+  /* ------------------------------------------------------------------- colour --- */
+  /* LIGHT is the complete palette. The dark block further down redefines only what moves;
+   * the anchor hue (250-258, cool) never changes between modes. */
+
+  /* Surfaces, lightest content surface last so the ladder reads top to bottom. */
+  --color-paper: oklch(97.6% 0.005 250);
+  --color-surface: oklch(99.3% 0.005 250);
+  --color-surface-2: oklch(95.6% 0.007 252);
+  --color-surface-3: oklch(93.2% 0.009 252);
+
+  /* Hairlines. Cobalt draws structure with rules, not shadows or boxes. */
+  --color-rule: oklch(90.5% 0.009 252);
+  --color-rule-2: oklch(82% 0.012 252);
+
+  /* Ink. Never #000: cool charcoal, so the greys agree with the accent. */
+  --color-ink: oklch(24% 0.02 258);
+  --color-ink-2: oklch(38% 0.018 257);
+  --color-ink-3: oklch(52% 0.016 255);
+
+  /* The one signal. L 50 clears 4.5:1 both ways: as text on paper and under accent-ink. */
+  --color-accent: oklch(50% 0.19 258);
+  --color-accent-hover: oklch(43% 0.18 258);
+  --color-accent-ink: oklch(99% 0.005 250);
+  --color-accent-soft: oklch(94.5% 0.035 256);
+  --color-accent-rule: oklch(78% 0.09 256);
+  --color-focus: oklch(50% 0.19 258);
+
+  /* Functional signal colours. NOT brand accents: every one of them is paired with a word
+   * on screen (OK / FAILED / active / paused / INTACT), so colour is never the only signal
+   * and a black and white printout still says what happened. */
+  --color-ok: oklch(45% 0.11 165);
+  --color-ok-soft: oklch(95.5% 0.03 165);
+  --color-ok-rule: oklch(83% 0.07 165);
+  --color-warn: oklch(46% 0.12 70);
+  --color-warn-soft: oklch(95.5% 0.05 80);
+  --color-warn-rule: oklch(82% 0.09 75);
+  --color-danger: oklch(48% 0.2 25);
+  --color-danger-soft: oklch(95.5% 0.03 25);
+  --color-danger-rule: oklch(80% 0.11 25);
+
+  /* The one dark band Cobalt allows: the code well an integration snippet lives in. */
+  --color-graphite: oklch(22% 0.016 260);
+  --color-graphite-2: oklch(27% 0.016 260);
+  --color-graphite-ink: oklch(91% 0.01 250);
+  --color-graphite-ink-2: oklch(70% 0.014 252);
+  --color-graphite-rule: oklch(33% 0.016 260);
+  --color-graphite-accent: oklch(76% 0.14 254);
+
+  /* Charts. recharts paints through these, in both modes (see .ag-chart in globals.css). */
+  --color-chart-serve: oklch(50% 0.19 258);
+  --color-chart-suppress: oklch(84% 0.012 252);
+  --color-chart-reason: oklch(58% 0.02 255);
+  --color-chart-sensitive: oklch(52% 0.13 70);
+  --color-chart-grid: oklch(91% 0.008 252);
+  --color-chart-axis: oklch(52% 0.016 255);
+
+  /* -------------------------------------------------------------------- radii --- */
+  /* Drawn with a ruler: 6 px on controls, 10 px on cards. No pills anywhere. */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+
+  /* ------------------------------------------------------------------- motion --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ------------------------------------------------------------------ shadows --- */
+  /* One, barely there, and only under the two surfaces that must lift off the page. */
+  --shadow-whisper: 0 1px 2px oklch(24% 0.02 258 / 0.06);
+}
+
+/* Tokens Tailwind has no namespace for. Plain custom properties on :root, used by the
+ * component layer in app/globals.css; the 4 pt scale is the same grid Tailwind's numeric
+ * spacing utilities sit on, so `gap-4` and `var(--space-md)` are the same 16 px. */
+:root {
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-sticky-nav: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+
+  /* A hairline used as a GAP rather than a border - the metric strip's dividers. */
+  --rule-width: 1px;
+
+  --rail-width: 15.5rem;
+  --measure: 68ch;
+
+  color-scheme: light;
+}
+
+/* ============================================================================ DARK ===
+ * Three states, all first class:
+ *   1. explicit light  -> <html data-theme="light">   (this block never applies)
+ *   2. system default  -> no attribute                (the media query below applies)
+ *   3. explicit dark   -> <html data-theme="dark">    (the attribute block applies)
+ * The inline script in app/layout.tsx stamps the attribute before first paint, so a
+ * dark-mode operator never sees a white flash. Only lightness and chroma move: the anchor
+ * hue is the same 250-258 in both modes, which is why the two do not read as two products.
+ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --color-paper: oklch(17.5% 0.014 258);
+    --color-surface: oklch(21.5% 0.014 258);
+    --color-surface-2: oklch(25.5% 0.014 258);
+    --color-surface-3: oklch(29.5% 0.014 258);
+
+    --color-rule: oklch(31% 0.013 256);
+    --color-rule-2: oklch(41% 0.015 256);
+
+    --color-ink: oklch(95% 0.008 250);
+    --color-ink-2: oklch(85% 0.011 252);
+    --color-ink-3: oklch(67% 0.013 254);
+
+    --color-accent: oklch(72% 0.155 254);
+    --color-accent-hover: oklch(80% 0.13 254);
+    --color-accent-ink: oklch(17.5% 0.02 258);
+    --color-accent-soft: oklch(29% 0.06 256);
+    --color-accent-rule: oklch(45% 0.11 256);
+    --color-focus: oklch(76% 0.15 254);
+
+    --color-ok: oklch(78% 0.11 165);
+    --color-ok-soft: oklch(27% 0.045 165);
+    --color-ok-rule: oklch(40% 0.07 165);
+    --color-warn: oklch(80% 0.11 78);
+    --color-warn-soft: oklch(28% 0.05 70);
+    --color-warn-rule: oklch(42% 0.07 72);
+    --color-danger: oklch(74% 0.15 25);
+    --color-danger-soft: oklch(27% 0.06 25);
+    --color-danger-rule: oklch(43% 0.11 25);
+
+    --color-graphite: oklch(13% 0.014 260);
+    --color-graphite-2: oklch(18% 0.014 260);
+    --color-graphite-rule: oklch(26% 0.016 260);
+
+    --color-chart-serve: oklch(72% 0.155 254);
+    --color-chart-suppress: oklch(38% 0.014 256);
+    --color-chart-reason: oklch(62% 0.02 255);
+    --color-chart-sensitive: oklch(78% 0.12 75);
+    --color-chart-grid: oklch(29% 0.013 256);
+    --color-chart-axis: oklch(66% 0.013 254);
+
+    --shadow-whisper: 0 1px 2px oklch(0% 0 0 / 0.35);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-paper: oklch(17.5% 0.014 258);
+  --color-surface: oklch(21.5% 0.014 258);
+  --color-surface-2: oklch(25.5% 0.014 258);
+  --color-surface-3: oklch(29.5% 0.014 258);
+
+  --color-rule: oklch(31% 0.013 256);
+  --color-rule-2: oklch(41% 0.015 256);
+
+  --color-ink: oklch(95% 0.008 250);
+  --color-ink-2: oklch(85% 0.011 252);
+  --color-ink-3: oklch(67% 0.013 254);
+
+  --color-accent: oklch(72% 0.155 254);
+  --color-accent-hover: oklch(80% 0.13 254);
+  --color-accent-ink: oklch(17.5% 0.02 258);
+  --color-accent-soft: oklch(29% 0.06 256);
+  --color-accent-rule: oklch(45% 0.11 256);
+  --color-focus: oklch(76% 0.15 254);
+
+  --color-ok: oklch(78% 0.11 165);
+  --color-ok-soft: oklch(27% 0.045 165);
+  --color-ok-rule: oklch(40% 0.07 165);
+  --color-warn: oklch(80% 0.11 78);
+  --color-warn-soft: oklch(28% 0.05 70);
+  --color-warn-rule: oklch(42% 0.07 72);
+  --color-danger: oklch(74% 0.15 25);
+  --color-danger-soft: oklch(27% 0.06 25);
+  --color-danger-rule: oklch(43% 0.11 25);
+
+  --color-graphite: oklch(13% 0.014 260);
+  --color-graphite-2: oklch(18% 0.014 260);
+  --color-graphite-rule: oklch(26% 0.016 260);
+
+  --color-chart-serve: oklch(72% 0.155 254);
+  --color-chart-suppress: oklch(38% 0.014 256);
+  --color-chart-reason: oklch(62% 0.02 255);
+  --color-chart-sensitive: oklch(78% 0.12 75);
+  --color-chart-grid: oklch(29% 0.013 256);
+  --color-chart-axis: oklch(66% 0.013 254);
+
+  --shadow-whisper: 0 1px 2px oklch(0% 0 0 / 0.35);
+}
+
+/* ============================================================================ PRINT ===
+ * A verification report is filed and forwarded, so paper wins over the operator's theme:
+ * whatever mode the screen was in, the sheet is ink on white. Only the tokens a printed
+ * report actually uses are restated.
+ */
+@media print {
+  :root,
+  :root[data-theme='dark'],
+  :root[data-theme='light'] {
+    color-scheme: light;
+
+    --color-paper: oklch(100% 0 0);
+    --color-surface: oklch(100% 0 0);
+    --color-surface-2: oklch(96% 0 0);
+    --color-surface-3: oklch(93% 0 0);
+    --color-rule: oklch(78% 0 0);
+    --color-rule-2: oklch(62% 0 0);
+    --color-ink: oklch(15% 0 0);
+    --color-ink-2: oklch(28% 0 0);
+    --color-ink-3: oklch(42% 0 0);
+    --color-accent: oklch(38% 0.15 258);
+    --color-accent-ink: oklch(100% 0 0);
+    --color-accent-soft: oklch(95% 0.02 256);
+    --color-accent-rule: oklch(70% 0.06 256);
+    --color-ok: oklch(38% 0.1 165);
+    --color-ok-soft: oklch(97% 0.015 165);
+    --color-ok-rule: oklch(75% 0.05 165);
+    --color-warn: oklch(38% 0.1 70);
+    --color-warn-soft: oklch(97% 0.02 80);
+    --color-warn-rule: oklch(75% 0.06 75);
+    --color-danger: oklch(38% 0.17 25);
+    --color-danger-soft: oklch(97% 0.015 25);
+    --color-danger-rule: oklch(72% 0.08 25);
+    --shadow-whisper: none;
+  }
+}

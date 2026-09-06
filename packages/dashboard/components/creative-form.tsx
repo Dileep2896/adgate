@@ -67,12 +67,11 @@ const CreativeFormBody = ({
       <input type="hidden" name="id" value={values.id} />
 
       {formIssues.length > 0 ? (
-        <div
-          data-testid="creative-form-error"
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-        >
+        <div data-testid="creative-form-error" className="ag-note ag-note-danger">
           {formIssues.map((issue) => (
-            <p key={issue.message}>{issue.message}</p>
+            <p key={issue.message}>
+              <span aria-hidden="true">&#9888;&#xFE0E;</span> {issue.message}
+            </p>
           ))}
         </div>
       ) : null}
@@ -171,9 +170,7 @@ const CreativeFormBody = ({
             <summary className="cursor-pointer">
               Comma or newline separated. A trailing .* wildcard matches everything below it.
             </summary>
-            <span className="mt-1 block font-mono text-[11px] break-words">
-              {categories.join(', ')}
-            </span>
+            <span className="ag-mono-2xs mt-1 block break-words">{categories.join(', ')}</span>
           </details>
         }
       >
@@ -238,25 +235,20 @@ const CreativeFormBody = ({
         onSourceChange={setSource}
       />
 
-      <p
-        data-testid="content-hash-warning"
-        className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
-      >
+      <p data-testid="content-hash-warning" className="ag-note ag-note-warn text-xs">
         {CONTENT_HASH_WARNING}
       </p>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-stone-900 px-3 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50"
+          data-state={pending ? 'loading' : undefined}
+          className="ag-btn ag-btn-primary"
         >
-          {pending ? 'Saving...' : mode === 'create' ? 'Create creative' : 'Save creative'}
+          {pending ? 'Saving…' : mode === 'create' ? 'Create creative' : 'Save creative'}
         </button>
-        <Link
-          href="/creatives"
-          className="text-sm text-stone-600 underline-offset-2 hover:underline"
-        >
+        <Link href="/creatives" className="ag-link-quiet text-xs">
           Cancel
         </Link>
       </div>
