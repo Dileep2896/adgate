@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Why a creative can never serve for an app: inactive (active is false), source_not_enabled (no enabled demand entry for its source), network_not_enabled (affiliate network absent from the policy demand list), affiliate_not_configured (network enabled but the app has no affiliate_config entry for it), region_never_allowed (target_regions and policy regions.allow do not intersect), no_target_categories (targets nothing), all_categories_blocked (every target is a blocked_categories entry).",
+  "enum": [
+    "inactive",
+    "source_not_enabled",
+    "network_not_enabled",
+    "affiliate_not_configured",
+    "region_never_allowed",
+    "no_target_categories",
+    "all_categories_blocked"
+  ],
+  "title": "DeliverabilityReason",
+  "type": "string"
+}

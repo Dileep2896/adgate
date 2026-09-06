@@ -20,6 +20,7 @@ import {
   createPgClassifyCache,
   type LayeredClassifyCache,
 } from './classify-cache-pg.js';
+import { createDeliverabilityWarner, type DeliverabilityWarner } from './deliverability-warning.js';
 import { createPolicyLoader, type PolicyLoader } from './policy-loader.js';
 
 /**
@@ -48,6 +49,8 @@ export interface EvaluateDeps {
   caps: CapReader;
   adapters: AdapterFactory;
   auditStore: AuditStore;
+  /** One warn line per (app, reason) when no_fill was caused by an unservable catalog. */
+  catalogWarnings: DeliverabilityWarner;
 }
 
 /** Overrides for createEvaluateDeps. `llm: null` forces rules only; undefined = from config. */
@@ -63,6 +66,7 @@ export interface EvaluateDepsOverrides {
   caps?: CapReader | undefined;
   adapters?: AdapterFactory | undefined;
   auditStore?: AuditStore | undefined;
+  catalogWarnings?: DeliverabilityWarner | undefined;
   classifierTimeoutMs?: number | undefined;
   demandTimeoutMs?: number | undefined;
 }
@@ -104,5 +108,6 @@ export const createEvaluateDeps = (
       overrides.adapters ??
       createAdapterFactory(db, { koah: config.koah, gravity: config.gravity, now }),
     auditStore: overrides.auditStore ?? createAuditStore(db),
+    catalogWarnings: overrides.catalogWarnings ?? createDeliverabilityWarner(),
   };
 };

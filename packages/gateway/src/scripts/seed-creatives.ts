@@ -1,6 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { SeedCreative } from '@adgate/schemas';
+
+import {
+  type AppReadiness,
+  appReadiness,
+  loadCatalogApps,
+  readinessLines,
+  type ReadinessCreative,
+} from '../catalog/readiness.js';
 import { type SeedCounts, type SeedResult, seedCreatives } from '../catalog/seed.js';
 import { isMainModule } from '../cli.js';
 import { findRepoRoot } from '../env-file.js';
@@ -23,6 +32,10 @@ export const SEED_CREATIVES_USAGE = [
   '',
   'Idempotent: advertisers match by domain and creatives by (advertiser, headline); unchanged',
   'entries are left alone, changed ones are updated in place and keep their id.',
+  '',
+  'After seeding it reports, per app, how many of these creatives can actually serve for that',
+  'app and why the rest cannot (see check-catalog for the per-creative table). Seeding itself',
+  'is unaffected by that report.',
   'Connects to DATABASE_URL (from the environment or the repo-root .env).',
   '',
 ].join('\n');
@@ -41,13 +54,52 @@ export const parseSeedCreativesArgs = (argv: readonly string[]): SeedCreativesAr
 const counts = (label: string, value: SeedCounts): string =>
   `  ${label}: ${value.inserted} inserted, ${value.updated} updated, ${value.unchanged} unchanged`;
 
-export const renderSeedOutput = (file: string, appId: string | null, result: SeedResult): string =>
+/**
+ * The readiness block printed under the counts. This is the moment an operator adds inventory,
+ * so it is the moment to say that a creative the catalog now holds can never serve: an app with
+ * no affiliate_config, or a network the app's policy demand list does not enable, looks exactly
+ * like a healthy creative everywhere else.
+ */
+export const renderReadiness = (readiness: readonly AppReadiness[]): string[] => {
+  if (readiness.length === 0) {
+    return ['', 'Readiness: no apps are registered yet, so nothing can serve these creatives.'];
+  }
+  const blocked = readiness.reduce((sum, app) => sum + (app.total - app.deliverable), 0);
+  return [
+    '',
+    blocked === 0
+      ? 'Readiness: every seeded creative can serve for every app.'
+      : 'Readiness: which of these creatives can actually serve?',
+    ...readiness.flatMap((app) => readinessLines(app)),
+  ];
+};
+
+export const renderSeedOutput = (
+  file: string,
+  appId: string | null,
+  result: SeedResult,
+  readiness: readonly AppReadiness[] = [],
+): string =>
   [
     `Seeded ${file} into the ${appId === null ? 'global catalog' : `catalog of ${appId}`}`,
     counts('advertisers', result.advertisers),
     counts('creatives  ', result.creatives),
+    ...renderReadiness(readiness),
     '',
   ].join('\n');
+
+/** The seed entries as readiness inputs; a seed has no id yet, so the advertiser is the label. */
+export const seedReadinessCreatives = (seeds: readonly SeedCreative[]): ReadinessCreative[] =>
+  seeds.map((seed) => ({
+    label: seed.advertiser,
+    creative: {
+      active: seed.active,
+      source: seed.source,
+      network: seed.network,
+      target_categories: seed.target_categories,
+      target_regions: seed.target_regions,
+    },
+  }));
 
 const resolveSeedFile = (file: string | null): string => {
   if (file !== null) {
@@ -73,7 +125,13 @@ const main = async (argv: readonly string[]): Promise<string> => {
   const handle = connectFromEnv();
   try {
     const result = await seedCreatives(handle.db, entries, { appId: args.appId });
-    return renderSeedOutput(file, args.appId, result);
+    // Re-parsed rather than threaded out of seedCreatives: it already validated them, so this
+    // cannot throw, and the script stays additive to the seeding path.
+    const seeds = SeedCreative.array().parse(entries);
+    const apps = await loadCatalogApps(handle.db, args.appId);
+    const inputs = seedReadinessCreatives(seeds);
+    const readiness = apps.map((app) => appReadiness(app, inputs));
+    return renderSeedOutput(file, args.appId, result, readiness);
   } finally {
     await handle.close();
   }

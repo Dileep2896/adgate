@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Whether one catalog creative can serve for one app under that app’s policy and affiliate config, and if not, why.",
+  "oneOf": [
+    {
+      "properties": {
+        "deliverable": {
+          "const": true,
+          "description": "The creative can serve; nothing blocks it.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "deliverable"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "deliverable": {
+          "const": false,
+          "type": "boolean"
+        },
+        "reason": {
+          "description": "Why a creative can never serve for an app: inactive (active is false), source_not_enabled (no enabled demand entry for its source), network_not_enabled (affiliate network absent from the policy demand list), affiliate_not_configured (network enabled but the app has no affiliate_config entry for it), region_never_allowed (target_regions and policy regions.allow do not intersect), no_target_categories (targets nothing), all_categories_blocked (every target is a blocked_categories entry).",
+          "enum": [
+            "inactive",
+            "source_not_enabled",
+            "network_not_enabled",
+            "affiliate_not_configured",
+            "region_never_allowed",
+            "no_target_categories",
+            "all_categories_blocked"
+          ],
+          "title": "DeliverabilityReason",
+          "type": "string"
+        },
+        "detail": {
+          "description": "One sentence naming what blocked the creative and the change that unblocks it. Never creative copy and never message text.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "deliverable",
+        "reason",
+        "detail"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "CreativeDeliverability"
+}

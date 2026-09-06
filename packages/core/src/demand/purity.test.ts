@@ -66,6 +66,7 @@ describe('demand package purity', () => {
       'affiliate/template.ts',
       'affiliate/types.ts',
       'catalog.ts',
+      'deliverability.ts',
       'direct.ts',
       'exclusions.ts',
       'gravity.ts',

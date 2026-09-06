@@ -18,6 +18,7 @@ import {
   User,
 } from './common.js';
 import { Creative, DemandSource } from './creative.js';
+import { CreativeDeliverability, DeliverabilityReason } from './deliverability.js';
 import {
   Candidate,
   CatalogCreative,
@@ -62,6 +63,8 @@ export const CONTRACT_SCHEMAS = {
   CatalogCreative,
   SeedCreative,
   TargetCategory,
+  CreativeDeliverability,
+  DeliverabilityReason,
   DemandRequest,
   DemandResponse,
   Candidate,

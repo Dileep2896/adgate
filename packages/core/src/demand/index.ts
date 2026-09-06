@@ -2,11 +2,19 @@
  * Demand adapters and mediation (docs/BUILD_GUIDE.md Phase 3). Public surface of
  * packages/core/src/demand: the DemandAdapter contract, the DirectAdapter and AffiliateAdapter
  * over an in-memory catalog, the Koah and Gravity stubs (docs/decisions.md item 10), mediate()
- * across adapters with the audit demand trace, and the selection, matching, exclusion and
- * response helpers the adapters and mediation share.
+ * across adapters with the audit demand trace, the selection, matching, exclusion and
+ * response helpers the adapters and mediation share, and creativeDeliverability(), the
+ * diagnostic that says why a catalog creative can never serve for one app.
  */
 export * from './affiliate/index.js';
 export { CREATIVE_ID_PREFIX, assignCreativeIds, creativeId } from './catalog.js';
+export {
+  creativeDeliverability,
+  enabledAffiliateNetworks,
+  enabledDemandSources,
+  targetCategoryBase,
+} from './deliverability.js';
+export type { DeliverabilityContext, DeliverabilityCreative } from './deliverability.js';
 export {
   DIRECT_MAX_CANDIDATES,
   DirectAdapter,

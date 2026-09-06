@@ -267,6 +267,8 @@ Every schema below is a component of `GET /openapi.json` and is also written to
 | `CatalogCreative` | A creative as stored in the catalog (creatives table, dashboard, seed file plus id). |
 | `SeedCreative` | A catalog creative before an id is assigned: the shape of examples/creatives.seed.json entries. |
 | `TargetCategory` | A content category such as software.devtools.database, or a trailing-wildcard pattern such as software.devtools.* that matches every deeper category. |
+| `CreativeDeliverability` | Whether one catalog creative can serve for one app under that app’s policy and affiliate config, and if not, why. |
+| `DeliverabilityReason` | Why a creative can never serve for an app: inactive (active is false), source_not_enabled (no enabled demand entry for its source), network_not_enabled (affiliate network absent from the policy demand list), affiliate_not_configured (network enabled but the app has no affiliate_config entry for it), region_never_allowed (target_regions and policy regions.allow do not intersect), no_target_categories (targets nothing), all_categories_blocked (every target is a blocked_categories entry). |
 | `DemandRequest` | What the gateway hands every demand adapter for one evaluation. |
 | `DemandResponse` | One demand adapter’s answer; summarized into the audit record demand block. |
 | `Candidate` | A catalog creative an adapter proposes for this turn, with its scores. |

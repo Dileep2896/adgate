@@ -161,9 +161,34 @@ class ContentCategory(str, Enum):
     general = 'general'
 
 
+class CreativeDeliverability1(BaseModel):
+    """
+    Whether one catalog creative can serve for one app under that app’s policy and affiliate config, and if not, why.
+    """
+
+    deliverable: Literal[True]
+    """
+    The creative can serve; nothing blocks it.
+    """
+
+
 class Decision(str, Enum):
     serve = 'serve'
     suppress = 'suppress'
+
+
+class DeliverabilityReason(str, Enum):
+    """
+    Why a creative can never serve for an app: inactive (active is false), source_not_enabled (no enabled demand entry for its source), network_not_enabled (affiliate network absent from the policy demand list), affiliate_not_configured (network enabled but the app has no affiliate_config entry for it), region_never_allowed (target_regions and policy regions.allow do not intersect), no_target_categories (targets nothing), all_categories_blocked (every target is a blocked_categories entry).
+    """
+
+    inactive = 'inactive'
+    source_not_enabled = 'source_not_enabled'
+    network_not_enabled = 'network_not_enabled'
+    affiliate_not_configured = 'affiliate_not_configured'
+    region_never_allowed = 'region_never_allowed'
+    no_target_categories = 'no_target_categories'
+    all_categories_blocked = 'all_categories_blocked'
 
 
 class DemandEntry1(BaseModel):
@@ -1061,6 +1086,34 @@ class Creative(BaseModel):
     """
 
 
+class CreativeDeliverability2(BaseModel):
+    """
+    Whether one catalog creative can serve for one app under that app’s policy and affiliate config, and if not, why.
+    """
+
+    deliverable: Literal[False]
+    reason: DeliverabilityReason
+    """
+    Why a creative can never serve for an app: inactive (active is false), source_not_enabled (no enabled demand entry for its source), network_not_enabled (affiliate network absent from the policy demand list), affiliate_not_configured (network enabled but the app has no affiliate_config entry for it), region_never_allowed (target_regions and policy regions.allow do not intersect), no_target_categories (targets nothing), all_categories_blocked (every target is a blocked_categories entry).
+    """
+    detail: Annotated[str, Field(min_length=1)]
+    """
+    One sentence naming what blocked the creative and the change that unblocks it. Never creative copy and never message text.
+    """
+
+
+class CreativeDeliverability(
+    RootModel[CreativeDeliverability1 | CreativeDeliverability2]
+):
+    root: Annotated[
+        CreativeDeliverability1 | CreativeDeliverability2,
+        Field(title='CreativeDeliverability'),
+    ]
+    """
+    Whether one catalog creative can serve for one app under that app’s policy and affiliate config, and if not, why.
+    """
+
+
 class DemandResponse(BaseModel):
     """
     One demand adapter’s answer; summarized into the audit record demand block.
@@ -1699,7 +1752,11 @@ __all__ = [
     "ClassificationMethod",
     "ContentCategory",
     "Creative",
+    "CreativeDeliverability",
+    "CreativeDeliverability1",
+    "CreativeDeliverability2",
     "Decision",
+    "DeliverabilityReason",
     "DemandEntry1",
     "DemandEntry2",
     "DemandEntry3",

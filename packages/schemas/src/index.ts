@@ -7,6 +7,7 @@ export * from './classification.js';
 export * from './classify-fixture.js';
 export * from './common.js';
 export * from './creative.js';
+export * from './deliverability.js';
 export * from './demand.js';
 export * from './demand-trace.js';
 export * from './evaluate.js';

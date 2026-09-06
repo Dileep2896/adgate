@@ -210,6 +210,9 @@ export const createHarness = async (options: HarnessOptions = {}): Promise<Harne
       await handle.sql.unsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
       deps.classifyCache.clear();
       deps.policies.clear();
+      // The no_fill deliverability warning fires once per (app, reason) per warner, so a test
+      // that wants to see it again must start from a clean one.
+      deps.catalogWarnings.clear();
       logs.lines.length = 0;
     },
     close: () => handle.close(),

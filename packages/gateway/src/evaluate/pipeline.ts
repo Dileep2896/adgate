@@ -99,15 +99,26 @@ const runPipeline = async (deps: EvaluateDeps, ctx: EvaluateContext): Promise<Ev
   let mediation: MediationResult | null = null;
   let advertiserId: string | null = null;
   if (policyResult.allowed) {
-    const { adapters, advertiserIds } = await deps.adapters.build({ app, policy, log });
+    const built = await deps.adapters.build({ app, policy, log });
     mediation = await mediate(
-      adapters,
+      built.adapters,
       demandRequestOf(app, request, classification, outcome.keywords),
       policy,
       { timeoutMs: deps.demandTimeoutMs, now },
     );
-    if (mediation.selected !== null) {
-      advertiserId = advertiserIds.get(mediation.selected.id) ?? null;
+    if (mediation.selected === null) {
+      // no_fill. Say once per (app, reason) when the catalog DOES hold matching creatives that
+      // can never serve for this app, which is otherwise visible only inside the demand trace.
+      deps.catalogWarnings.warnNoFill({
+        appId: app.id,
+        catalog: built.catalog,
+        classification,
+        policy,
+        affiliateConfig: built.affiliateConfig,
+        log,
+      });
+    } else {
+      advertiserId = built.advertiserIds.get(mediation.selected.id) ?? null;
     }
   }
 

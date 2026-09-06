@@ -46,6 +46,10 @@ export interface AdapterFactoryInput {
 export interface AdapterSet {
   adapters: DemandAdapter[];
   advertiserIds: ReadonlyMap<string, string>;
+  /** The catalog the adapters were built over, for the no-fill deliverability warning. */
+  catalog: CatalogCreative[];
+  /** The app's validated AffiliateConfig, the same one every affiliate adapter received. */
+  affiliateConfig: AffiliateConfig;
 }
 
 export interface AdapterFactory {
@@ -122,14 +126,14 @@ export const loadCatalog = async (
  */
 export const affiliateConfigOf = (
   app: Pick<AppRow, 'id' | 'affiliateConfig'>,
-  log: Logger,
+  log?: Logger | undefined,
 ): AffiliateConfig => {
   if (app.affiliateConfig === null) {
     return {};
   }
   const parsed = AffiliateConfig.safeParse(app.affiliateConfig);
   if (!parsed.success) {
-    log.warn({ app_id: app.id }, 'apps.affiliate_config is not an AffiliateConfig; ignored');
+    log?.warn({ app_id: app.id }, 'apps.affiliate_config is not an AffiliateConfig; ignored');
     return {};
   }
   return parsed.data;
@@ -174,12 +178,13 @@ export const createAdapterFactory = (
 ): AdapterFactory => ({
   async build({ app, policy, log }) {
     const catalog = await loadCatalog(db, app.id, log);
-    const adapters = createAdapters(
-      policy,
-      catalog.creatives,
-      affiliateConfigOf(app, log),
-      options,
-    );
-    return { adapters, advertiserIds: catalog.advertiserIds };
+    const affiliateConfig = affiliateConfigOf(app, log);
+    const adapters = createAdapters(policy, catalog.creatives, affiliateConfig, options);
+    return {
+      adapters,
+      advertiserIds: catalog.advertiserIds,
+      catalog: catalog.creatives,
+      affiliateConfig,
+    };
   },
 });
