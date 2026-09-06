@@ -24,7 +24,8 @@
   },
   "pnpm": {
     "overrides": {
-      "postcss@<8.5.23": "^8.5.23"
+      "postcss@<8.5.23": "^8.5.23",
+      "jsdom": "^26"
     }
   },
   "devDependencies": {
