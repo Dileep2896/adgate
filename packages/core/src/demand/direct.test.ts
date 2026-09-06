@@ -23,7 +23,15 @@ if (c001 === undefined) {
 }
 
 const catalog = assignCreativeIds(seeds, sequentialUlidOptions());
-const seedAdapter = createDirectAdapter(catalog);
+/**
+ * A frozen clock: start and end read the same millisecond, so latency_ms is exactly 0 by
+ * construction. Any adapter here whose latency_ms is asserted MUST be built with it. With the
+ * real Date.now the elapsed time rounds to 0 ms on a fast dev machine and to 1 ms on a loaded CI
+ * runner, which makes an exact latency_ms assertion flake. The injected-clock test at the bottom
+ * of this file is what pins the measurement itself.
+ */
+const frozen = { now: () => 1_000 };
+const seedAdapter = createDirectAdapter(catalog, frozen);
 const opts = { timeoutMs: DEFAULT_DEMAND_TIMEOUT_MS };
 const rules = classifyByRules(c001.text);
 const c001Keywords = keywordsFromRulesMatches(rules.matches);
@@ -236,7 +244,8 @@ describe('DirectAdapter never throws', () => {
         throw new Error('secret message');
       },
     });
-    const response = await createDirectAdapter([trap]).fetch(request(), opts);
+    // Frozen clock (see `frozen` above): latency_ms is 0 by construction, not by measurement.
+    const response = await createDirectAdapter([trap], frozen).fetch(request(), opts);
     expect(response).toEqual({ source: 'direct', candidates: [], latency_ms: 0, error: 'Error' });
     expect(JSON.stringify(response)).not.toContain('secret');
   });
