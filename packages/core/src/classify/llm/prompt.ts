@@ -7,6 +7,13 @@ import { sha256Prefixed } from '../../audit/crypto.js';
  * allowed values in the text can never drift from @adgateio/schemas. PROMPT_VERSION is the sha256
  * of this exact text and is written into every Classification with method 'llm', so an audit
  * record pins the prompt that produced a decision. Any edit here changes the version.
+ *
+ * EDITING THIS PROMPT: the unit suite drives the classifier with FakeLlmClassifier seeded from
+ * fixtures/classify-fixtures.json, so it asserts the merge and can never tell you whether a real
+ * model reads these words the way you meant. Score the change against a real endpoint with
+ * `pnpm --filter @adgateio/gateway eval-classifier` (CONTRIBUTING.md, "Validating a classifier
+ * prompt change") and paste the numbers into progress.txt. One wrong example here made the
+ * classifier measurably worse than the keyword rules alone and the suite stayed green.
  */
 const quoted = (values: readonly string[]): string => values.map((v) => `"${v}"`).join(', ');
 

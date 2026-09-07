@@ -136,6 +136,39 @@ A change to a contract schema usually touches three of those in one commit: the 
 files, `docs/api-reference.md` (the OpenAPI document is built from the same schemas), and the
 Python models.
 
+## Validating a classifier prompt change
+
+`pnpm test` drives the classifier with `FakeLlmClassifier` seeded **from
+`fixtures/classify-fixtures.json` itself**, so it asserts the merge logic and structurally cannot
+see the prompt: every word of `CLASSIFIER_PROMPT` can be wrong and the suite still passes. It has
+already happened — the prompt listed "coding help" as an example of no buying context, a real
+model applied that to every technical question, and the LLM stage made the classifier worse than
+the keyword rules alone (progress.txt, `2026-09-07 CLASSIFIER-PROMPT`).
+
+So a change to `packages/core/src/classify/llm/prompt.ts` is validated against a real endpoint:
+
+```bash
+pnpm --filter @adgateio/gateway eval-classifier            # all 67 fixtures
+pnpm --filter @adgateio/gateway eval-classifier --limit 9  # a cheap smoke run
+pnpm --filter @adgateio/gateway eval-classifier --json     # machine-readable, for trending
+```
+
+It builds the same `OpenAiCompatibleClassifier` the gateway builds from `CLASSIFIER_BASE_URL`,
+`CLASSIFIER_API_KEY`, `CLASSIFIER_MODEL` and `CLASSIFIER_TIMEOUT_MS` (repo-root `.env` included;
+`--model` overrides the model) and runs the real `classify()` over every fixture case, then
+reports sensitive recall, sensitive false positives, intent band compliance, category compliance,
+the source and method distribution and the latency spread. **Exit code 1 only when sensitive
+recall is below 100 percent**; band and category misses are printed and exit 0, because they are
+a tuning signal and no model reaches 100 percent on them today. Watch the source line: a run
+where every call timed out falls back to the rules and would otherwise look like a good score.
+
+It needs an API key and the network, so it is deliberately **not** part of `pnpm test` — the
+suite stays offline and deterministic. A full run costs about 39 API calls (the 28 sensitive
+fixtures are caught by the rules stage and never reach the model), so raise
+`CLASSIFIER_TIMEOUT_MS` well above its 400 ms default first. Record the numbers of a prompt
+change in progress.txt; the scoring itself is pure and unit tested in
+`packages/gateway/src/scripts/eval-classifier-score.test.ts`.
+
 ## Adding a migration
 
 1. Edit the Drizzle table modules under `packages/gateway/src/db/tables/`. Those modules may
