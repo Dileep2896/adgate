@@ -89,16 +89,14 @@ jobs:
         # candidates. --no-git-checks: a workflow_dispatch run is not on a release branch.
         run: pnpm publish -r --dry-run --no-git-checks
 
-      - name: Authenticate with npm
-        if: env.DRY_RUN != 'true'
-        # The literal ${NPM_TOKEN} is what npm expands at read time, so the token itself never
-        # lands in a file on the runner.
-        run: printf '//registry.npmjs.org/:_authToken=${NPM_TOKEN}\n' > "$HOME/.npmrc"
-
       - name: Publish
         if: env.DRY_RUN != 'true'
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # setup-node's registry-url writes its own .npmrc and points NPM_CONFIG_USERCONFIG at
+          # it, so a hand-written $HOME/.npmrc is never read and the publish goes out
+          # unauthenticated (npm answers 404, not 401, for a scope it thinks you cannot see).
+          # NODE_AUTH_TOKEN is the variable that generated file expands.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         # Already published versions are skipped, so a re-run of a partially failed release is
         # safe. "access": "public" is in each package.json publishConfig.
         run: pnpm publish -r --no-git-checks
