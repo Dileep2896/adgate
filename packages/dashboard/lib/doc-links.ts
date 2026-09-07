@@ -14,6 +14,7 @@
 export const DOC_PATHS = {
   integration: 'docs/integration.md',
   deploy: 'docs/deploy.md',
+  policy: 'docs/policy.md',
 } as const;
 
 export type DocName = keyof typeof DOC_PATHS;
@@ -23,6 +24,8 @@ export const DOC_TITLES: Record<DocName, string> = {
     'Wiring an app to this gateway: web chat, agent loops and CLIs, in TypeScript and Python',
   deploy:
     'Running this gateway in production: keys, retention, proxies and the dashboard allowlist',
+  policy:
+    'What a policy decides, field by field, including the demand list that says which networks are queried',
 };
 
 export const docPath = (doc: DocName): string => DOC_PATHS[doc];

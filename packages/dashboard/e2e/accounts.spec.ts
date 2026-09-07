@@ -171,3 +171,49 @@ test('the operator sees every app and every account', async ({ page }) => {
   await expect(adminApps.filter({ hasText: ALICE })).toHaveCount(1);
   await expect(adminApps.filter({ hasText: 'no owner' })).toHaveCount(1);
 });
+
+/**
+ * Its own client address: the file above already spends most of the ten sign-ins a minute one
+ * address gets, and this test needs two more (lib/rate-limit.ts).
+ */
+test.describe('affiliate accounts', () => {
+  test.use({ extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.56' } });
+
+  test('a developer sets their own affiliate accounts, and only their own', async ({ page }) => {
+    await signIn(page, ALICE, PASSWORD);
+    await page.getByTestId('app-row').first().getByRole('link').click();
+    await expect(page).toHaveURL(/\/apps\/app_[0-9A-HJKMNP-TV-Z]{26}$/);
+    const appUrl = page.url();
+
+    // Nothing configured yet: this is the state where affiliate demand answers
+    // affiliate_not_configured and a correctly integrated app still earns nothing.
+    await expect(page.getByLabel('PartnerStack program id')).toHaveValue('');
+
+    await page.getByLabel('PartnerStack program id').fill('ps-alice');
+    await page.getByLabel('Amazon Associates tag').fill('alice-20');
+    await page.getByLabel('Amazon storefront').selectOption('co.uk');
+    await page.getByTestId('save-affiliate').click();
+
+    await expect(page.getByTestId('affiliate-saved')).toContainText('amazon, partnerstack');
+
+    // It is not a secret, so unlike the API key it is still there after a reload.
+    await page.reload();
+    await expect(page.getByLabel('PartnerStack program id')).toHaveValue('ps-alice');
+    await expect(page.getByLabel('Amazon Associates tag')).toHaveValue('alice-20');
+    await expect(page.getByLabel('Amazon storefront')).toHaveValue('co.uk');
+
+    // A half-filled entry is refused rather than stored: a campaign id with no program id is what
+    // leaves impact.com looking configured while it answers affiliate_not_configured.
+    await page.getByLabel('impact.com campaign id (optional)').fill('camp-3');
+    await page.getByTestId('save-affiliate').click();
+    await expect(page.getByRole('alert').first()).toContainText('program id');
+    await page.reload();
+    await expect(page.getByLabel('impact.com campaign id (optional)')).toHaveValue('');
+
+    // Bob cannot reach the form at all: the app is not his.
+    await page.getByRole('button', { name: 'Sign out' }).click();
+    await signIn(page, BOB, PASSWORD);
+    await page.goto(appUrl);
+    await expect(page.getByRole('heading', { name: 'No such app' })).toBeVisible();
+  });
+});

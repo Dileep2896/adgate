@@ -1,4 +1,5 @@
 import { apiKeys, apps, creatives } from '@adgate/gateway/schema';
+import type { AffiliateConfig } from '@adgate/schemas';
 import { and, count, desc, eq, isNotNull } from 'drizzle-orm';
 
 import type { AppScope } from './app-scope';
@@ -106,6 +107,13 @@ export interface AppDetail {
   policyHash: string;
   policyVersion: number;
   ownerUserId: string | null;
+  /**
+   * The app owner's own affiliate identifiers, or null when no network is configured. Safe to
+   * render back: docs/decisions.md item 6 - these are the PUBLIC ids that already appear in a
+   * tracked link, never a credential, which is exactly why this column behaves nothing like
+   * api_keys.hashed_key.
+   */
+  affiliateConfig: AffiliateConfig | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -132,6 +140,7 @@ export const getApp = async (
       policyHash: apps.policyHash,
       policyVersion: apps.policyVersion,
       ownerUserId: apps.ownerUserId,
+      affiliateConfig: apps.affiliateConfig,
       createdAt: apps.createdAt,
       updatedAt: apps.updatedAt,
     })

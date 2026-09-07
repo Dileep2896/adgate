@@ -20,8 +20,10 @@ to this repo and is never published.
 - `/apps/new` - register an app and read its first API key, once.
 - `/apps/[id]` - the app's last 30 days (turns evaluated, ad eligible rate, fill rate,
   impressions, clicks, CTR, estimated revenue, RPM) with a decisions-per-day chart and a
-  suppress-reason breakdown, then the policy YAML in an editor with inline schema errors, and
-  the API keys with a Revoke button.
+  suppress-reason breakdown, then the policy YAML in an editor with inline schema errors, the
+  **affiliate accounts** form (the owner's own PartnerStack / impact.com / Amazon Associates ids,
+  without which affiliate demand answers `affiliate_not_configured`), and the API keys with a
+  Revoke button.
 - `/creatives`, `/creatives/new`, `/creatives/[id]` - the catalog the demand path serves from.
 - `/audit` - search the signed records by app, date range, decision and reason, with keyset
   pagination; `/audit/[id]` shows one record, its chain neighbours and its other version, and

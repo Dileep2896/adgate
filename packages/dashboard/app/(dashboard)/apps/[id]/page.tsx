@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 
+import { AffiliateForm } from '@/components/affiliate-form';
 import { ApiKeysTable } from '@/components/api-keys-table';
 import { AppOverview } from '@/components/app-overview';
 import { CopyButton } from '@/components/copy-button';
@@ -7,6 +8,7 @@ import { IntegrationPanel } from '@/components/integration-panel';
 import { IntegrationStatus } from '@/components/integration-status';
 import { PageHeader } from '@/components/page-header';
 import { PolicyEditor } from '@/components/policy-editor';
+import { affiliateFormValues } from '@/lib/affiliate-form';
 import { requireSession } from '@/lib/auth';
 import { formatTimestamp } from '@/lib/format';
 import { computeMetrics, decisionsPerDay, suppressBreakdown } from '@/lib/metrics';
@@ -100,6 +102,20 @@ const AppDetailPage = async ({ params }: { params: Promise<{ id: string }> }) =>
         policyHash={app.policyHash}
         policyVersion={app.policyVersion}
       />
+
+      <div>
+        <div className="ag-section-head">
+          <h2 className="ag-section-title">Affiliate accounts</h2>
+          <p className="ag-section-hint">Your own program ids. Affiliate demand needs them.</p>
+        </div>
+        <p className="ag-prose mb-3">
+          Affiliate creatives pay <em>you</em>: the link is built from your own PartnerStack,
+          impact.com or Amazon Associates identifiers. Until a network has an entry here its adapter
+          answers <span className="ag-code">affiliate_not_configured</span> and every eligible turn
+          ends in <span className="ag-code">no_fill</span>, however well the app is integrated.
+        </p>
+        <AffiliateForm appId={app.id} values={affiliateFormValues(app.affiliateConfig)} />
+      </div>
 
       <div>
         <div className="ag-section-head">

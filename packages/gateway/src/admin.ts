@@ -6,7 +6,10 @@
  * second copy is exactly the kind of drift this subpath exists to prevent.
  *
  * It is deliberately narrow: registerApp, issueApiKey and revokeApiKey, the creative editor of
- * catalog/creative-admin.ts, the dashboard ACCOUNT logic of accounts/*.ts, plus the types they
+ * catalog/creative-admin.ts, setAffiliateConfig (the ONLY writer of apps.affiliate_config
+ * anywhere), the catalog readiness diagnostic of catalog/readiness.ts - so the dashboard reports
+ * a blocked creative in the same words `check-catalog` prints rather than a second wording of
+ * its own - the dashboard ACCOUNT logic of accounts/*.ts, plus the types they
  * need, and nothing that serves traffic. Importing
  * the package root (`@adgate/gateway`) from
  * a Next.js app would drag Hono, the evaluate pipeline and the signing keys into a bundle
@@ -54,6 +57,8 @@ export type {
   UserRole,
   UserRow,
 } from './accounts/users.js';
+export { setAffiliateConfig } from './apps/affiliate-config.js';
+export type { AffiliateConfigFailure, SetAffiliateConfigResult } from './apps/affiliate-config.js';
 export {
   APP_ID_PREFIX,
   APP_SALT_BYTES,
@@ -69,6 +74,14 @@ export type {
   CreativeWriteFailure,
   CreativeWriteResult,
 } from './catalog/creative-admin.js';
+export { appReadiness, blockedLines, groupBlocked, readinessLines } from './catalog/readiness.js';
+export type {
+  AppReadiness,
+  BlockedGroup,
+  CatalogApp,
+  ReadinessCreative,
+  ReadinessRow,
+} from './catalog/readiness.js';
 export { ADVERTISER_ID_PREFIX } from './catalog/seed.js';
 export type { CreativeRow } from './catalog/seed.js';
 export type { Db, DbOrTx } from './db/client.js';

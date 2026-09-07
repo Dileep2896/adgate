@@ -88,8 +88,11 @@ To make one real, replace four fields with the details from a program you have a
 | `url_template` | their affiliate link, keeping the `{{program_id}}` or `{{tag}}` placeholder |
 | `network` | `partnerstack`, `impact` or `amazon` — and it must be an enabled affiliate entry in the app's policy `demand` list, see above |
 
-Then put your own account identifiers in the app's `affiliate_config`. The gateway fills the
-placeholder at click time, so the commission is attributed to you and never to this file.
+Then put your own account identifiers in the app's `affiliate_config`. The dashboard has a form
+for it — **the app's page, "Affiliate accounts"** — or set the column directly if you are
+scripting. The gateway fills the placeholder at click time, so the commission is attributed to you
+and never to this file. Until a network has an entry, its adapter answers
+`affiliate_not_configured` and every eligible turn ends in `no_fill`.
 
 Leave `target_categories` and `keywords` alone unless you know the taxonomy. They are aligned with
 the terms the rules classifier actually matches, in

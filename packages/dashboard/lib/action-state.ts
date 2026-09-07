@@ -1,3 +1,4 @@
+import type { AffiliateFieldIssue, AffiliateFormValues } from './affiliate-issue';
 import type { CreativeFieldIssue, CreativeFormValues } from './creative-issue';
 import type { PolicyIssueView } from './policy-issue';
 
@@ -56,6 +57,27 @@ export type CreativeSaveState =
     };
 
 export const INITIAL_CREATIVE_SAVE_STATE: CreativeSaveState = { status: 'idle' };
+
+/**
+ * The affiliate form on /apps/[id]. Like the creative editor it carries `attempt` and `values` on
+ * a refusal, because React 19 resets an uncontrolled form once its action has run and the body is
+ * re-mounted with the submitted values as its new defaults.
+ *
+ * Unlike the API key, a saved config IS shown again: it holds only the public identifiers that
+ * already appear in a tracked link, so `saved` carries the values back and the page keeps
+ * rendering them on every load.
+ */
+export type AffiliateSaveState =
+  | { status: 'idle' }
+  | {
+      status: 'invalid';
+      attempt: number;
+      values: AffiliateFormValues;
+      issues: AffiliateFieldIssue[];
+    }
+  | { status: 'saved'; attempt: number; values: AffiliateFormValues; configured: string[] };
+
+export const INITIAL_AFFILIATE_SAVE_STATE: AffiliateSaveState = { status: 'idle' };
 
 /** What a form says when the database, not the operator, is the problem. */
 export const WRITE_FAILED_MESSAGE =

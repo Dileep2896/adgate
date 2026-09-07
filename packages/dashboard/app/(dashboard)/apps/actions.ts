@@ -4,12 +4,17 @@ import { registerApp, revokeApiKey } from '@adgate/gateway/admin';
 import { revalidatePath } from 'next/cache';
 
 import {
+  type AffiliateSaveState,
   type CreateAppState,
   type PolicySaveState,
   WRITE_FAILED_MESSAGE,
 } from '@/lib/action-state';
+import { affiliateFormValues, readAffiliateFormValues } from '@/lib/affiliate-form';
+import { AFFILIATE_WRITE_FAILED_MESSAGE } from '@/lib/affiliate-issue';
+import { saveAffiliateConfig } from '@/lib/affiliate-save';
+import { createAffiliateWriter } from '@/lib/affiliate-store';
 import { createPolicyWriter } from '@/lib/admin-store';
-import { parseNewAppForm, parsePolicySaveForm, parseRevokeKeyForm } from '@/lib/app-form';
+import { parseNewAppForm, parsePolicySaveForm, parseRevokeKeyForm, readText } from '@/lib/app-form';
 import { requireSession, sessionOwnerId } from '@/lib/auth';
 import { dashboardWriteDb } from '@/lib/db-write';
 import { dashboardEnv } from '@/lib/env';
@@ -152,4 +157,61 @@ export const revokeKeyAction = async (formData: FormData): Promise<void> => {
   }
   await revokeApiKey(writeDb(), parsed.value.keyId);
   revalidatePath(`/apps/${parsed.value.appId}`);
+};
+
+/**
+ * Stores this app's affiliate identifiers - the app owner's OWN PartnerStack / impact.com /
+ * Amazon Associates ids, which is what the affiliate adapters fill into a creative's url_template
+ * (docs/decisions.md item 6). Without them every affiliate demand entry answers
+ * `affiliate_not_configured` and the turn ends in no_fill, which is the single most common reason
+ * a correctly integrated app earns nothing.
+ *
+ * Ownership is checked here, not on the page that rendered the form: the app id arrives in the
+ * request. A member posting another account's app id changes nothing.
+ *
+ * Nothing here is a secret, so unlike the API key the saved values are handed straight back to the
+ * form and re-rendered on every later page load.
+ */
+export const saveAffiliateAction = async (
+  previous: AffiliateSaveState,
+  formData: FormData,
+): Promise<AffiliateSaveState> => {
+  const session = await requireSession();
+  const attempt = previous.status === 'idle' ? 1 : previous.attempt + 1;
+  const values = readAffiliateFormValues(formData);
+  const appId = readText(formData, 'app_id').trim();
+
+  if (appId === '' || !(await appIsVisible(session.scope, appId))) {
+    return {
+      status: 'invalid',
+      attempt,
+      values,
+      issues: [{ field: 'form', message: WRITE_FAILED_MESSAGE }],
+    };
+  }
+
+  let result;
+  try {
+    result = await saveAffiliateConfig(createAffiliateWriter(writeDb()), appId, formData);
+  } catch {
+    return {
+      status: 'invalid',
+      attempt,
+      values,
+      issues: [{ field: 'form', message: AFFILIATE_WRITE_FAILED_MESSAGE }],
+    };
+  }
+  if (!result.ok) {
+    return { status: 'invalid', attempt, values, issues: result.issues };
+  }
+
+  revalidatePath(`/apps/${appId}`);
+  return {
+    status: 'saved',
+    attempt,
+    // Read back from the PARSED config, not from the raw inputs: what the form shows afterwards is
+    // what was stored, including the entries that were dropped for being blank.
+    values: affiliateFormValues(result.config),
+    configured: Object.keys(result.config).sort(),
+  };
 };
