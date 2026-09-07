@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { CopyButton } from '@/components/copy-button';
 import { CreativeActiveToggle } from '@/components/creative-active-toggle';
 import { CreativeForm } from '@/components/creative-form';
+import { DeliveryBreakdown } from '@/components/delivery-breakdown';
 import { PageHeader } from '@/components/page-header';
 import { requireSession } from '@/lib/auth';
 import {
@@ -12,15 +13,22 @@ import {
   listAdvertiserOptions,
   listAppOptions,
 } from '@/lib/creative-queries';
+import { creativeDelivery, deliveryOf } from '@/lib/deliverability';
 import { formatTimestamp } from '@/lib/format';
 
 /**
- * One creative: its stored content_hash, whether it is running, and the editor.
+ * One creative: its stored content_hash, whether it can actually serve, and the editor.
  *
  * The hash shown here is the one the demand path stamped into every audit record that served
  * this creative. Saving a change to the copy or the destination recomputes it, which is exactly
  * why the form says so: older records keep the old hash and will report a creative_hash
  * mismatch when they are verified.
+ *
+ * DELIVERY IS PER APP, which is why it is a table and not a badge. `active` says somebody has not
+ * paused it; whether it can serve is decided against ONE app's policy and ONE app's affiliate
+ * accounts, so a creative in the shared catalog gets one verdict per app the session can see and
+ * can honestly be blocked for one of them and fine for another. lib/deliverability.ts runs the
+ * gateway's own diagnostic here on the server and hands the component plain rows.
  */
 
 export const dynamic = 'force-dynamic';
@@ -43,9 +51,10 @@ const CreativePage = async ({
   if (creative === null) {
     notFound();
   }
-  const [advertisers, apps] = await Promise.all([
+  const [advertisers, apps, delivery] = await Promise.all([
     listAdvertiserOptions(),
     listAppOptions(session.scope),
+    creativeDelivery(session.scope, [creative]),
   ]);
   const saved = typeof query['saved'] === 'string' ? SAVED_MESSAGE[query['saved']] : undefined;
   const admin = session.role === 'admin';
@@ -100,6 +109,12 @@ const CreativePage = async ({
           <CopyButton value={creative.contentHash} label="Copy hash" />
         </p>
       </div>
+
+      <DeliveryBreakdown
+        delivery={deliveryOf(delivery, creative.id)}
+        active={creative.active}
+        shared={creative.appId === null}
+      />
 
       {writable ? (
         <CreativeForm

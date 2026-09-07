@@ -43,7 +43,12 @@ export interface CreativeRecord {
   targetRegions: string[];
   keywords: string[];
   ecpm: number;
-  source: string;
+  /**
+   * The demand source as the column stores it, narrowed rather than left as `string`: the
+   * deliverability diagnostic (lib/deliverability.ts) judges on it, and a widened type here would
+   * force a cast at every call site instead of a compile error at the one place it could be wrong.
+   */
+  source: CreativeSource;
   network: string | null;
   programId: string | null;
   active: boolean;

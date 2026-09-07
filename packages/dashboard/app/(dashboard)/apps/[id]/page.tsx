@@ -4,12 +4,14 @@ import { AffiliateForm } from '@/components/affiliate-form';
 import { ApiKeysTable } from '@/components/api-keys-table';
 import { AppOverview } from '@/components/app-overview';
 import { CopyButton } from '@/components/copy-button';
+import { DemandReadiness } from '@/components/demand-readiness';
 import { IntegrationPanel } from '@/components/integration-panel';
 import { IntegrationStatus } from '@/components/integration-status';
 import { PageHeader } from '@/components/page-header';
 import { PolicyEditor } from '@/components/policy-editor';
 import { affiliateFormValues } from '@/lib/affiliate-form';
 import { requireSession } from '@/lib/auth';
+import { appDemandReadiness } from '@/lib/deliverability';
 import { formatTimestamp } from '@/lib/format';
 import { computeMetrics, decisionsPerDay, suppressBreakdown } from '@/lib/metrics';
 import {
@@ -36,6 +38,14 @@ import { getApp, listApiKeys } from '@/lib/queries';
  * from the audit chain itself (appLastTurn), because an audit record IS the evidence a turn
  * was evaluated; there is no heartbeat table and there does not need to be one.
  *
+ * AND THE HALF THAT LINE CANNOT ANSWER sits directly under it: DemandReadiness says how much of
+ * this app's catalog can actually serve for it, from the same diagnostic `check-catalog` prints
+ * (lib/deliverability.ts). "Your call arrived" and "and something could come back" are the two
+ * halves of "is this working", so they are one block; putting the second one beside the fill rate
+ * three sections down would mean reading a bare 0.0% and guessing. When it is a policy or an
+ * affiliate-account problem, the line points at the section of THIS page that fixes it rather
+ * than repeating what that section already says.
+ *
  * SCOPE. getApp() carries the session's scope, so an app id belonging to another account answers
  * null and this page renders the ordinary not-found - the same page an id that was never
  * registered gets. The per-app queries below take the id getApp() has already authorised.
@@ -51,11 +61,12 @@ const AppDetailPage = async ({ params }: { params: Promise<{ id: string }> }) =>
     notFound();
   }
   const metricWindow = defaultMetricsWindow();
-  const [keys, decisions, eventCounts, lastTurnAt] = await Promise.all([
+  const [keys, decisions, eventCounts, lastTurnAt, readiness] = await Promise.all([
     listApiKeys(session.scope, app.id),
     appDecisionCounts(app.id, metricWindow),
     appEventCounts(app.id, metricWindow),
     appLastTurn(app.id),
+    appDemandReadiness(session.scope, app.id),
   ]);
   const metrics = computeMetrics(decisions, eventCounts);
 
@@ -81,11 +92,20 @@ const AppDetailPage = async ({ params }: { params: Promise<{ id: string }> }) =>
         title="Integration"
         lede="Everything this app needs to start evaluating turns. The app id below is already filled in; the key is the one you were shown once when the app was registered, read from an environment variable."
         status={
-          <IntegrationStatus
-            lastTurnAt={lastTurnAt}
-            turnsInWindow={metrics.turnsEvaluated}
-            windowDays={METRICS_WINDOW_DAYS}
-          />
+          <div className="space-y-2">
+            <IntegrationStatus
+              lastTurnAt={lastTurnAt}
+              turnsInWindow={metrics.turnsEvaluated}
+              windowDays={METRICS_WINDOW_DAYS}
+            />
+            {readiness === null ? null : (
+              <DemandReadiness
+                readiness={readiness}
+                serves={metrics.serves}
+                windowDays={METRICS_WINDOW_DAYS}
+              />
+            )}
+          </div>
         }
       />
 

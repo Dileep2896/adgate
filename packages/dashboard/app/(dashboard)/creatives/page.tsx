@@ -2,9 +2,11 @@ import Link from 'next/link';
 
 import { CreativeActiveToggle } from '@/components/creative-active-toggle';
 import { CreativeFiltersForm } from '@/components/creative-filters';
+import { DeliveryStatus } from '@/components/delivery-status';
 import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { requireSession } from '@/lib/auth';
+import { creativeDelivery, deliveryOf } from '@/lib/deliverability';
 import { formatAmount, truncateHash } from '@/lib/format';
 import {
   ALL_FILTER,
@@ -29,6 +31,14 @@ import {
  * used to wrap the row into four lines - only at 96rem, where they genuinely fit. What stays is truncated in CSS with the whole value on the title attribute and, for the
  * hash, on a copy button on the creative's own page: nothing is lost, the row is always one
  * line, and the table's own scroller carries the rest without the page body moving sideways.
+ *
+ * STATUS IS NOT `active`. `active` is a column in the catalog; "can serve" is a verdict about a
+ * (creative, app) pair, and the two disagree constantly - an active, matching, priced creative on
+ * an affiliate network the app's policy never enables is queried by nobody. The Status column
+ * therefore carries the deliverability verdict (components/delivery-status.tsx over
+ * lib/deliverability.ts), with the first blocking reason and, for a shared creative judged
+ * against several apps, the count. Before this the column was a green badge, and the only
+ * evidence of the real state was one line inside an audit record's demand trace.
  *
  * The empty state distinguishes an empty catalog from a filter that matches nothing: those are
  * different problems with different next actions, and a bare "no results" tells you neither.
@@ -60,6 +70,10 @@ const CreativesPage = async ({
     listCreatives(session.scope, filters),
     listAppOptions(session.scope),
   ]);
+  // Whether each of these can ACTUALLY serve, judged per (creative, app) against the same
+  // diagnostic check-catalog runs. One extra query (the apps in scope); the judging is pure and
+  // happens here on the server, so no component below carries @adgate/core into the browser.
+  const delivery = await creativeDelivery(session.scope, creatives);
   const filtered = isFiltered(filters);
   // Only the operator edits the shared catalog; a member sees it and edits their own apps'.
   const admin = session.role === 'admin';
@@ -206,10 +220,12 @@ const CreativesPage = async ({
                       {catalogLabel(creative)}
                     </span>
                   </td>
-                  <td className="table-cell" data-testid="creative-status">
-                    <span className={creative.active ? 'ag-badge ag-badge-ok' : 'ag-badge'}>
-                      {creative.active ? 'active' : 'paused'}
-                    </span>
+                  <td className="table-cell">
+                    <DeliveryStatus
+                      active={creative.active}
+                      delivery={deliveryOf(delivery, creative.id)}
+                      testId="creative-status"
+                    />
                   </td>
                   <td
                     className="table-cell ag-mono-2xs table-cell-nowrap max-2xl:hidden"

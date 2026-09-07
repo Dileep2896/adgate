@@ -15,6 +15,12 @@ import {
   openSeedClient,
   prepareMetricsTestDatabase,
 } from './metrics-test-db';
+import {
+  appDemandReadiness,
+  creativeDelivery,
+  deliveryOf,
+  listReadinessApps,
+} from './deliverability';
 import { getApp, listApiKeys, listAppsWithCounts } from './queries';
 import { getReport, listReports } from './report-queries';
 import { appIsVisible, visibleAppIds } from './scope-queries';
@@ -93,9 +99,11 @@ const seedFixture = async (): Promise<void> => {
     [APP_CLI, 'Operator CLI app', null, 'key_00000000000000000000cli'],
   ] as const) {
     await seed.unsafe(
+      // A policy that actually LOADS: the deliverability diagnostic parses this column, and
+      // `version: 1` on its own has no app_id and would report every app as unreadable.
       `insert into apps (id, name, salt, policy_yaml, policy_hash, owner_user_id)
-       values ($1, $2, 'salt', 'version: 1', $3, $4)`,
-      [id, name, hash('a'), owner],
+       values ($1, $2, 'salt', $3, $4, $5)`,
+      [id, name, `version: 1\napp_id: ${id}\n`, hash('a'), owner],
     );
     await seed.unsafe(
       `insert into api_keys (id, app_id, key_prefix, hashed_key, role)
@@ -240,6 +248,48 @@ describe('creatives', () => {
     expect(await getCreative(alice, CR_BOB, db)).toBeNull();
     expect(await getCreative(bob, CR_ALICE, db)).toBeNull();
     expect(await getCreative(ADMIN_SCOPE, CR_BOB, db)).not.toBeNull();
+  });
+});
+
+describe('the deliverability diagnostic', () => {
+  it('judges against a member’s own apps only, and every app for an operator', async () => {
+    expect((await listReadinessApps(alice, db)).map((row) => row.id)).toEqual([APP_ALICE]);
+    expect((await listReadinessApps(ADMIN_SCOPE, db)).map((row) => row.id).sort()).toEqual(
+      [APP_ALICE, APP_BOB, APP_CLI].sort(),
+    );
+  });
+
+  it('never judges a shared creative against another account’s app', async () => {
+    const record = await getCreative(alice, CR_GLOBAL, db);
+    expect(record).not.toBeNull();
+    const shared = record === null ? [] : [record];
+    // Alice has one app, so the shared creative gets exactly one verdict - not Bob's, not the
+    // operator's CLI app. The operator, judging the same row, gets all three.
+    expect(deliveryOf(await creativeDelivery(alice, shared, db), CR_GLOBAL).judged).toBe(1);
+    const asOperator = await creativeDelivery(ADMIN_SCOPE, shared, db);
+    const judgedBy = deliveryOf(asOperator, CR_GLOBAL).perApp.map((entry) => entry.appId);
+    expect(judgedBy.sort()).toEqual([APP_ALICE, APP_BOB, APP_CLI].sort());
+  });
+
+  it('answers the same null for another member’s app as for one that does not exist', async () => {
+    expect(await appDemandReadiness(alice, APP_ALICE, db)).not.toBeNull();
+    expect(await appDemandReadiness(alice, APP_BOB, db)).toBeNull();
+    expect(await appDemandReadiness(alice, APP_CLI, db)).toBeNull();
+    expect(await appDemandReadiness(alice, APP_NOWHERE, db)).toBeNull();
+    expect(await appDemandReadiness(ADMIN_SCOPE, APP_BOB, db)).not.toBeNull();
+  });
+
+  it('counts an app’s catalog as the shared rows plus its own, and says why they cannot serve', async () => {
+    const readiness = await appDemandReadiness(alice, APP_ALICE, db);
+    expect(readiness?.app_id).toBe(APP_ALICE);
+    // The shared creative and Alice's own; Bob's private one is in neither.
+    expect(readiness?.total).toBe(2);
+    expect(readiness?.rows.map((row) => row.label).sort()).toEqual([CR_ALICE, CR_GLOBAL].sort());
+    // The fixture's creatives target nothing at all, which is a real reason with a real fix.
+    expect(readiness?.deliverable).toBe(0);
+    expect(readiness?.blocked[0]?.reason).toBe('no_target_categories');
+    expect(readiness?.blocked[0]?.count).toBe(2);
+    expect(readiness?.blocked[0]?.detail).toContain('add at least one category');
   });
 });
 
