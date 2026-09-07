@@ -24,7 +24,12 @@ import {
   type SeedTurn,
 } from './audit-seed';
 import { ADMIN_SCOPE } from './app-scope';
-import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
+import {
+  createReadOnlyDb,
+  type DashboardDb,
+  type DashboardDbHandle,
+  testStatementTimeoutMs,
+} from './db';
 import { createWriteDb, type DashboardWriteDbHandle } from './db-write';
 import { advertisersWithReportQuery } from './metrics-queries';
 import { truncateAll } from './metrics-seed';
@@ -74,8 +79,8 @@ const ADVERTISER: ReportAdvertiser = {
 beforeAll(async () => {
   await prepareMetricsTestDatabase(url);
   seed = openSeedClient(url);
-  handle = createReadOnlyDb(url);
-  writeHandle = createWriteDb(url);
+  handle = createReadOnlyDb(url, testStatementTimeoutMs());
+  writeHandle = createWriteDb(url, testStatementTimeoutMs());
   db = handle.db;
   tempDir = mkdtempSync(join(tmpdir(), 'adgate-bundle-'));
 }, 120_000);

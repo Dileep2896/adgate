@@ -29,12 +29,40 @@ export const DASHBOARD_POOL_MAX = 4;
 export const DASHBOARD_STATEMENT_TIMEOUT_MS = 10_000;
 export const CONNECT_TIMEOUT_S = 5;
 
-export const createReadOnlyDb = (url: string): DashboardDbHandle => {
+/**
+ * The statement_timeout the integration suites in this directory open their handles with,
+ * instead of the two production budgets above.
+ *
+ * Same reasoning as the gateway's test factory (packages/gateway/src/db/test-support.ts), and
+ * deliberately the same number: a shared CI runner under load is slow enough to cancel a healthy
+ * query inside a budget that is generous in production, and DB_STATEMENT_TIMEOUT_MS is the one
+ * knob CI turns for both packages. It stays well below this package's 30 s vitest testTimeout so
+ * a genuinely wedged query is still bounded. The production handles are untouched: pages keep
+ * 10 s and admin writes keep 15 s.
+ */
+export const TEST_STATEMENT_TIMEOUT_MS = 15_000;
+
+/** DB_STATEMENT_TIMEOUT_MS when it holds a non-negative integer, else TEST_STATEMENT_TIMEOUT_MS. */
+export const testStatementTimeoutMs = (
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): number => {
+  const raw = env['DB_STATEMENT_TIMEOUT_MS'];
+  if (raw === undefined || raw.trim() === '') {
+    return TEST_STATEMENT_TIMEOUT_MS;
+  }
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= 0 ? value : TEST_STATEMENT_TIMEOUT_MS;
+};
+
+export const createReadOnlyDb = (
+  url: string,
+  statementTimeoutMs: number = DASHBOARD_STATEMENT_TIMEOUT_MS,
+): DashboardDbHandle => {
   const sql = postgres(url, {
     max: DASHBOARD_POOL_MAX,
     connect_timeout: CONNECT_TIMEOUT_S,
     connection: {
-      statement_timeout: DASHBOARD_STATEMENT_TIMEOUT_MS,
+      statement_timeout: statementTimeoutMs,
       default_transaction_read_only: true,
     },
     onnotice: () => undefined,

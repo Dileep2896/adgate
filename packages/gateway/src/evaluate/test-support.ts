@@ -18,10 +18,10 @@ import { type App, createApp } from '../app.js';
 import { type RegisteredApp, registerApp } from '../apps/register-app.js';
 import { seedCreatives } from '../catalog/seed.js';
 import { type GatewayConfig, loadConfig } from '../config.js';
-import { createDb, type DbHandle, type DbOptions } from '../db/client.js';
+import type { DbHandle, DbOptions } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import { advertisers, auditRecords, creatives } from '../db/schema.js';
-import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { findRepoRoot } from '../env-file.js';
 import { createLogger, type LogLevel } from '../logger.js';
 import type { RateLimiter, TokenBucketOptions } from '../rate-limit/limiter.js';
@@ -142,7 +142,7 @@ const DEFAULT_TEST_RATE_LIMIT: TokenBucketOptions = { rps: 10_000, burst: 10_000
 export const createHarness = async (options: HarnessOptions = {}): Promise<Harness> => {
   const url = requireTestDatabaseUrl();
   await runMigrations(url);
-  const handle = createDb(url, { max: 4, ...options.db });
+  const handle = createTestDb(url, { max: 4, ...options.db });
   await truncateAllTables(handle.sql);
 
   const registered = await registerApp(handle.db, {

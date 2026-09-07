@@ -42,6 +42,18 @@ jobs:
     env:
       DATABASE_URL: postgres://adgate:adgate@localhost:5432/adgate
       DATABASE_URL_TEST: postgres://adgate:adgate@localhost:5432/adgate_test
+      # These two differ from production on purpose. The deployed gateway keeps a 2 s
+      # statement_timeout and a 1 s lock_timeout (db/client.ts, docs/deploy.md) so a wedged
+      # connection fails closed instead of hanging a request. A shared GitHub runner under load
+      # is slow enough to trip that budget on a perfectly healthy integration query, which is
+      # exactly how 7ae1fc3 went red with one "canceling statement due to statement timeout".
+      # Integration tests read these (packages/gateway/src/db/test-support.ts, and lib/db.ts in
+      # the dashboard); they must also be listed on turbo.json's test task, because turbo runs
+      # in strict env mode and would otherwise strip them before vitest saw them. Raise them if
+      # the runner gets slower, but keep them under each package's vitest testTimeout (20 s
+      # gateway, 30 s dashboard) so a genuine hang is still reported as a cancelled statement.
+      DB_STATEMENT_TIMEOUT_MS: 15000
+      DB_LOCK_TIMEOUT_MS: 10000
 
     steps:
       - name: Checkout

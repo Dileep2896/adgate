@@ -38,11 +38,19 @@ export const WRITE_POOL_MAX = 2;
 export const WRITE_STATEMENT_TIMEOUT_MS = 15_000;
 export const WRITE_CONNECT_TIMEOUT_S = 5;
 
-export const createWriteDb = (url: string): DashboardWriteDbHandle => {
+/**
+ * `statementTimeoutMs` exists for the integration suites, which pass testStatementTimeoutMs()
+ * from lib/db.ts so a loaded CI runner cannot cancel a healthy query. Production callers
+ * (dashboardWriteDb below) leave it alone and keep WRITE_STATEMENT_TIMEOUT_MS.
+ */
+export const createWriteDb = (
+  url: string,
+  statementTimeoutMs: number = WRITE_STATEMENT_TIMEOUT_MS,
+): DashboardWriteDbHandle => {
   const sql = postgres(url, {
     max: WRITE_POOL_MAX,
     connect_timeout: WRITE_CONNECT_TIMEOUT_S,
-    connection: { statement_timeout: WRITE_STATEMENT_TIMEOUT_MS },
+    connection: { statement_timeout: statementTimeoutMs },
     onnotice: () => undefined,
   });
   return { db: drizzle(sql, { schema }), sql, close: () => sql.end({ timeout: 5 }) };

@@ -11,6 +11,8 @@
       "env": [
         "DATABASE_URL",
         "DATABASE_URL_TEST",
+        "DB_STATEMENT_TIMEOUT_MS",
+        "DB_LOCK_TIMEOUT_MS",
         "PGPORT_HOST",
         "ADMIN_PASSWORD",
         "DASHBOARD_SESSION_SECRET",

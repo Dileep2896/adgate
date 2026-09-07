@@ -2,10 +2,10 @@ import { HealthResponse } from '@adgateio/schemas';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from './app.js';
-import { createDb, type DbHandle } from './db/client.js';
+import type { DbHandle } from './db/client.js';
 import { findMigrationsDir, runMigrations } from './db/migrate.js';
 import { TABLE_NAMES } from './db/schema.js';
-import { requireTestDatabaseUrl, truncateAllTables } from './db/test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from './db/test-support.js';
 import { createLogger } from './logger.js';
 import { collectLogs } from './test-support/logs.js';
 
@@ -19,7 +19,7 @@ let handle: DbHandle;
 
 beforeAll(async () => {
   await runMigrations(url);
-  handle = createDb(url, { max: 2 });
+  handle = createTestDb(url, { max: 2 });
   await truncateAllTables(handle.sql);
 });
 

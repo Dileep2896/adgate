@@ -63,6 +63,13 @@ Integration test files read `DATABASE_URL_TEST` (whose database name must contai
 the migrations and truncate every table between tests. They must never assume the compose init
 script ran, and never depend on any local service other than that Postgres.
 
+They also open their database handle with `createTestDb` from
+`packages/gateway/src/db/test-support.ts` (`testStatementTimeoutMs()` from `lib/db.ts` in the
+dashboard), never with `createDb`. The deployed gateway runs on a 2 s `statement_timeout` so a
+wedged connection fails closed; a loaded CI runner is slow enough to trip that on a healthy query,
+so tests get 15 s instead. `DB_STATEMENT_TIMEOUT_MS` and `DB_LOCK_TIMEOUT_MS` override it, and
+`packages/gateway/src/db/create-db-usage.test.ts` fails the build if a test goes back to `createDb`.
+
 CI (`.github/workflows/ci.yml`) runs three jobs: the pnpm workspace against a Postgres 16 service
 container, the Python SDK, and the FastAPI example.
 

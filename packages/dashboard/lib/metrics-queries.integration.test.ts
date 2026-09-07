@@ -13,7 +13,12 @@ import {
 } from './audit-filters';
 import { auditPageQuery, auditReasonsQuery } from './audit-queries';
 import { ADMIN_SCOPE } from './app-scope';
-import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
+import {
+  createReadOnlyDb,
+  type DashboardDb,
+  type DashboardDbHandle,
+  testStatementTimeoutMs,
+} from './db';
 import { computeMetrics, computeGlobalMetrics, metricsWindow, suppressBreakdown } from './metrics';
 import {
   advertisersWithReportQuery,
@@ -81,7 +86,7 @@ beforeAll(async () => {
   await prepareMetricsTestDatabase(url);
   seed = openSeedClient(url);
   await seedMetricsFixture(seed);
-  handle = createReadOnlyDb(url);
+  handle = createReadOnlyDb(url, testStatementTimeoutMs());
   db = handle.db;
 }, 120_000);
 

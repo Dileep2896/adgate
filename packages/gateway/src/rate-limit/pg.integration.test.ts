@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { createDb, type DbHandle } from '../db/client.js';
+import type { DbHandle } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import { rateLimits } from '../db/schema.js';
-import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { takeToken } from './limiter.js';
 import { createPgRateLimiter } from './pg.js';
 
@@ -17,7 +17,7 @@ const opts = { rps: 5, burst: 3 };
 
 beforeAll(async () => {
   await runMigrations(url);
-  handle = createDb(url, { max: 6 });
+  handle = createTestDb(url, { max: 6 });
   await truncateAllTables(handle.sql);
 });
 

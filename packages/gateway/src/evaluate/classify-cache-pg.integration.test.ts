@@ -2,10 +2,10 @@ import { createLruCache, failClosedClassification } from '@adgateio/core';
 import type { Classification } from '@adgateio/schemas';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { createDb, type DbHandle } from '../db/client.js';
+import type { DbHandle } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import { classifyCache } from '../db/schema.js';
-import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { createLogger } from '../logger.js';
 import { collectLogs } from '../test-support/logs.js';
 import {
@@ -34,7 +34,7 @@ const VALUE: Classification = {
 
 beforeAll(async () => {
   await runMigrations(url);
-  handle = createDb(url, { max: 2 });
+  handle = createTestDb(url, { max: 2 });
 });
 
 beforeEach(async () => {
@@ -87,7 +87,7 @@ describe('createPgClassifyCache', () => {
   });
 
   it('swallows database errors on both paths and logs the error name only', async () => {
-    const closed = createDb(url, { max: 1 });
+    const closed = createTestDb(url, { max: 1 });
     await closed.close();
     const pg = createPgClassifyCache(closed.db);
     const logger = log();

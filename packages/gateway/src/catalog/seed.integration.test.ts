@@ -7,10 +7,10 @@ import { ZodError } from 'zod';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { registerApp } from '../apps/register-app.js';
-import { createDb, type DbHandle } from '../db/client.js';
+import type { DbHandle } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import { advertisers, creatives } from '../db/schema.js';
-import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { findRepoRoot } from '../env-file.js';
 import { seedCreatives } from './seed.js';
 
@@ -31,7 +31,7 @@ const snapshot = async () => ({
 
 beforeAll(async () => {
   await runMigrations(url);
-  handle = createDb(url, { max: 2 });
+  handle = createTestDb(url, { max: 2 });
 });
 
 beforeEach(async () => {

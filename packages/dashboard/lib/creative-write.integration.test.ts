@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createCreativeWriter, setCreativeActiveById } from './creative-store';
 import { saveCreative } from './creative-save';
+import { testStatementTimeoutMs } from './db';
 import { createWriteDb, type DashboardWriteDbHandle } from './db-write';
 import { truncateAll } from './metrics-seed';
 import {
@@ -102,7 +103,7 @@ beforeAll(async () => {
     values (${appId}, 'Creative editor test app', ${randomBytes(32).toString('hex')},
       'version: 1', ${`sha256:${'0'.repeat(64)}`})
   `;
-  handle = createWriteDb(url);
+  handle = createWriteDb(url, testStatementTimeoutMs());
 }, 120_000);
 
 afterAll(async () => {

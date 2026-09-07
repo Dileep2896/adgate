@@ -2,10 +2,10 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { registerApp } from '../apps/register-app.js';
-import { createDb, type DbHandle } from '../db/client.js';
+import type { DbHandle } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import { apps, users } from '../db/schema.js';
-import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { MIN_PASSWORD_LENGTH } from './credentials.js';
 import {
   authenticateUser,
@@ -29,7 +29,7 @@ const PASSWORD = 'correct horse battery staple';
 
 beforeAll(async () => {
   await runMigrations(url);
-  handle = createDb(url, { max: 2 });
+  handle = createTestDb(url, { max: 2 });
   await truncateAllTables(handle.sql);
 });
 

@@ -1,9 +1,9 @@
 import postgres, { type Sql } from 'postgres';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { createDb, type DbHandle } from '../db/client.js';
+import type { DbHandle } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
-import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { createLogger, type Logger } from '../logger.js';
 import { collectLogs } from '../test-support/logs.js';
 import {
@@ -53,7 +53,7 @@ const holdLockElsewhere = async (): Promise<() => Promise<void>> => {
 
 beforeAll(async () => {
   await runMigrations(url);
-  handle = createDb(url, { max: 4 });
+  handle = createTestDb(url, { max: 4 });
   other = postgres(url, { max: 1, onnotice: () => undefined });
   await truncateAllTables(handle.sql);
 });

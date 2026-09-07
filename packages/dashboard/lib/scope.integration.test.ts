@@ -6,7 +6,12 @@ import { ALL_APPS, type AuditFilters, ANY_DECISION, ANY_REASON, utcDay } from '.
 import { loadAuditDetail } from './audit-detail';
 import { listAuditPage } from './audit-queries';
 import { getCreative, listAppOptions, listCreatives } from './creative-queries';
-import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
+import {
+  createReadOnlyDb,
+  type DashboardDb,
+  type DashboardDbHandle,
+  testStatementTimeoutMs,
+} from './db';
 import { defaultMetricsWindow, globalMetricRows } from './metrics-queries';
 import { truncateAll } from './metrics-seed';
 // The dashboard's own test database (S32): `<DATABASE_URL_TEST>_dashboard`.
@@ -160,7 +165,7 @@ beforeAll(async () => {
   await prepareMetricsTestDatabase(url);
   seed = openSeedClient(url);
   await seedFixture();
-  handle = createReadOnlyDb(url);
+  handle = createReadOnlyDb(url, testStatementTimeoutMs());
   db = handle.db;
 }, 120_000);
 

@@ -11,7 +11,12 @@ import {
   type SeedTurn,
 } from './audit-seed';
 import { ADMIN_SCOPE } from './app-scope';
-import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
+import {
+  createReadOnlyDb,
+  type DashboardDb,
+  type DashboardDbHandle,
+  testStatementTimeoutMs,
+} from './db';
 import { truncateAll } from './metrics-seed';
 import {
   metricsTestDatabaseUrl,
@@ -52,7 +57,7 @@ let seed: Sql;
 beforeAll(async () => {
   await prepareMetricsTestDatabase(url);
   seed = openSeedClient(url);
-  handle = createReadOnlyDb(url);
+  handle = createReadOnlyDb(url, testStatementTimeoutMs());
   db = handle.db;
 }, 120_000);
 

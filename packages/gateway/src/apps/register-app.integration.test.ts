@@ -6,10 +6,10 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { API_KEY_PATTERN, parseApiKey, verifyApiSecret } from '../auth/keys.js';
-import { createDb, type DbHandle } from '../db/client.js';
+import type { DbHandle } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import { apiKeys, apps } from '../db/schema.js';
-import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { findRepoRoot } from '../env-file.js';
 import { defaultPolicyYaml, registerApp } from './register-app.js';
 
@@ -23,7 +23,7 @@ const rowCount = async (table: typeof apps | typeof apiKeys): Promise<number> =>
 
 beforeAll(async () => {
   await runMigrations(url);
-  handle = createDb(url, { max: 2 });
+  handle = createTestDb(url, { max: 2 });
   await truncateAllTables(handle.sql);
 });
 

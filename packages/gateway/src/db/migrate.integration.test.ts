@@ -3,10 +3,10 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { createDb, type DbHandle, MIGRATION_DB_OPTIONS } from './client.js';
+import { type DbHandle, MIGRATION_DB_OPTIONS } from './client.js';
 import { findMigrationsDir, runMigrations } from './migrate.js';
 import { TABLE_NAMES } from './schema.js';
-import { requireTestDatabaseUrl, truncateAllTables } from './test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from './test-support.js';
 
 /**
  * The migrations apply from nothing (a fresh clone, CI) and 0001_audit_seq.sql is safe on a
@@ -34,7 +34,7 @@ const seqColumn = async (handle: DbHandle) => {
 
 describe('migrations', () => {
   it('apply from an empty database', async () => {
-    const admin = createDb(url, MIGRATION_DB_OPTIONS);
+    const admin = createTestDb(url, MIGRATION_DB_OPTIONS);
     try {
       await admin.sql.unsafe(
         'drop schema public cascade; create schema public; drop schema if exists drizzle cascade',
@@ -43,7 +43,7 @@ describe('migrations', () => {
       await admin.close();
     }
     await runMigrations(url);
-    const handle = createDb(url, { max: 1 });
+    const handle = createTestDb(url, { max: 1 });
     try {
       const rows = await handle.sql<{ table_name: string }[]>`
         select table_name from information_schema.tables
@@ -64,7 +64,7 @@ describe('migrations', () => {
   });
 
   it('0001_audit_seq backfills seq per app in ts order for pre-existing records', async () => {
-    const handle = createDb(url, MIGRATION_DB_OPTIONS);
+    const handle = createTestDb(url, MIGRATION_DB_OPTIONS);
     try {
       await truncateAllTables(handle.sql);
       await handle.sql.unsafe('alter table audit_records drop column seq');

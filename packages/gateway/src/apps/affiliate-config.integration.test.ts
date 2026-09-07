@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { createDb, type DbHandle } from '../db/client.js';
+import type { DbHandle } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import { apps } from '../db/schema.js';
-import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { affiliateConfigOf } from '../evaluate/adapters.js';
 import { setAffiliateConfig } from './affiliate-config.js';
 import { registerApp } from './register-app.js';
@@ -26,7 +26,7 @@ const storedConfig = async (id: string) => {
 
 beforeAll(async () => {
   await runMigrations(url);
-  handle = createDb(url, { max: 2 });
+  handle = createTestDb(url, { max: 2 });
   await truncateAllTables(handle.sql);
   const created = await registerApp(handle.db, { name: 'Affiliate app' });
   appId = created.app.id;

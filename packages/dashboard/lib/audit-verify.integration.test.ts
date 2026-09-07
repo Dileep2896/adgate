@@ -10,7 +10,12 @@ import {
   type SeededAuditChain,
   type SeedTurn,
 } from './audit-seed';
-import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
+import {
+  createReadOnlyDb,
+  type DashboardDb,
+  type DashboardDbHandle,
+  testStatementTimeoutMs,
+} from './db';
 import { truncateAll } from './metrics-seed';
 // The dashboard's own test database (S32): `<DATABASE_URL_TEST>_dashboard`, so the gateway's
 // integration tests and this one never truncate each other's fixtures.
@@ -41,7 +46,7 @@ let seed: Sql;
 beforeAll(async () => {
   await prepareMetricsTestDatabase(url);
   seed = openSeedClient(url);
-  handle = createReadOnlyDb(url);
+  handle = createReadOnlyDb(url, testStatementTimeoutMs());
   db = handle.db;
 }, 120_000);
 

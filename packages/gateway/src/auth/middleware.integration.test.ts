@@ -6,10 +6,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
 import type { AppEnv } from '../app-env.js';
 import { registerApp } from '../apps/register-app.js';
-import { createDb, type DbHandle } from '../db/client.js';
+import type { DbHandle } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import { advertisers, apiKeys } from '../db/schema.js';
-import { requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
+import { createTestDb, requireTestDatabaseUrl, truncateAllTables } from '../db/test-support.js';
 import { createLogger } from '../logger.js';
 import { collectLogs } from '../test-support/logs.js';
 import { generateApiKey } from './keys.js';
@@ -37,7 +37,7 @@ const UNAUTHORIZED_BODY = { error: { code: 'unauthorized', message: UNAUTHORIZED
 
 beforeAll(async () => {
   await runMigrations(url);
-  handle = createDb(url, { max: 2 });
+  handle = createTestDb(url, { max: 2 });
   await truncateAllTables(handle.sql);
 
   const registered = await registerApp(handle.db, { name: 'Auth Test App' });

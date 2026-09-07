@@ -12,7 +12,12 @@ import {
 import { type AuditPageRow, listAuditPage, listAuditReasons } from './audit-queries';
 import { ADMIN_SCOPE } from './app-scope';
 import { seedAuditVolume } from './audit-volume-seed';
-import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
+import {
+  createReadOnlyDb,
+  type DashboardDb,
+  type DashboardDbHandle,
+  testStatementTimeoutMs,
+} from './db';
 import { truncateAll } from './metrics-seed';
 // The dashboard's own test database (S32): `<DATABASE_URL_TEST>_dashboard`.
 import {
@@ -59,7 +64,7 @@ beforeAll(async () => {
     perTimestamp: PER_TIMESTAMP,
     start: START,
   }));
-  handle = createReadOnlyDb(url);
+  handle = createReadOnlyDb(url, testStatementTimeoutMs());
   db = handle.db;
 }, 120_000);
 

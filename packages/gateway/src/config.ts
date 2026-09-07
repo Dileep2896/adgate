@@ -80,7 +80,7 @@ export const GatewayConfig = GatewayEnv.transform((env) => ({
   logLevel: env.LOG_LEVEL,
   databaseUrl: env.DATABASE_URL,
   databaseUrlTest: env.DATABASE_URL_TEST ?? null,
-  /** Per-session Postgres timeouts for createDb (db/client.ts); 0 disables one. */
+  /** Per-session Postgres timeouts the handle in db/client.ts applies; 0 disables one. */
   db: {
     statementTimeoutMs: env.DB_STATEMENT_TIMEOUT_MS,
     lockTimeoutMs: env.DB_LOCK_TIMEOUT_MS,
