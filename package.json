@@ -19,8 +19,8 @@
     "changeset": "changeset",
     "version": "changeset version && pnpm install --lockfile-only",
     "release": "pnpm build && changeset publish",
-    "db:migrate": "pnpm --filter @adgate/gateway db:migrate",
-    "docs:api": "pnpm --filter @adgate/gateway docs:api"
+    "db:migrate": "pnpm --filter @adgateio/gateway db:migrate",
+    "docs:api": "pnpm --filter @adgateio/gateway docs:api"
   },
   "pnpm": {
     "overrides": {

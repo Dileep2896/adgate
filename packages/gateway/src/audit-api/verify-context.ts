@@ -1,4 +1,4 @@
-import type { PreviousRecord, VerifyContext } from '@adgate/core';
+import type { PreviousRecord, VerifyContext } from '@adgateio/core';
 
 import type { AuditRecordRow } from '../attest/store.js';
 import type { AuditReader } from './loader.js';

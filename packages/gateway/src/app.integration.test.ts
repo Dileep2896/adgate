@@ -1,4 +1,4 @@
-import { HealthResponse } from '@adgate/schemas';
+import { HealthResponse } from '@adgateio/schemas';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from './app.js';

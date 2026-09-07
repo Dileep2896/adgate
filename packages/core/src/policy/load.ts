@@ -1,4 +1,4 @@
-import { parsePolicyYaml, type PolicyConfig, type Sha256Hash } from '@adgate/schemas';
+import { parsePolicyYaml, type PolicyConfig, type Sha256Hash } from '@adgateio/schemas';
 
 import { policyHash } from './hash.js';
 

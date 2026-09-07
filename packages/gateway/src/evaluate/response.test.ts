@@ -1,5 +1,5 @@
-import { failClosedClassification } from '@adgate/core';
-import { type Candidate, EvaluateResponse } from '@adgate/schemas';
+import { failClosedClassification } from '@adgateio/core';
+import { type Candidate, EvaluateResponse } from '@adgateio/schemas';
 import { ZodError } from 'zod';
 import { describe, expect, it } from 'vitest';
 

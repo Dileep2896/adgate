@@ -1,4 +1,4 @@
-import { CATEGORIES_TAXONOMY } from '@adgate/schemas';
+import { CATEGORIES_TAXONOMY } from '@adgateio/schemas';
 import { notFound } from 'next/navigation';
 
 import { CopyButton } from '@/components/copy-button';

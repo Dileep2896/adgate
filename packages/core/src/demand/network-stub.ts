@@ -3,7 +3,7 @@ import type {
   DemandResponse,
   DemandSource,
   NetworkAdapterConfig,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import { type Clock, demandResponse, describeError, latencySince, safeNow } from './response.js';
 import type { DemandAdapter, DemandFetchOptions } from './types.js';

@@ -1,4 +1,4 @@
-import type { AuditRecord, VerifyResponse } from '@adgate/schemas';
+import type { AuditRecord, VerifyResponse } from '@adgateio/schemas';
 
 import {
   CHAIN_INTEGRITY_CHECKS,
@@ -29,7 +29,7 @@ import { VERIFY_CHECK_NAMES } from './verify-labels';
  * creatives, the impression and click counts of each of those turns, and the result core's
  * verify() gave for each record - so lib/report.test.ts hand-computes every figure from a
  * fixture instead of from a database. The only imports are types (erased) and two
- * dependency-free modules; nothing here can drag @adgate/core into a browser bundle.
+ * dependency-free modules; nothing here can drag @adgateio/core into a browser bundle.
  */
 
 export * from './report-document';

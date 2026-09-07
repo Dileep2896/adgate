@@ -1,4 +1,4 @@
-import type { EvaluateResult } from '@adgate/sdk';
+import type { EvaluateResult } from '@adgateio/sdk';
 import type { UIMessage } from 'ai';
 
 /**

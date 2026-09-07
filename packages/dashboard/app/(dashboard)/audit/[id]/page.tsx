@@ -18,7 +18,7 @@ import { formatTimestamp, truncateHash } from '@/lib/format';
  * `?version=<record_hash>` selects one stored version of the id, the same parameter the
  * gateway's GET /v1/audit/:id takes. Without it the latest version is shown.
  *
- * Everything here happens on the server: @adgate/core is a Node package and the components
+ * Everything here happens on the server: @adgateio/core is a Node package and the components
  * receive plain computed data (lib/audit-detail.ts).
  */
 

@@ -1,4 +1,4 @@
-import { AuditRecord, type PolicyDecision, type SuppressReason } from '@adgate/schemas';
+import { AuditRecord, type PolicyDecision, type SuppressReason } from '@adgateio/schemas';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { creatives } from '../db/schema.js';

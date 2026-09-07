@@ -1,5 +1,5 @@
 {
-  "name": "@adgate/core",
+  "name": "@adgateio/core",
   "version": "0.0.0",
   "private": true,
   "description": "Pure classify, policy, demand and audit logic. Not published: only the private gateway and dashboard consume it.",
@@ -22,6 +22,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@adgate/schemas": "workspace:*"
+    "@adgateio/schemas": "workspace:*"
   }
 }

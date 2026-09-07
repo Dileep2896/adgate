@@ -1,6 +1,6 @@
 'use server';
 
-import { registerApp, revokeApiKey } from '@adgate/gateway/admin';
+import { registerApp, revokeApiKey } from '@adgateio/gateway/admin';
 import { revalidatePath } from 'next/cache';
 
 import {

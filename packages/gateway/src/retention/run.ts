@@ -1,4 +1,4 @@
-import { loadPolicyFromYaml } from '@adgate/core';
+import { loadPolicyFromYaml } from '@adgateio/core';
 
 import type { Db } from '../db/client.js';
 import type { Logger } from '../logger.js';

@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto';
 
-import { createDirectAdapter, creativeContentHash, prefixedUlid } from '@adgate/core';
-import { loadCatalog } from '@adgate/gateway';
-import type { DemandRequest } from '@adgate/schemas';
+import { createDirectAdapter, creativeContentHash, prefixedUlid } from '@adgateio/core';
+import { loadCatalog } from '@adgateio/gateway';
+import type { DemandRequest } from '@adgateio/schemas';
 import type { Sql } from 'postgres';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 

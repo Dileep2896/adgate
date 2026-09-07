@@ -8,7 +8,7 @@ import {
   hashModelOutput,
 } from './hash.js';
 
-/** The same digest the gateway computes with @adgate/core's sha256Prefixed (node:crypto). */
+/** The same digest the gateway computes with @adgateio/core's sha256Prefixed (node:crypto). */
 const nodeSha256 = (text: string): string =>
   `sha256:${createHash('sha256').update(text, 'utf8').digest('hex')}`;
 

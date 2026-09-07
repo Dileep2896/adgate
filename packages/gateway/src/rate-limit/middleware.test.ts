@@ -1,4 +1,4 @@
-import { ErrorResponse } from '@adgate/schemas';
+import { ErrorResponse } from '@adgateio/schemas';
 import type { Context } from 'hono';
 import { describe, expect, it } from 'vitest';
 

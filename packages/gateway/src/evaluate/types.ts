@@ -1,5 +1,5 @@
-import type { ClassifyLlmFailure, ClassifySource } from '@adgate/core';
-import type { DemandTrace, EvaluateRequest, EvaluateResponse } from '@adgate/schemas';
+import type { ClassifyLlmFailure, ClassifySource } from '@adgateio/core';
+import type { DemandTrace, EvaluateRequest, EvaluateResponse } from '@adgateio/schemas';
 import type { Logger } from 'pino';
 
 import type { AppRow } from '../db/tables/apps.js';

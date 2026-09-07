@@ -1,5 +1,5 @@
 /**
- * @adgate/gateway: the Hono service wiring @adgate/core to Postgres and HTTP. server.ts is the
+ * @adgateio/gateway: the Hono service wiring @adgateio/core to Postgres and HTTP. server.ts is the
  * process entry point; this index exposes the building blocks for tests and tooling. The
  * command line scripts (keygen.ts, db/migrate.ts, scripts/*.ts) are deliberately not re-exported: each
  * decides whether it is the main module from its own import.meta.url.

@@ -1,4 +1,4 @@
-import { VerifyCheckName, VerifyResponse } from '@adgate/schemas';
+import { VerifyCheckName, VerifyResponse } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { sha256Prefixed } from './crypto.js';

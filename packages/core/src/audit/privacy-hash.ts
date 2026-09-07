@@ -1,4 +1,4 @@
-import type { Sha256Hash } from '@adgate/schemas';
+import type { Sha256Hash } from '@adgateio/schemas';
 
 import { sha256Prefixed } from './crypto.js';
 

@@ -1,4 +1,4 @@
-import { parsePolicy, type PolicyConfig, type PolicyConfigInput } from '@adgate/schemas';
+import { parsePolicy, type PolicyConfig, type PolicyConfigInput } from '@adgateio/schemas';
 
 /** Test fixture: a stored policy with room to move in both directions on every field family. */
 export const BASE_POLICY_INPUT: PolicyConfigInput = {

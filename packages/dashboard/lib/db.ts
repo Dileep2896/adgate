@@ -1,4 +1,4 @@
-import * as schema from '@adgate/gateway/schema';
+import * as schema from '@adgateio/gateway/schema';
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
 

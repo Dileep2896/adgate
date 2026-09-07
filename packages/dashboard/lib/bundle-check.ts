@@ -1,5 +1,5 @@
-import { createKeyRing, verify } from '@adgate/core';
-import { AuditRecord } from '@adgate/schemas';
+import { createKeyRing, verify } from '@adgateio/core';
+import { AuditRecord } from '@adgateio/schemas';
 
 import { bundleVerifyContexts, type ReportBundleFile } from './report-bundle';
 

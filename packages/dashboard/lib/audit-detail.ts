@@ -1,11 +1,11 @@
-import { verify } from '@adgate/core';
+import { verify } from '@adgateio/core';
 import {
   type AuditReader,
   type AuditRecordRow,
   buildVerifyContext,
   createAuditReader,
-} from '@adgate/gateway/audit';
-import { AuditRecord } from '@adgate/schemas';
+} from '@adgateio/gateway/audit';
+import { AuditRecord } from '@adgateio/schemas';
 
 import type { AppScope } from './app-scope';
 import { appNameOf, type AuditVersionSummary, listAuditVersions } from './audit-lookups';
@@ -22,11 +22,11 @@ import { type VerifyKeys, verifyKeys } from './verify-keys';
  * VERIFICATION IS NOT CACHED AND NOT COPIED. The page runs verify() on every load, against the
  * record as it is stored right now, with the context packages/gateway/src/audit-api builds for
  * GET /v1/verify/:id - the SAME loader and the SAME buildVerifyContext, imported through
- * @adgate/gateway/audit rather than reimplemented here. A dashboard that agreed with the
+ * @adgateio/gateway/audit rather than reimplemented here. A dashboard that agreed with the
  * gateway only most of the time would be worse than no dashboard: an operator uses this page to
  * decide whether the chain is intact.
  *
- * The page components receive plain data (strings, numbers, booleans): @adgate/core is a Node
+ * The page components receive plain data (strings, numbers, booleans): @adgateio/core is a Node
  * package and nothing computed here crosses into the browser.
  */
 

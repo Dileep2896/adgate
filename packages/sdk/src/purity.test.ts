@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * The core entry must run unchanged in Node 20 and in browsers: no node built-ins, no runtime
- * dependency at all. @adgate/schemas is allowed for TYPES ONLY (`import type` / `export type`),
+ * dependency at all. @adgateio/schemas is allowed for TYPES ONLY (`import type` / `export type`),
  * so zod never reaches the bundle (build.test.ts checks the output; this test checks the source).
  */
 const srcDir = dirname(fileURLToPath(import.meta.url));
@@ -31,7 +31,7 @@ const aiSourceOf = (name: string) => readFileSync(join(aiDir, name), 'utf8');
 const specifiersOf = (source: string) =>
   [...source.matchAll(SPECIFIER)].map((match) => match[1] ?? '');
 
-describe('@adgate/sdk core entry purity', () => {
+describe('@adgateio/sdk core entry purity', () => {
   it('has the expected implementation files', () => {
     expect(files.map((file) => basename(file))).toEqual([
       'client.ts',
@@ -45,11 +45,11 @@ describe('@adgate/sdk core entry purity', () => {
     ]);
   });
 
-  it('imports only relative modules and @adgate/schemas', () => {
+  it('imports only relative modules and @adgateio/schemas', () => {
     for (const file of files) {
       for (const specifier of specifiersOf(sourceOf(file))) {
         expect(
-          specifier.startsWith('./') || specifier === '@adgate/schemas',
+          specifier.startsWith('./') || specifier === '@adgateio/schemas',
           `${file} imports ${specifier}`,
         ).toBe(true);
       }
@@ -66,9 +66,9 @@ describe('@adgate/sdk core entry purity', () => {
     }
   });
 
-  it('uses @adgate/schemas for types only', () => {
+  it('uses @adgateio/schemas for types only', () => {
     // Whole statements, so a multi-line `import type {\n...\n} from` counts as one.
-    const STATEMENT = /\b(import|export)\b([^;]*?)from\s+['"]@adgate\/schemas['"]/g;
+    const STATEMENT = /\b(import|export)\b([^;]*?)from\s+['"]@adgateio\/schemas['"]/g;
     for (const file of files) {
       const statements = [...sourceOf(file).matchAll(STATEMENT)];
       for (const statement of statements) {
@@ -114,7 +114,7 @@ describe('@adgate/sdk core entry purity', () => {
  * The React entry may use React and the DOM, but nothing else: no Next.js, no CSS-in-JS, no
  * router, no HTTP of its own. It talks to the gateway only through the client it is handed.
  */
-describe('@adgate/sdk react entry', () => {
+describe('@adgateio/sdk react entry', () => {
   it('has the expected implementation files', () => {
     expect(reactFiles).toEqual([
       'index.ts',
@@ -125,8 +125,8 @@ describe('@adgate/sdk react entry', () => {
     ]);
   });
 
-  it('imports only react, relative modules and @adgate/schemas types', () => {
-    const allowed = new Set(['react', '@adgate/schemas']);
+  it('imports only react, relative modules and @adgateio/schemas types', () => {
+    const allowed = new Set(['react', '@adgateio/schemas']);
     for (const file of reactFiles) {
       for (const specifier of specifiersOf(reactSourceOf(file))) {
         expect(
@@ -159,7 +159,7 @@ describe('@adgate/sdk react entry', () => {
  * runtime import would crash an app that never installed it) plus the core client's helpers.
  * No React, no node built-ins, no HTTP of its own.
  */
-describe('@adgate/sdk ai entry', () => {
+describe('@adgateio/sdk ai entry', () => {
   it('has the expected implementation files', () => {
     expect(aiFiles).toEqual([
       'ai-types.ts',
@@ -171,8 +171,8 @@ describe('@adgate/sdk ai entry', () => {
     ]);
   });
 
-  it('imports only the ai types, relative modules and @adgate/schemas types', () => {
-    const allowed = new Set(['ai', '@adgate/schemas']);
+  it('imports only the ai types, relative modules and @adgateio/schemas types', () => {
+    const allowed = new Set(['ai', '@adgateio/schemas']);
     for (const file of aiFiles) {
       for (const specifier of specifiersOf(aiSourceOf(file))) {
         expect(

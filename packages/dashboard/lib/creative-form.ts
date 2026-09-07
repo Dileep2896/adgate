@@ -1,4 +1,4 @@
-import { SeedCreative } from '@adgate/schemas';
+import { SeedCreative } from '@adgateio/schemas';
 
 import { type FormFields, readText } from './app-form';
 import {
@@ -24,7 +24,7 @@ import type { CreativeField, CreativeFieldIssue, CreativeFormValues } from './cr
  * the catalog it is being written into (the known advertisers and app ids, passed in as plain
  * data). PURE - no database, no React, no environment - so every rule is a unit test.
  *
- * The last word belongs to SeedCreative.safeParse from @adgate/schemas: the dashboard must not
+ * The last word belongs to SeedCreative.safeParse from @adgateio/schemas: the dashboard must not
  * be able to write a row the demand adapters would refuse to load (evaluate/adapters.ts
  * validates every catalog row with CatalogCreative and skips what fails). The per-field checks
  * in lib/creative-fields.ts exist to say WHICH input is wrong; the schema is what decides.

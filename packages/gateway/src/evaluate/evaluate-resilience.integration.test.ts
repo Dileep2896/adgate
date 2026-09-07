@@ -1,4 +1,4 @@
-import { AuditRecord, type AffiliateConfig } from '@adgate/schemas';
+import { AuditRecord, type AffiliateConfig } from '@adgateio/schemas';
 import { count, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 

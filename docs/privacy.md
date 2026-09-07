@@ -264,7 +264,7 @@ Each app's window is `privacy.retain_days` in its own policy (docs/policy.md; th
 The window is enforced by a job you run — nothing expires on its own:
 
 ```
-pnpm --filter @adgate/gateway retention [--dry-run] [--app <app_id>] [--now <iso 8601>]
+pnpm --filter @adgateio/gateway retention [--dry-run] [--app <app_id>] [--now <iso 8601>]
 ```
 
 For every app it reads that app's stored policy, computes `cutoff = now - retain_days`, and
@@ -292,7 +292,7 @@ Once a day is plenty. The job connects to `DATABASE_URL` (from the environment o
 
 ```cron
 # adgate retention: every day at 03:17 UTC
-17 3 * * * cd /srv/adgate && /usr/bin/env DATABASE_URL="$DATABASE_URL" pnpm --filter @adgate/gateway retention >> /var/log/adgate-retention.log 2>&1
+17 3 * * * cd /srv/adgate && /usr/bin/env DATABASE_URL="$DATABASE_URL" pnpm --filter @adgateio/gateway retention >> /var/log/adgate-retention.log 2>&1
 ```
 
 In a container image, `node dist/scripts/retention.js` is the same entry without pnpm or tsx.
@@ -300,7 +300,7 @@ In a container image, `node dist/scripts/retention.js` is the same entry without
 Before the first real run on a database that matters, do the dry run:
 
 ```
-pnpm --filter @adgate/gateway retention --dry-run
+pnpm --filter @adgateio/gateway retention --dry-run
 ```
 
 ### Retention and the hash chain

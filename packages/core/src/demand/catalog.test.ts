@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { SeedCreative, CatalogCreative } from '@adgate/schemas';
+import { SeedCreative, CatalogCreative } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { encodeUlidTime, isUlid } from '../ids/ulid.js';

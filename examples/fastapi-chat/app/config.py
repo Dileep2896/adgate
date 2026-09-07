@@ -94,7 +94,7 @@ def settings_from_env(env: Mapping[str, str] | None = None) -> Settings:
         app_id=_required(
             source,
             "ADGATE_APP_ID",
-            "It is the app_id printed by `pnpm --filter @adgate/gateway create-app`.",
+            "It is the app_id printed by `pnpm --filter @adgateio/gateway create-app`.",
         ),
         api_key=_required(
             source,

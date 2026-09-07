@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * CLAUDE.md: pure logic lives in packages/core with no HTTP, DB, env or network access. The
- * audit directory may reach @adgate/schemas (the record and key shapes), node:crypto (hashing
+ * audit directory may reach @adgateio/schemas (the record and key shapes), node:crypto (hashing
  * and Ed25519) and ../canonical (canonical JSON), and nothing else outside src/. Keys are always
  * passed in as PEM strings; nothing here reads the environment. Same approach as
  * ../demand/purity.test.ts.
@@ -15,7 +15,7 @@ const auditDir = dirname(fileURLToPath(import.meta.url));
 const srcDir = resolve(auditDir, '..');
 const SPECIFIER = /(?:\bfrom\s+|\bimport\s+|\bimport\s*\(\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]/g;
 const BANNED =
-  /^(node:(?!crypto$)|fs|path|os|http|https|net|tls|dns|child_process|worker_threads|pg|postgres|drizzle|hono|undici|redis|ioredis|zod|jose|tweetnacl|noble|@adgate\/gateway|@adgate\/sdk)/;
+  /^(node:(?!crypto$)|fs|path|os|http|https|net|tls|dns|child_process|worker_threads|pg|postgres|drizzle|hono|undici|redis|ioredis|zod|jose|tweetnacl|noble|@adgateio\/gateway|@adgateio\/sdk)/;
 
 const isImplementation = (name: string) =>
   name.endsWith('.ts') && !name.endsWith('.test.ts') && !name.endsWith('.fixture.ts');
@@ -69,7 +69,7 @@ describe('audit package purity', () => {
       for (const specifier of specifiersOf(join(auditDir, name))) {
         expect(specifier, `${name} imports ${specifier}`).not.toMatch(BANNED);
         expect(
-          specifier === '@adgate/schemas' ||
+          specifier === '@adgateio/schemas' ||
             specifier === 'node:crypto' ||
             specifier.startsWith('.'),
           `${name} imports ${specifier}`,
@@ -81,9 +81,9 @@ describe('audit package purity', () => {
     }
   });
 
-  it('reaches only @adgate/schemas and node:crypto through its whole import graph', () => {
+  it('reaches only @adgateio/schemas and node:crypto through its whole import graph', () => {
     const bare = [...reachableBareImports(join(auditDir, 'index.ts'))].sort();
-    expect(bare).toEqual(['@adgate/schemas', 'node:crypto']);
+    expect(bare).toEqual(['@adgateio/schemas', 'node:crypto']);
   });
 
   it('keeps every file under 300 lines (CLAUDE.md)', () => {

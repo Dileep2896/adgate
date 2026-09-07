@@ -8,11 +8,11 @@ import type {
   EventRequest as EventRequestShape,
   EventType as EventTypeShape,
   SuppressReason as SuppressReasonShape,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 /**
  * Public types of the core client. The wire shapes are the docs/api.md contract, taken from
- * @adgate/schemas as TYPES ONLY so the runtime bundle carries no zod (build.test.ts). They are
+ * @adgateio/schemas as TYPES ONLY so the runtime bundle carries no zod (build.test.ts). They are
  * re-exported as local aliases rather than `export type { X } from`, because the declaration
  * bundler drops the `type` keyword on a re-export and a consumer could then import the zod
  * schema value of the same name from this package, which does not exist at runtime.

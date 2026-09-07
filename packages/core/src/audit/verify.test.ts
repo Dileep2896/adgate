@@ -1,4 +1,4 @@
-import { VerifyResponse } from '@adgate/schemas';
+import { VerifyResponse } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { attest } from './attest.js';

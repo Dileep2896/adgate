@@ -1,5 +1,5 @@
-import { attest, type AuditSigningKey, type Clock, nextPrevHash } from '@adgate/core';
-import { AttestRequest } from '@adgate/schemas';
+import { attest, type AuditSigningKey, type Clock, nextPrevHash } from '@adgateio/core';
+import { AttestRequest } from '@adgateio/schemas';
 import type { Context } from 'hono';
 
 import type { AppEnv } from '../app-env.js';

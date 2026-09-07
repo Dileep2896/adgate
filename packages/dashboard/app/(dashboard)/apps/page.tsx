@@ -124,7 +124,7 @@ const AppsPage = async () => {
                 {' '}
                 You can also do it from the command line:{' '}
                 <span className="ag-code">
-                  pnpm --filter @adgate/gateway create-app --name &quot;My chat app&quot;
+                  pnpm --filter @adgateio/gateway create-app --name &quot;My chat app&quot;
                 </span>
                 . Apps created that way have no owner and are visible here only to an operator.
               </>

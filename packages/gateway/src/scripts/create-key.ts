@@ -5,7 +5,7 @@ import { optionalFlag, parseFlags, requireFlag, UsageError } from './args.js';
 import { connectFromEnv, runScript } from './run.js';
 
 /**
- * `pnpm --filter @adgate/gateway create-key --app <app_id> --role app|advertiser_read
+ * `pnpm --filter @adgateio/gateway create-key --app <app_id> --role app|advertiser_read
  * [--advertiser <adv_id>]`: issues one more API key for an existing app and prints it once.
  */
 

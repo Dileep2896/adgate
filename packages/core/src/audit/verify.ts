@@ -3,7 +3,7 @@ import {
   type VerifyCheck,
   VerifyCheckName,
   type VerifyResponse,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import type { PublicKeyRing } from './keys.js';
 import {

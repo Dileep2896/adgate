@@ -18,7 +18,7 @@ import { SensitiveCategory } from './taxonomy.js';
 /**
  * PolicyOverrides is the deep-partial PolicyConfig an app may send as
  * EvaluateRequest.policy_overrides. It validates shape only; whether each value tightens or
- * loosens the stored policy is decided by mergeOverrides in @adgate/core, which ignores loosening
+ * loosens the stored policy is decided by mergeOverrides in @adgateio/core, which ignores loosening
  * values and reports them as OverrideRejection entries.
  *
  * No field here carries a default on purpose: a default would look like a value the caller sent.

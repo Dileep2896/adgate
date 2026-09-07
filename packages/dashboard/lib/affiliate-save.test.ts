@@ -1,4 +1,4 @@
-import type { AffiliateConfig } from '@adgate/schemas';
+import type { AffiliateConfig } from '@adgateio/schemas';
 import { describe, expect, it, vi } from 'vitest';
 
 import { saveAffiliateConfig, type AffiliateWriter } from './affiliate-save';

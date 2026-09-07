@@ -1,4 +1,4 @@
-import { AffiliateNetwork, DemandSource } from '@adgate/schemas';
+import { AffiliateNetwork, DemandSource } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import {

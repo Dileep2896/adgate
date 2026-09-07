@@ -54,7 +54,7 @@ importers:
 
   examples/nextjs-chat:
     dependencies:
-      '@adgate/sdk':
+      '@adgateio/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
       '@ai-sdk/openai':
@@ -103,19 +103,19 @@ importers:
 
   packages/core:
     dependencies:
-      '@adgate/schemas':
+      '@adgateio/schemas':
         specifier: workspace:*
         version: link:../schemas
 
   packages/dashboard:
     dependencies:
-      '@adgate/core':
+      '@adgateio/core':
         specifier: workspace:*
         version: link:../core
-      '@adgate/gateway':
+      '@adgateio/gateway':
         specifier: workspace:*
         version: link:../gateway
-      '@adgate/schemas':
+      '@adgateio/schemas':
         specifier: workspace:*
         version: link:../schemas
       argon2:
@@ -167,10 +167,10 @@ importers:
 
   packages/gateway:
     dependencies:
-      '@adgate/core':
+      '@adgateio/core':
         specifier: workspace:*
         version: link:../core
-      '@adgate/schemas':
+      '@adgateio/schemas':
         specifier: workspace:*
         version: link:../schemas
       '@hono/node-server':
@@ -210,7 +210,7 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@adgate/schemas':
+      '@adgateio/schemas':
         specifier: workspace:*
         version: link:../schemas
     devDependencies:

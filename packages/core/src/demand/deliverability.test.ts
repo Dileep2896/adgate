@@ -1,4 +1,4 @@
-import { PolicyConfig } from '@adgate/schemas';
+import { PolicyConfig } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import {

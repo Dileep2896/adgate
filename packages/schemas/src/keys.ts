@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * Audit signing keys (docs/audit.md): every record carries `key_id` and `signature`, and the
  * gateway verifies with a set of public keys keyed by key_id (ADGATE_PUBLIC_KEYS_JSON) that keeps
- * every retired key forever. The Ed25519 primitives live in @adgate/core (audit/crypto.ts);
+ * every retired key forever. The Ed25519 primitives live in @adgateio/core (audit/crypto.ts);
  * this module only describes the on-the-wire and config shapes.
  */
 

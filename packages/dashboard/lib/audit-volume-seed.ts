@@ -1,4 +1,4 @@
-import { loadPolicyFromYaml, prefixedUlid } from '@adgate/core';
+import { loadPolicyFromYaml, prefixedUlid } from '@adgateio/core';
 import type { Sql } from 'postgres';
 
 /**

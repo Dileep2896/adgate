@@ -1,11 +1,11 @@
-import { type Db, setAffiliateConfig } from '@adgate/gateway/admin';
-import type { AffiliateConfig } from '@adgate/schemas';
+import { type Db, setAffiliateConfig } from '@adgateio/gateway/admin';
+import type { AffiliateConfig } from '@adgateio/schemas';
 
 import type { AffiliateWriter } from './affiliate-save';
 
 /**
  * The Postgres side of the affiliate form. The write is the GATEWAY's own setAffiliateConfig
- * (`@adgate/gateway/admin`), not SQL of the dashboard's, so the column the request path reads is
+ * (`@adgateio/gateway/admin`), not SQL of the dashboard's, so the column the request path reads is
  * written by the module that owns its meaning - the same rule lib/creative-store.ts follows.
  *
  * It needs a READ-WRITE handle (lib/db-write.ts). The default handle from lib/db.ts is opened

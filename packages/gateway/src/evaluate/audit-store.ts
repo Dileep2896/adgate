@@ -1,4 +1,4 @@
-import type { AuditRecord, CapState } from '@adgate/schemas';
+import type { AuditRecord, CapState } from '@adgateio/schemas';
 import { desc, eq } from 'drizzle-orm';
 
 import type { Db, DbOrTx } from '../db/client.js';

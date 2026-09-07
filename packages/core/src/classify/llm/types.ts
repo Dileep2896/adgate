@@ -1,4 +1,4 @@
-import type { Classification } from '@adgate/schemas';
+import type { Classification } from '@adgateio/schemas';
 
 /**
  * Types for the LLM stage of the classifier (docs/BUILD_GUIDE.md Phase 2, design step 2).

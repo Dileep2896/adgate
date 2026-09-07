@@ -1,4 +1,4 @@
-import { DemandSource, Decision, EventType } from '@adgate/schemas';
+import { DemandSource, Decision, EventType } from '@adgateio/schemas';
 import { getTableName } from 'drizzle-orm';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -44,7 +44,7 @@ describe('schema', () => {
     const dir = join(findMigrationsDir(), '..', 'src', 'db', 'tables');
     for (const file of readdirSync(dir)) {
       const source = readFileSync(join(dir, file), 'utf8');
-      const imports = source.match(/^import .* from '@adgate\/schemas';$/gm) ?? [];
+      const imports = source.match(/^import .* from '@adgateio\/schemas';$/gm) ?? [];
       for (const line of imports) {
         expect(line, `${file}: ${line}`).toMatch(/^import type /);
       }

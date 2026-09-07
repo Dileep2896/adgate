@@ -28,7 +28,7 @@ import {
  * mismatch on every load where the operator has chosen.
  *
  * Client side, and deliberately importing nothing but lib/theme.ts (which has no imports of
- * its own): anything reaching @adgate/core from here would ship zod and a YAML parser to
+ * its own): anything reaching @adgateio/core from here would ship zod and a YAML parser to
  * every page, because this component is in the shell.
  */
 export const ThemeToggle = () => {

@@ -1,4 +1,4 @@
-import { CATEGORIES_TAXONOMY, SENSITIVE_TAXONOMY } from '@adgate/schemas';
+import { CATEGORIES_TAXONOMY, SENSITIVE_TAXONOMY } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { RULES_DATA } from './data/index.js';

@@ -1,4 +1,4 @@
-import type { DemandSource } from '@adgate/schemas';
+import type { DemandSource } from '@adgateio/schemas';
 import { sql } from 'drizzle-orm';
 import { boolean, check, index, numeric, pgTable, text } from 'drizzle-orm/pg-core';
 
@@ -7,7 +7,7 @@ import { createdAt, sqlList, updatedAt } from './columns.js';
 
 /**
  * The creative catalog that DirectAdapter and AffiliateAdapter read (CatalogCreative in
- * @adgate/schemas). A row plus its advertiser's name and domain is one CatalogCreative.
+ * @adgateio/schemas). A row plus its advertiser's name and domain is one CatalogCreative.
  * Type-only contract import (see audit.ts); schema.test.ts pins CREATIVE_SOURCES to
  * DemandSource.options.
  */

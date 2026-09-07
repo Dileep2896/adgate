@@ -1,4 +1,4 @@
-import type { CatalogCreative, Sha256Hash } from '@adgate/schemas';
+import type { CatalogCreative, Sha256Hash } from '@adgateio/schemas';
 
 import { canonicalize } from '../canonical/canonicalize.js';
 import { sha256Prefixed } from './crypto.js';

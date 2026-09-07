@@ -22,7 +22,7 @@ import {
  * one it inserts, and on success saveCreativeAction redirects to the creative's own page.
  *
  * It imports lib/creative-issue.ts and NOTHING else from lib/: that module has no imports of its
- * own, while the validation (lib/creative-fields.ts) pulls in @adgate/schemas and @adgate/core,
+ * own, while the validation (lib/creative-fields.ts) pulls in @adgateio/schemas and @adgateio/core,
  * which must never reach the browser bundle. Every rule is therefore decided on the server; the
  * only logic here is which inputs to show.
  */

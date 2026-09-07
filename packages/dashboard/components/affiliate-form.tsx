@@ -25,7 +25,7 @@ import {
  * why - unlike the API key one screen up - the stored values are shown again on every page load.
  *
  * It imports lib/affiliate-issue.ts and NOTHING else from lib/: that module has no imports of its
- * own, while the parser (lib/affiliate-form.ts) pulls in @adgate/schemas, which must never reach
+ * own, while the parser (lib/affiliate-form.ts) pulls in @adgateio/schemas, which must never reach
  * the browser bundle. Every rule is decided on the server.
  */
 

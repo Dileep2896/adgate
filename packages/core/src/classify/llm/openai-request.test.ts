@@ -1,4 +1,4 @@
-import { Classification } from '@adgate/schemas';
+import { Classification } from '@adgateio/schemas';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {

@@ -18,7 +18,7 @@ import { SuppressReason } from './suppress-reason.js';
 /**
  * The audit record (docs/audit.md): one per /v1/evaluate call, suppressions included. The
  * records of an app form a hash chain through prev_hash and each one is signed with Ed25519
- * (signature, key_id). Building, hashing and signing live in @adgate/core (audit/record.ts and
+ * (signature, key_id). Building, hashing and signing live in @adgateio/core (audit/record.ts and
  * audit/chain.ts); this module is the on-the-wire shape only. Nothing in a record is message
  * text or a raw identifier: conversation ids and user ids appear as salted hashes.
  *

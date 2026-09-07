@@ -4,7 +4,7 @@
  * restates the verdict (that is the check's own `detail`).
  *
  * NO IMPORTS. This module is dependency free on purpose so a client component can render a
- * check name without dragging @adgate/core - and with it zod, the policy schema and the whole
+ * check name without dragging @adgateio/core - and with it zod, the policy schema and the whole
  * canonical JSON implementation - into the browser bundle (the S31 lesson).
  */
 

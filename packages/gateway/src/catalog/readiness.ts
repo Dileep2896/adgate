@@ -2,7 +2,7 @@ import {
   creativeDeliverability,
   type DeliverabilityCreative,
   loadPolicyFromYaml,
-} from '@adgate/core';
+} from '@adgateio/core';
 import {
   type AffiliateConfig,
   AffiliateNetwork,
@@ -10,7 +10,7 @@ import {
   DELIVERABILITY_REASONS,
   type DeliverabilityReason,
   type PolicyConfig,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 import { asc, eq, isNull, or } from 'drizzle-orm';
 
 import type { DbOrTx } from '../db/client.js';
@@ -20,7 +20,7 @@ import { affiliateConfigOf } from '../evaluate/adapters.js';
 
 /**
  * Catalog readiness: for one app, which creatives can actually serve and why the rest cannot.
- * The decision is creativeDeliverability() in @adgate/core; this file only loads the rows,
+ * The decision is creativeDeliverability() in @adgateio/core; this file only loads the rows,
  * groups the failures and renders them for the two operator-facing scripts (seed-creatives
  * prints it right after seeding, check-catalog prints it on demand). Read-only; it never
  * writes and never exits non-zero, because a blocked creative is a configuration fact, not a

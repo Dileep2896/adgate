@@ -1,4 +1,4 @@
-import { ErrorResponse, HealthResponse } from '@adgate/schemas';
+import { ErrorResponse, HealthResponse } from '@adgateio/schemas';
 import { HTTPException } from 'hono/http-exception';
 import type { Context } from 'hono';
 import { describe, expect, it, vi } from 'vitest';

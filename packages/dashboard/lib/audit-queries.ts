@@ -1,4 +1,4 @@
-import { apps, auditRecords } from '@adgate/gateway/schema';
+import { apps, auditRecords } from '@adgateio/gateway/schema';
 import { and, asc, desc, eq, gt, gte, isNotNull, lt, lte, or, type SQL } from 'drizzle-orm';
 
 import type { AppScope } from './app-scope';

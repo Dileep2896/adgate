@@ -1,4 +1,4 @@
-import type { AuditRecord, VerifyCheck, VerifyCheckName, VerifyResponse } from '@adgate/schemas';
+import type { AuditRecord, VerifyCheck, VerifyCheckName, VerifyResponse } from '@adgateio/schemas';
 
 import { attest } from './attest.js';
 import { nextPrevHash } from './chain.js';

@@ -1,4 +1,4 @@
-import type { Classification, ContentCategory, SensitiveCategory } from '@adgate/schemas';
+import type { Classification, ContentCategory, SensitiveCategory } from '@adgateio/schemas';
 
 /**
  * Types for the rules classifier. The keyword data under ./data is plain TS constants of these

@@ -1,4 +1,4 @@
-import { INVALID_CREDENTIALS_MESSAGE, MIN_PASSWORD_LENGTH } from '@adgate/gateway/admin';
+import { INVALID_CREDENTIALS_MESSAGE, MIN_PASSWORD_LENGTH } from '@adgateio/gateway/admin';
 import { describe, expect, it } from 'vitest';
 
 import {

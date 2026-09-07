@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { derivePublicPem } from '@adgate/core';
+import { derivePublicPem } from '@adgateio/core';
 import { defineConfig, devices } from '@playwright/test';
 
 /**
@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
  * browser binary (`pnpm exec playwright install chromium`) and a running Postgres.
  *
  *   docker compose up -d postgres
- *   pnpm --filter @adgate/dashboard test:e2e
+ *   pnpm --filter @adgateio/dashboard test:e2e
  *
  * The server under test is a real production build (`next build && next start`), which is the
  * only way the middleware redirect and the cookie flags behave as they will in deployment.

@@ -50,7 +50,7 @@ export const parsePolicy = (input: unknown): PolicyConfig => {
 
 /**
  * Parses one YAML document (YAML 1.2 core schema: `yes` stays a string, duplicate keys are an
- * error) and validates it as a PolicyConfig. Use loadPolicyFromYaml in @adgate/core when the
+ * error) and validates it as a PolicyConfig. Use loadPolicyFromYaml in @adgateio/core when the
  * policy_hash is needed as well.
  */
 export const parsePolicyYaml = (yamlText: string): PolicyConfig => {

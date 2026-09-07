@@ -1,6 +1,6 @@
-import { prefixedUlid } from '@adgate/core';
-import type { Db } from '@adgate/gateway/admin';
-import { reports } from '@adgate/gateway/schema';
+import { prefixedUlid } from '@adgateio/core';
+import type { Db } from '@adgateio/gateway/admin';
+import { reports } from '@adgateio/gateway/schema';
 
 import type { ReportDocument } from './report';
 

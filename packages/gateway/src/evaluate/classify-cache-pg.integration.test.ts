@@ -1,5 +1,5 @@
-import { createLruCache, failClosedClassification } from '@adgate/core';
-import type { Classification } from '@adgate/schemas';
+import { createLruCache, failClosedClassification } from '@adgateio/core';
+import type { Classification } from '@adgateio/schemas';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createDb, type DbHandle } from '../db/client.js';

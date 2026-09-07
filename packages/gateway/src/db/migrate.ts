@@ -26,7 +26,7 @@ export const findMigrationsDir = (): string => {
     }
   }
   throw new Error(
-    `drizzle migrations folder not found (looked in ${candidates.join(', ')}); run pnpm --filter @adgate/gateway db:generate`,
+    `drizzle migrations folder not found (looked in ${candidates.join(', ')}); run pnpm --filter @adgateio/gateway db:generate`,
   );
 };
 

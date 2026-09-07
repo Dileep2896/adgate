@@ -1,4 +1,4 @@
-import { creativeContentHash } from '@adgate/core';
+import { creativeContentHash } from '@adgateio/core';
 import { and, eq, type SQL } from 'drizzle-orm';
 
 import type { AuditRecordRow } from '../attest/store.js';

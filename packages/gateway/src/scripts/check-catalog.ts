@@ -11,7 +11,7 @@ import { optionalFlag, parseFlags } from './args.js';
 import { connectFromEnv, runScript } from './run.js';
 
 /**
- * `pnpm --filter @adgate/gateway check-catalog [--app <app_id>]`: for every app (or one), the
+ * `pnpm --filter @adgateio/gateway check-catalog [--app <app_id>]`: for every app (or one), the
  * creatives it could serve, whether each one CAN serve, and the first reason it cannot.
  *
  * The two failures this exists for look identical to an operator: the creative is active, it
@@ -22,7 +22,7 @@ import { connectFromEnv, runScript } from './run.js';
  * line of an audit record's demand trace.
  *
  * Read-only and ALWAYS exit code 0: this is a diagnostic, not a gate. The decision itself is
- * creativeDeliverability() in @adgate/core; the loading and grouping is src/catalog/readiness.ts.
+ * creativeDeliverability() in @adgateio/core; the loading and grouping is src/catalog/readiness.ts.
  */
 
 export const CHECK_CATALOG_USAGE = [

@@ -2,8 +2,8 @@ import { randomBytes } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { type AuditSigningKey, loadPolicyFromYaml, prefixedUlid } from '@adgate/core';
-import { apps, TABLE_NAMES } from '@adgate/gateway/schema';
+import { type AuditSigningKey, loadPolicyFromYaml, prefixedUlid } from '@adgateio/core';
+import { apps, TABLE_NAMES } from '@adgateio/gateway/schema';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
@@ -209,7 +209,7 @@ export const auditSigningKey = (): AuditSigningKey => {
   const pem = (process.env['ADGATE_SIGNING_KEY_PEM'] ?? '').replace(/\\n/g, '\n');
   if (keyId === '' || pem === '') {
     throw new Error(
-      'ADGATE_SIGNING_KEY_ID and ADGATE_SIGNING_KEY_PEM must be set for the audit e2e run; generate them with `pnpm --filter @adgate/gateway keygen`',
+      'ADGATE_SIGNING_KEY_ID and ADGATE_SIGNING_KEY_PEM must be set for the audit e2e run; generate them with `pnpm --filter @adgateio/gateway keygen`',
     );
   }
   return { key_id: keyId, private_pem: pem };

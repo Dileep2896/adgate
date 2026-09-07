@@ -1,11 +1,11 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@4.0.0/schema.json",
-  "baseBranch": "main",
+  "baseBranch": "ralph/adgate-mvp",
   "access": "public",
   "format": "auto",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "ignore": ["@adgate/core", "@adgate/gateway", "@adgate/dashboard", "nextjs-chat"],
+  "ignore": ["@adgateio/core", "@adgateio/gateway", "@adgateio/dashboard", "nextjs-chat"],
   "fixed": [],
   "linked": [],
   "updateInternalDependencies": "patch"

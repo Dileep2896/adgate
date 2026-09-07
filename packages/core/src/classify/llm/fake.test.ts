@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { Classification, ClassifyFixture, type ClassifyFixtureCase } from '@adgate/schemas';
+import { Classification, ClassifyFixture, type ClassifyFixtureCase } from '@adgateio/schemas';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { FakeLlmClassifier, fakeLlmFailure, fakeLlmSuccess } from './fake.js';

@@ -1,4 +1,4 @@
-import type { Classification } from '@adgate/schemas';
+import type { Classification } from '@adgateio/schemas';
 
 import { sha256Prefixed } from '../audit/crypto.js';
 import { PROMPT_VERSION } from './llm/prompt.js';

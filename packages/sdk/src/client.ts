@@ -1,4 +1,4 @@
-import type { AttestRequest, EventRequest } from '@adgate/schemas';
+import type { AttestRequest, EventRequest } from '@adgateio/schemas';
 
 import { isEvaluateResponse } from './guards.js';
 import { CLIENT_FAILURE_PROMPT_VERSION, hashModelOutput } from './hash.js';

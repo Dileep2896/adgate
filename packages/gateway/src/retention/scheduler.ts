@@ -7,7 +7,7 @@ import { type RetentionSummary, runRetention } from './run.js';
 /**
  * The in-process retention scheduler (RETENTION_INTERVAL_HOURS). A free-tier host has nowhere to
  * put a crontab, so the gateway can run its own retention job on a timer instead of leaving
- * `privacy.retain_days` as a promise nobody keeps. `pnpm --filter @adgate/gateway retention` from
+ * `privacy.retain_days` as a promise nobody keeps. `pnpm --filter @adgateio/gateway retention` from
  * cron is still the better answer wherever cron exists; this is the fallback, and 0 (the default)
  * turns it off entirely so nothing changes for a deployment that already has cron.
  *

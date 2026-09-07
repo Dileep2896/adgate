@@ -6,7 +6,7 @@ import {
   type Classification,
   type DemandRequest,
   SeedCreative,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import { assignCreativeIds } from '../catalog.js';
 import { creative, request, sequentialUlidOptions } from '../direct.fixture.js';

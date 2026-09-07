@@ -1,6 +1,10 @@
 'use client';
 
-import { AdgateMessageBoundary, SponsoredSlot, type SponsoredSlotClient } from '@adgate/sdk/react';
+import {
+  AdgateMessageBoundary,
+  SponsoredSlot,
+  type SponsoredSlotClient,
+} from '@adgateio/sdk/react';
 import type { ReactElement } from 'react';
 
 import { decisionOf, messageText, type ChatMessage } from '@/lib/chat';

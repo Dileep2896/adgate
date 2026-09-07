@@ -37,7 +37,7 @@ export type Classification = z.infer<typeof Classification>;
 /**
  * The raw JSON object the LLM classifier prompt asks the model for (packages/core
  * classify/llm/prompt.ts). Category and sensitive values are free strings here because models
- * drift in casing and invent labels; @adgate/core lowercases them, drops anything outside
+ * drift in casing and invent labels; @adgateio/core lowercases them, drops anything outside
  * SENSITIVE_TAXONOMY / CATEGORIES_TAXONOMY and only then builds a Classification. Not part of
  * the HTTP contract, so it is deliberately absent from CONTRACT_SCHEMAS.
  */

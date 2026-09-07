@@ -1,5 +1,5 @@
 /**
- * @adgate/schemas: the Zod implementation of docs/api.md. Every TS type is z.infer of a schema.
+ * @adgateio/schemas: the Zod implementation of docs/api.md. Every TS type is z.infer of a schema.
  */
 export * from './affiliate.js';
 export * from './audit-record.js';

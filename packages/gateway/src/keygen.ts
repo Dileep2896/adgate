@@ -1,9 +1,9 @@
-import { type GeneratedKeypair, generateKeypair } from '@adgate/core';
+import { type GeneratedKeypair, generateKeypair } from '@adgateio/core';
 
 import { isMainModule } from './cli.js';
 
 /**
- * `pnpm --filter @adgate/gateway keygen [--key-id k_...]`: prints a fresh Ed25519 signing key
+ * `pnpm --filter @adgateio/gateway keygen [--key-id k_...]`: prints a fresh Ed25519 signing key
  * pair as the three .env lines the gateway reads (docs/audit.md, .env.example). It writes no
  * files and touches no environment; the operator pastes the output into .env (git ignored).
  * When rotating, keep the previous entries in ADGATE_PUBLIC_KEYS_JSON: old public keys remain

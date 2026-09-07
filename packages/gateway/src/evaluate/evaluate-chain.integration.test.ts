@@ -1,5 +1,5 @@
-import { mergeOverrides, policyHash } from '@adgate/core';
-import { AuditRecord } from '@adgate/schemas';
+import { mergeOverrides, policyHash } from '@adgateio/core';
+import { AuditRecord } from '@adgateio/schemas';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import {

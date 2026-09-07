@@ -1,4 +1,4 @@
-import { CATEGORIES_TAXONOMY, SENSITIVE_TAXONOMY, type SensitiveCategory } from '@adgate/schemas';
+import { CATEGORIES_TAXONOMY, SENSITIVE_TAXONOMY, type SensitiveCategory } from '@adgateio/schemas';
 
 import { RULES_DATA } from './data/index.js';
 import { compilePatterns, type CompiledPattern } from './match.js';

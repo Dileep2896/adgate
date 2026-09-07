@@ -60,7 +60,7 @@ describe('loadConfig', () => {
     for (const value of ['', undefined]) {
       const error = failure({ ...MINIMAL, ADGATE_SIGNING_KEY_PEM: value });
       expect(error.message).toContain('ADGATE_SIGNING_KEY_PEM');
-      expect(error.message).toContain('pnpm --filter @adgate/gateway keygen');
+      expect(error.message).toContain('pnpm --filter @adgateio/gateway keygen');
     }
   });
 

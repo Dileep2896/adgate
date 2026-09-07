@@ -1,4 +1,4 @@
-import { prefixedUlid, type UlidOptions } from '@adgate/core';
+import { prefixedUlid, type UlidOptions } from '@adgateio/core';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import type { DbOrTx } from '../db/client.js';

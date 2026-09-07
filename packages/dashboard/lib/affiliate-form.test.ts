@@ -1,4 +1,4 @@
-import { AMAZON_MARKETPLACES } from '@adgate/schemas';
+import { AMAZON_MARKETPLACES } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import {

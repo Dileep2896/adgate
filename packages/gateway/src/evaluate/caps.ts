@@ -1,5 +1,5 @@
-import { type CapRow, capStateFrom, nextCapRow } from '@adgate/core';
-import type { CapState } from '@adgate/schemas';
+import { type CapRow, capStateFrom, nextCapRow } from '@adgateio/core';
+import type { CapState } from '@adgateio/schemas';
 import { and, eq, sql } from 'drizzle-orm';
 
 import type { DbOrTx } from '../db/client.js';
@@ -9,7 +9,7 @@ import { capState, userDayCaps } from '../db/tables/caps.js';
  * Frequency-cap counters (docs/policy.md frequency_caps): the bridge between the cap_state and
  * user_day_caps tables and the pure CapState the policy engine reads. The semantics (a turn per
  * call, session_count and last_turn_index on a serve, keep-first user hash) live in
- * @adgate/core policy/caps.ts; this module only reads rows and stores what nextCapRow computes.
+ * @adgateio/core policy/caps.ts; this module only reads rows and stores what nextCapRow computes.
  * The pipeline reads once before the policy runs; the audit store reads AGAIN under the app
  * lock and writes in the same transaction, so a rolled-back record never counts a turn and two
  * concurrent turns of one conversation can never both serve under per_session 1.

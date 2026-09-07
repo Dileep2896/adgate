@@ -1,4 +1,4 @@
-import type { AuditRecord, Classification, VerifyResponse } from '@adgate/schemas';
+import type { AuditRecord, Classification, VerifyResponse } from '@adgateio/schemas';
 
 import type { ReportRecordInput } from './report';
 import { VERIFY_CHECK_NAMES } from './verify-labels';

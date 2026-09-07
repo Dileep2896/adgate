@@ -1,4 +1,4 @@
-import type { DemandRequest, DemandResponse, DemandSource } from '@adgate/schemas';
+import type { DemandRequest, DemandResponse, DemandSource } from '@adgateio/schemas';
 
 /**
  * The demand adapter contract (docs/BUILD_GUIDE.md Phase 3). Every demand source (direct,

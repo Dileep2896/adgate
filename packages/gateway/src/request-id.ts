@@ -1,4 +1,4 @@
-import { ulid } from '@adgate/core';
+import { ulid } from '@adgateio/core';
 import { createMiddleware } from 'hono/factory';
 import type { Logger } from 'pino';
 

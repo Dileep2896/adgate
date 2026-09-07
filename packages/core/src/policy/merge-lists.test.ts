@@ -1,4 +1,4 @@
-import { parsePolicy } from '@adgate/schemas';
+import { parsePolicy } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { mergeOverrides } from './merge.js';

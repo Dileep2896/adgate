@@ -7,7 +7,7 @@ import type {
   DemandTrace,
   ExcludedCandidate,
   PolicyConfig,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import { isExcludedDomain } from './exclusions.js';
 import { type Clock, describeError, latencySince, safeNow } from './response.js';

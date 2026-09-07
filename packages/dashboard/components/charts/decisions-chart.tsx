@@ -9,7 +9,7 @@ import type { DailyDecisions } from '@/lib/metrics';
  *
  * A CLIENT component that takes ALREADY COMPUTED plain data. recharts only runs in the browser,
  * and the arithmetic behind these numbers is done on the server (lib/metrics.ts, which this
- * file imports types from and nothing else) - so no query, no Drizzle and no @adgate/core ever
+ * file imports types from and nothing else) - so no query, no Drizzle and no @adgateio/core ever
  * reaches the browser bundle through this import.
  *
  * It renders with an empty series on purpose: lib/metrics.ts always returns one bucket per day

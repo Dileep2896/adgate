@@ -1,4 +1,4 @@
-import type { PolicyRule } from '@adgate/schemas';
+import type { PolicyRule } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { EU_MEMBER_STATES, isEuMemberState } from './eu-members.js';

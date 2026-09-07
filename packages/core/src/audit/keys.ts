@@ -1,6 +1,6 @@
 import { createPublicKey, generateKeyPairSync, type KeyObject } from 'node:crypto';
 
-import { KEY_ID_PATTERN, PublicKeysJson } from '@adgate/schemas';
+import { KEY_ID_PATTERN, PublicKeysJson } from '@adgateio/schemas';
 
 import { loadPrivateKey, loadPublicKey, sha256Hex, verifyWithPublicKey } from './crypto.js';
 import { AuditKeyError, describeIssues } from './errors.js';

@@ -1,5 +1,5 @@
-import { sha256Prefixed } from '@adgate/core';
-import { ErrorResponse, VerifyResponse } from '@adgate/schemas';
+import { sha256Prefixed } from '@adgateio/core';
+import { ErrorResponse, VerifyResponse } from '@adgateio/schemas';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 

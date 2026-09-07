@@ -17,8 +17,8 @@ import {
   prefixedUlid,
   prepareText,
   userHash,
-} from '@adgate/core';
-import type { Classification, DemandRequest, EvaluateRequest } from '@adgate/schemas';
+} from '@adgateio/core';
+import type { Classification, DemandRequest, EvaluateRequest } from '@adgateio/schemas';
 
 import type { AppRow } from '../db/tables/apps.js';
 import { utcDay } from './caps.js';

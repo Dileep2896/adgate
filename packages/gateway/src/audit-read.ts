@@ -1,5 +1,5 @@
 /**
- * `@adgate/gateway/audit`: the READ side of the audit API, exposed as its own entry point so
+ * `@adgateio/gateway/audit`: the READ side of the audit API, exposed as its own entry point so
  * the dashboard verifies a stored record exactly the way GET /v1/verify/:id does.
  *
  * The verdict of verify() depends entirely on the context it is given - the POSITIONAL

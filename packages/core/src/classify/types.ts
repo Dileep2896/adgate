@@ -1,4 +1,4 @@
-import type { Classification, EvaluateRequest, PolicyConfig } from '@adgate/schemas';
+import type { Classification, EvaluateRequest, PolicyConfig } from '@adgateio/schemas';
 
 import type { LlmClassifier, LlmFailureReason } from './llm/types.js';
 

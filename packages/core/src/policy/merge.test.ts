@@ -1,4 +1,4 @@
-import { OverrideRejection, PolicyConfig, type PolicyOverrides } from '@adgate/schemas';
+import { OverrideRejection, PolicyConfig, type PolicyOverrides } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { mergeOverrides } from './merge.js';

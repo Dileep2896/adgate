@@ -7,8 +7,8 @@ import {
   nextPrevHash,
   prefixedUlid,
   userHash,
-} from '@adgate/core';
-import { Disclosure } from '@adgate/schemas';
+} from '@adgateio/core';
+import { Disclosure } from '@adgateio/schemas';
 import type { Logger } from 'pino';
 
 import type { AppRow } from '../db/tables/apps.js';

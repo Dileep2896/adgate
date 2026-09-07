@@ -7,7 +7,7 @@ import {
   type LruCache,
   OpenAiCompatibleClassifier,
   type PublicKeyRing,
-} from '@adgate/core';
+} from '@adgateio/core';
 
 import type { GatewayConfig } from '../config.js';
 import type { Db } from '../db/client.js';

@@ -1,10 +1,15 @@
-import { createCreative, type Db, setCreativeActive, updateCreative } from '@adgate/gateway/admin';
+import {
+  createCreative,
+  type Db,
+  setCreativeActive,
+  updateCreative,
+} from '@adgateio/gateway/admin';
 
 import type { CreativeWriter } from './creative-save';
 
 /**
  * The Postgres side of the creative editor. Every write here is the GATEWAY's own function
- * (`@adgate/gateway/admin` -> catalog/creative-admin.ts), not SQL of the dashboard's: the
+ * (`@adgateio/gateway/admin` -> catalog/creative-admin.ts), not SQL of the dashboard's: the
  * advertiser rule, the content_hash and the row shape are decided in one place, next to the
  * `seed-creatives` importer that writes the same table.
  *

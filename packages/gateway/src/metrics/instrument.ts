@@ -1,5 +1,5 @@
-import type { Clock } from '@adgate/core';
-import type { Decision, DemandTrace, SuppressReason } from '@adgate/schemas';
+import type { Clock } from '@adgateio/core';
+import type { Decision, DemandTrace, SuppressReason } from '@adgateio/schemas';
 import type { MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
 

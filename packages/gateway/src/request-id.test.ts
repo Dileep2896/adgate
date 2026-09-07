@@ -1,4 +1,4 @@
-import { isUlid } from '@adgate/core';
+import { isUlid } from '@adgateio/core';
 import { describe, expect, it } from 'vitest';
 
 import { createApp } from './app.js';

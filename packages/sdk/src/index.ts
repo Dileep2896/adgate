@@ -1,6 +1,6 @@
 /**
- * @adgate/sdk core entry: works in Node 20 and browsers, no runtime dependencies.
- * `@adgate/sdk/react` (S24) and `@adgate/sdk/ai` (S25) are separate entries.
+ * @adgateio/sdk core entry: works in Node 20 and browsers, no runtime dependencies.
+ * `@adgateio/sdk/react` (S24) and `@adgateio/sdk/ai` (S25) are separate entries.
  */
 export {
   ATTEST_PATH,

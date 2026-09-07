@@ -63,7 +63,7 @@ const AdminPage = async () => {
             An account is created at <span className="ag-code">/signup</span> and immediately owns
             the apps it creates. Until then every app on this gateway is one you made yourself, from
             the console or from{' '}
-            <span className="ag-code">pnpm --filter @adgate/gateway create-app</span>, and only an
+            <span className="ag-code">pnpm --filter @adgateio/gateway create-app</span>, and only an
             operator can see it.
           </EmptyState>
         ) : (

@@ -72,7 +72,7 @@ const CreativesPage = async ({
   ]);
   // Whether each of these can ACTUALLY serve, judged per (creative, app) against the same
   // diagnostic check-catalog runs. One extra query (the apps in scope); the judging is pure and
-  // happens here on the server, so no component below carries @adgate/core into the browser.
+  // happens here on the server, so no component below carries @adgateio/core into the browser.
   const delivery = await creativeDelivery(session.scope, creatives);
   const filtered = isFiltered(filters);
   // Only the operator edits the shared catalog; a member sees it and edits their own apps'.
@@ -125,7 +125,7 @@ const CreativesPage = async ({
               A creative is one sponsored block a demand adapter can return: an advertiser, the
               copy, a destination, what it targets and what it pays. With none, every eligible turn
               ends in <span className="ag-code">no_fill</span>. Add one here, or import a file with{' '}
-              <span className="ag-code">pnpm --filter @adgate/gateway seed-creatives</span>.
+              <span className="ag-code">pnpm --filter @adgateio/gateway seed-creatives</span>.
             </>
           )}
         </EmptyState>

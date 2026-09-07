@@ -25,7 +25,7 @@ export const ApiKeysTable = ({ appId, keys }: ApiKeysTableProps) => {
         proves which tenant it belongs to. Registering an app issues its first key; issue another
         from the command line with{' '}
         <span className="ag-code">
-          pnpm --filter @adgate/gateway create-key --app {appId} --role app
+          pnpm --filter @adgateio/gateway create-key --app {appId} --role app
         </span>
         . A key is readable exactly once, on the screen that mints it.
       </EmptyState>

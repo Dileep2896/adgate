@@ -1,4 +1,4 @@
-import { MIN_PASSWORD_LENGTH } from '@adgate/gateway/admin';
+import { MIN_PASSWORD_LENGTH } from '@adgateio/gateway/admin';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 

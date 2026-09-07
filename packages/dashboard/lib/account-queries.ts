@@ -1,4 +1,4 @@
-import { type AccountUser, listUsers } from '@adgate/gateway/admin';
+import { type AccountUser, listUsers } from '@adgateio/gateway/admin';
 
 import { type DashboardDb, dashboardDb } from './db';
 

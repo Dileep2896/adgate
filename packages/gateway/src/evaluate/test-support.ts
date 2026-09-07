@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { creativeContentHash, generateKeypair, verify, type VerifyContext } from '@adgate/core';
+import { creativeContentHash, generateKeypair, verify, type VerifyContext } from '@adgateio/core';
 import {
   ClassifyFixture,
   type ClassifyFixtureCase,
@@ -9,7 +9,7 @@ import {
   EvaluateResponse,
   SeedCreative,
   type VerifyResponse,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 import { asc, eq } from 'drizzle-orm';
 import { expect } from 'vitest';
 import type { z } from 'zod';

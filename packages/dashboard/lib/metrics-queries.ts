@@ -1,4 +1,4 @@
-import { apps, auditRecords, creatives, events, reports } from '@adgate/gateway/schema';
+import { apps, auditRecords, creatives, events, reports } from '@adgateio/gateway/schema';
 import {
   and,
   count,

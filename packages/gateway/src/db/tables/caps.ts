@@ -1,4 +1,4 @@
-import type { Classification } from '@adgate/schemas';
+import type { Classification } from '@adgateio/schemas';
 import { date, index, integer, jsonb, pgTable, primaryKey, text } from 'drizzle-orm/pg-core';
 
 import { apps } from './apps.js';

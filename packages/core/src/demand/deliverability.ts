@@ -6,7 +6,7 @@ import type {
   DeliverabilityReason,
   DemandSource,
   PolicyConfig,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import { expandRegions, isRegionAllowed } from '../policy/regions.js';
 import { isWildcardTarget, WILDCARD_SUFFIX } from './match.js';

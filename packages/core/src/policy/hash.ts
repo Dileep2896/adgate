@@ -1,4 +1,4 @@
-import type { PolicyConfig, Sha256Hash } from '@adgate/schemas';
+import type { PolicyConfig, Sha256Hash } from '@adgateio/schemas';
 
 import { sha256Prefixed } from '../audit/crypto.js';
 import { canonicalize } from '../canonical/canonicalize.js';

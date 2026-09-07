@@ -1,4 +1,4 @@
-import type { EvaluateRequest, Message } from '@adgate/schemas';
+import type { EvaluateRequest, Message } from '@adgateio/schemas';
 
 /**
  * Turns the request's messages (or context_summary) into the strings the classifier stages and

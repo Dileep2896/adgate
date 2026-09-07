@@ -1,4 +1,4 @@
-import { CONTRACT_SCHEMAS, type ContractSchemaName, toJsonSchemaObject } from '@adgate/schemas';
+import { CONTRACT_SCHEMAS, type ContractSchemaName, toJsonSchemaObject } from '@adgateio/schemas';
 
 import { buildPaths, COMPONENT_SCHEMA_PREFIX, type PathsObject } from './paths.js';
 

@@ -1,4 +1,4 @@
-import { advertisers, apps, creatives } from '@adgate/gateway/schema';
+import { advertisers, apps, creatives } from '@adgateio/gateway/schema';
 import { and, asc, desc, eq, isNull, or, type SQL } from 'drizzle-orm';
 
 import type { AppScope } from './app-scope';

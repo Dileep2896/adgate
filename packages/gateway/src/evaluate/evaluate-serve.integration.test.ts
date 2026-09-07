@@ -1,5 +1,5 @@
-import { conversationIdHash } from '@adgate/core';
-import { AuditRecord } from '@adgate/schemas';
+import { conversationIdHash } from '@adgateio/core';
+import { AuditRecord } from '@adgateio/schemas';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 

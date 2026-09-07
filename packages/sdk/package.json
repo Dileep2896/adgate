@@ -1,12 +1,12 @@
 {
-  "name": "@adgate/sdk",
+  "name": "@adgateio/sdk",
   "version": "0.1.0",
   "description": "adgate client for Node and browsers: evaluate a turn, attest the model output hash, track events. Never throws.",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/adgate/adgate/tree/main/packages/sdk",
+  "homepage": "https://github.com/Dileep2896/adgate/tree/main/packages/sdk",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/adgate/adgate.git",
+    "url": "git+https://github.com/Dileep2896/adgate.git",
     "directory": "packages/sdk"
   },
   "type": "module",
@@ -72,7 +72,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@adgate/schemas": "workspace:*"
+    "@adgateio/schemas": "workspace:*"
   },
   "peerDependencies": {
     "ai": "^7",

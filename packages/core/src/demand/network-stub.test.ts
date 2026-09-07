@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { DemandResponse, DemandTrace, GravityConfig, KoahConfig } from '@adgate/schemas';
+import { DemandResponse, DemandTrace, GravityConfig, KoahConfig } from '@adgateio/schemas';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { creative, request } from './direct.fixture.js';

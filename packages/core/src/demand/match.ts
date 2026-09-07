@@ -1,4 +1,4 @@
-import type { CatalogCreative, Classification } from '@adgate/schemas';
+import type { CatalogCreative, Classification } from '@adgateio/schemas';
 
 import { keywordOverlap } from './keywords.js';
 

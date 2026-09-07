@@ -9,8 +9,8 @@ import {
   nextPrevHash,
   prefixedUlid,
   sha256Prefixed,
-} from '@adgate/core';
-import type { AuditRecord, Candidate, Classification, DemandTrace } from '@adgate/schemas';
+} from '@adgateio/core';
+import type { AuditRecord, Candidate, Classification, DemandTrace } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { FIXTURE_CANDIDATE, OTHER_CANDIDATE } from './audit-fixtures';

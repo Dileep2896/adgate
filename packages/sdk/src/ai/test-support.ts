@@ -15,7 +15,7 @@ import type { AdgateClient } from '../types.js';
 import { ADGATE_METADATA_KEY, type AdgateProviderMetadata } from './middleware.js';
 
 /**
- * Fakes for the `@adgate/sdk/ai` tests. No network and no model provider: the language model is
+ * Fakes for the `@adgateio/sdk/ai` tests. No network and no model provider: the language model is
  * the AI SDK's own MockLanguageModelV4 and the gateway is the core test-support routedFetch.
  */
 type WrapGenerate = NonNullable<LanguageModelMiddleware['wrapGenerate']>;

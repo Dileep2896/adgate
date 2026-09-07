@@ -1,4 +1,4 @@
-import type { CapState, PolicyRule, User } from '@adgate/schemas';
+import type { CapState, PolicyRule, User } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { evaluatePolicy, type PolicyEvaluation } from './evaluate.js';

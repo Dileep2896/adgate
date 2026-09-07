@@ -4,7 +4,7 @@ import {
   parsePolicyYaml,
   PolicyConfig,
   PolicyValidationError as SchemasPolicyValidationError,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { PolicyValidationError } from '../index.js';
@@ -89,7 +89,7 @@ describe('loadPolicyFromYaml', () => {
     expect(changed.policy_hash).not.toBe(loadPolicyFromYaml(exampleYaml).policy_hash);
   });
 
-  it('throws the PolicyValidationError class from @adgate/schemas', () => {
+  it('throws the PolicyValidationError class from @adgateio/schemas', () => {
     expect(PolicyValidationError).toBe(SchemasPolicyValidationError);
     expect(() => loadPolicyFromYaml('app_id: [')).toThrow(PolicyValidationError);
     expect(() => loadPolicyFromYaml('app_id: x\nunknown: 1')).toThrow(PolicyValidationError);

@@ -1,5 +1,5 @@
-import { loadPolicyFromYaml, policyHash, PolicyValidationError } from '@adgate/core';
-import { PolicyConfig } from '@adgate/schemas';
+import { loadPolicyFromYaml, policyHash, PolicyValidationError } from '@adgateio/core';
+import { PolicyConfig } from '@adgateio/schemas';
 import { count, eq } from 'drizzle-orm';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

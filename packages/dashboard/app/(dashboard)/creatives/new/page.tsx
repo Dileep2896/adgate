@@ -1,4 +1,4 @@
-import { CATEGORIES_TAXONOMY } from '@adgate/schemas';
+import { CATEGORIES_TAXONOMY } from '@adgateio/schemas';
 import Link from 'next/link';
 
 import { CreativeForm } from '@/components/creative-form';

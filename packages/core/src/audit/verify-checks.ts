@@ -1,4 +1,4 @@
-import type { AuditRecord, IsoTimestamp, VerifyCheck, VerifyCheckName } from '@adgate/schemas';
+import type { AuditRecord, IsoTimestamp, VerifyCheck, VerifyCheckName } from '@adgateio/schemas';
 
 import { isAttested, isUnattested } from './attest.js';
 import { computeRecordHash, GENESIS } from './chain.js';

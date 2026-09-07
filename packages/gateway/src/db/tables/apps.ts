@@ -1,4 +1,4 @@
-import type { AffiliateConfig } from '@adgate/schemas';
+import type { AffiliateConfig } from '@adgateio/schemas';
 import { sql } from 'drizzle-orm';
 import { check, index, integer, jsonb, pgTable, text } from 'drizzle-orm/pg-core';
 

@@ -66,7 +66,7 @@ Explicit non-goals for the MVP: no multi-region, no real-time bidding protocol, 
 ```
   AI app (chat UI, agent, coding tool)
         |
-        |  @adgate/sdk (TS) or adgate (Python)
+        |  @adgateio/sdk (TS) or adgate (Python)
         |  evaluate(turn, user, policy) -> decision
         v
   +------------------------------------------------------------+
@@ -255,7 +255,7 @@ adgate/
     schemas/              # Zod schemas + generated JSON schema + TS types (shared)
     core/                 # classifier, policy engine, mediation, audit (pure logic, no HTTP)
     gateway/              # Hono service, Drizzle, migrations, API keys, tracking redirect
-    sdk/                  # @adgate/sdk (TS client) + React components
+    sdk/                  # @adgateio/sdk (TS client) + React components
     sdk-python/           # adgate (Python client)
     dashboard/            # Next.js app (Phase 8)
   examples/
@@ -501,7 +501,7 @@ If p95 is above 300 ms with a warm cache, ask Claude Code to profile before opti
 Prompt:
 
 ```
-Implement packages/sdk as @adgate/sdk. Two entry points: "@adgate/sdk" (framework agnostic, works in Node and browsers) and "@adgate/sdk/react".
+Implement packages/sdk as @adgateio/sdk. Two entry points: "@adgateio/sdk" (framework agnostic, works in Node and browsers) and "@adgateio/sdk/react".
 
 Core client:
   const adgate = createClient({ apiKey, baseUrl, timeoutMs: 800 })
@@ -516,12 +516,12 @@ React:
   <SponsoredSlot decision={decision} onDismiss={...} /> renders nothing when decision is suppress. When serving, renders a separate block with the label from decision.creative.disclosure_label, the headline, body, CTA link to creative.url with rel="sponsored noopener", an aria-label "Sponsored content", and a dismiss button that calls track(auditId, "dismiss"). Fires track(auditId, "impression") once when it enters the viewport (IntersectionObserver, guarded for SSR).
   The component must refuse to be rendered inside an element with data-adgate-message="assistant" and log a console warning if attempted. This enforces separation from model output at the UI layer.
 
-Vercel AI SDK helper in "@adgate/sdk/ai": wrapLanguageModel middleware that runs evaluate on the latest user message in parallel with generation, attaches the decision to the response metadata, and attests with the final text.
+Vercel AI SDK helper in "@adgateio/sdk/ai": wrapLanguageModel middleware that runs evaluate on the latest user message in parallel with generation, attaches the decision to the response metadata, and attests with the final text.
 
 Build with tsup to ESM and CJS with types. Tests with vitest and @testing-library/react. Tests must cover the never-rejects guarantee, the streaming attest flow, and the separation guard.
 ```
 
-Acceptance: `pnpm --filter @adgate/sdk build` produces both formats, React tests pass, bundle under 15 kB gzipped for the core entry. Commit as `feat: typescript sdk`.
+Acceptance: `pnpm --filter @adgateio/sdk build` produces both formats, React tests pass, bundle under 15 kB gzipped for the core entry. Commit as `feat: typescript sdk`.
 
 ### Phase 7: Python SDK and example apps
 
@@ -530,7 +530,7 @@ Prompt:
 ```
 1. Implement packages/sdk-python as the "adgate" package (pyproject with hatchling, Python 3.10+). Use httpx (sync and async clients) and pydantic v2 models generated from the JSON Schemas exported by packages/schemas (write a small script that regenerates them; check the generated models into the repo). Mirror the TS API: evaluate, attest, track, and an async with_generation helper. Never raise from evaluate; return a suppress decision on error. Tests with pytest and respx.
 
-2. examples/nextjs-chat: a minimal Next.js chat app using the Vercel AI SDK and an OpenAI-compatible endpoint, wired with @adgate/sdk/ai and <SponsoredSlot/>. Free/paid toggle in the UI to demonstrate paid suppression. A README with a 5 minute setup.
+2. examples/nextjs-chat: a minimal Next.js chat app using the Vercel AI SDK and an OpenAI-compatible endpoint, wired with @adgateio/sdk/ai and <SponsoredSlot/>. Free/paid toggle in the UI to demonstrate paid suppression. A README with a 5 minute setup.
 
 3. examples/fastapi-chat: the same in Python with FastAPI, server-sent events, and the Python SDK; the sponsored slot is returned as a separate SSE event type "sponsored" so the frontend renders it after the answer.
 
@@ -570,10 +570,10 @@ Prompt:
 3. Observability: /metrics endpoint in Prometheus format with counters for decisions by reason, histograms for evaluate latency and per-adapter latency.
 4. Load test script in packages/gateway/scripts/load.ts and record p50/p95 in docs/performance.md.
 5. Docs: README with a 10 minute quickstart (docker compose up, seed, run example), docs/api.md regenerated from OpenAPI, CONTRIBUTING.md.
-6. Release: changesets for versioning, publish @adgate/sdk and @adgate/schemas to npm and adgate to PyPI from CI on tag. Docker image for the gateway published to GHCR.
+6. Release: changesets for versioning, publish @adgateio/sdk and @adgateio/schemas to npm and adgate to PyPI from CI on tag. Docker image for the gateway published to GHCR.
 ```
 
-Acceptance: `npm view @adgate/sdk` and `pip install adgate` work from a clean machine, quickstart takes under 10 minutes on a fresh clone. Tag `v0.1.0`.
+Acceptance: `npm view @adgateio/sdk` and `pip install adgate` work from a clean machine, quickstart takes under 10 minutes on a fresh clone. Tag `v0.1.0`.
 
 ---
 

@@ -1,4 +1,4 @@
-import { ErrorResponse } from '@adgate/schemas';
+import { ErrorResponse } from '@adgateio/schemas';
 import { eq } from 'drizzle-orm';
 import type { Context } from 'hono';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

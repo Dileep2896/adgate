@@ -3,7 +3,7 @@ import {
   derivePublicPem,
   parsePublicKeysJson,
   type PublicKeyRing,
-} from '@adgate/core';
+} from '@adgateio/core';
 
 import { loadRepoEnvFile } from './env';
 

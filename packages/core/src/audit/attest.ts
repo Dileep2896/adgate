@@ -4,7 +4,7 @@ import {
   PrevHash,
   Sha256Hash,
   type UnsignedAuditRecord,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import { type AuditSigningKey, GENESIS, signRecord, unsignedOf } from './chain.js';
 import { describeIssues } from './errors.js';

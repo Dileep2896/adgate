@@ -6,9 +6,9 @@ import { type ContractSchemaName, jsonSchemaFileName, renderJsonSchemas } from '
 
 /**
  * The node:fs half of the JSON Schema tooling. Deliberately not exported from the package index
- * (index-purity.test.ts): @adgate/schemas is bundled for browsers by the SDK and the dashboard,
+ * (index-purity.test.ts): @adgateio/schemas is bundled for browsers by the SDK and the dashboard,
  * so nothing reachable from the index may import a node built-in. Used by the gen-json.ts
- * script (`pnpm --filter @adgate/schemas gen:json`) and by json-schema.test.ts.
+ * script (`pnpm --filter @adgateio/schemas gen:json`) and by json-schema.test.ts.
  */
 
 /** Default output directory: packages/schemas/json (one level above src/ and dist/). */

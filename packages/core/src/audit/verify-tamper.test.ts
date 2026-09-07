@@ -1,4 +1,4 @@
-import type { AuditRecord } from '@adgate/schemas';
+import type { AuditRecord } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { nextPrevHash } from './chain.js';

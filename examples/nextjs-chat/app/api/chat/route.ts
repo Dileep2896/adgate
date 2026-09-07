@@ -1,5 +1,5 @@
-import { adgateMiddleware } from '@adgate/sdk/ai';
-import type { EvaluateResult } from '@adgate/sdk';
+import { adgateMiddleware } from '@adgateio/sdk/ai';
+import type { EvaluateResult } from '@adgateio/sdk';
 import {
   convertToModelMessages,
   createUIMessageStream,

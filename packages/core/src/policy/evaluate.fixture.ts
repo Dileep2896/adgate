@@ -6,7 +6,7 @@ import {
   type PolicyConfigInput,
   type Surface,
   type User,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import type { EvaluatePolicyInput } from './evaluate.js';
 

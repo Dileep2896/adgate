@@ -1,5 +1,5 @@
-import type { Clock } from '@adgate/core';
-import { AuditId, type PolicyConfig } from '@adgate/schemas';
+import type { Clock } from '@adgateio/core';
+import { AuditId, type PolicyConfig } from '@adgateio/schemas';
 import type { Context } from 'hono';
 import type { Logger } from 'pino';
 

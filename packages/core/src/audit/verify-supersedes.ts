@@ -1,4 +1,4 @@
-import { AuditRecord, type VerifyCheck, type VerifyResponse } from '@adgate/schemas';
+import { AuditRecord, type VerifyCheck, type VerifyResponse } from '@adgateio/schemas';
 
 import { canonicalize } from '../canonical/canonicalize.js';
 import {

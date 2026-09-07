@@ -1,4 +1,4 @@
-import { derivePublicPem, loadPrivateKey, parsePublicKeysJson } from '@adgate/core';
+import { derivePublicPem, loadPrivateKey, parsePublicKeysJson } from '@adgateio/core';
 import { describe, expect, it } from 'vitest';
 
 import { unescapeNewlines } from './config.js';

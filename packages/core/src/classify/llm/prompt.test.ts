@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { CATEGORIES_TAXONOMY, SENSITIVE_TAXONOMY } from '@adgate/schemas';
+import { CATEGORIES_TAXONOMY, SENSITIVE_TAXONOMY } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { CLASSIFIER_PROMPT, PROMPT_VERSION, computePromptVersion } from './prompt.js';

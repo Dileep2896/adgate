@@ -35,8 +35,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/adgate/adgate"
-Source = "https://github.com/adgate/adgate/tree/main/packages/sdk-python"
+Homepage = "https://github.com/Dileep2896/adgate"
+Source = "https://github.com/Dileep2896/adgate/tree/main/packages/sdk-python"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/adgate"]

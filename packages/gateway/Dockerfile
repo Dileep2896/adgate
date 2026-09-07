@@ -1,7 +1,7 @@
 # adgate gateway.
 #
 # The build context is the REPO ROOT, not this directory: the gateway imports its workspace
-# siblings (@adgate/core, @adgate/schemas) and pnpm needs the lockfile and every package
+# siblings (@adgateio/core, @adgateio/schemas) and pnpm needs the lockfile and every package
 # manifest to install. Build and run it from the repo root:
 #
 #   docker build -f packages/gateway/Dockerfile -t adgate-gateway .
@@ -49,13 +49,13 @@ WORKDIR /app
 COPY . .
 
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter "@adgate/gateway..." build
+RUN pnpm --filter "@adgateio/gateway..." build
 # `pnpm deploy` writes a self-contained copy of one workspace package: package.json, the files
 # its "files" field lists (dist/ and drizzle/) and a node_modules with the production
-# dependencies resolved from the lockfile — @adgate/core and @adgate/schemas copied in rather
+# dependencies resolved from the lockfile — @adgateio/core and @adgateio/schemas copied in rather
 # than symlinked out of the store. --prod drops devDependencies (drizzle-kit). The runtime stage
 # therefore needs no pnpm, no store and no sources.
-RUN pnpm deploy --filter=@adgate/gateway --prod /out
+RUN pnpm deploy --filter=@adgateio/gateway --prod /out
 
 # ---------------------------------------------------------------------------------------------
 # Runtime: Node 20 and the deployed directory. No pnpm, no sources, no dev dependencies.

@@ -1,4 +1,4 @@
-import type { HealthResponse } from '@adgate/schemas';
+import type { HealthResponse } from '@adgateio/schemas';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { createMiddleware } from 'hono/factory';

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import * as sdk from './index.js';
 
-describe('@adgate/sdk public surface', () => {
+describe('@adgateio/sdk public surface', () => {
   it('exports the client factory, the hash helper and the guard', () => {
     expect(typeof sdk.createClient).toBe('function');
     expect(typeof sdk.hashModelOutput).toBe('function');

@@ -1,4 +1,4 @@
-import { prefixedUlid, type UlidOptions } from '@adgate/core';
+import { prefixedUlid, type UlidOptions } from '@adgateio/core';
 import { eq } from 'drizzle-orm';
 
 import { burnVerifyTime, hashApiSecret, verifyApiSecret } from '../auth/keys.js';

@@ -1,4 +1,4 @@
-import type { EventType } from '@adgate/sdk';
+import type { EventType } from '@adgateio/sdk';
 
 import { adgateClient } from '@/lib/adgate';
 import { EVENT_TYPES } from '@/lib/events';

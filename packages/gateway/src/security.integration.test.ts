@@ -1,4 +1,4 @@
-import { ErrorResponse, EvaluateResponse, MESSAGE_CONTENT_MAX_CHARS } from '@adgate/schemas';
+import { ErrorResponse, EvaluateResponse, MESSAGE_CONTENT_MAX_CHARS } from '@adgateio/schemas';
 import { count } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 

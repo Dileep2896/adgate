@@ -1,4 +1,4 @@
-import type { Candidate } from '@adgate/schemas';
+import type { Candidate } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { creative, request } from './direct.fixture.js';

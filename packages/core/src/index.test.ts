@@ -1,9 +1,9 @@
-import * as schemas from '@adgate/schemas';
+import * as schemas from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import * as core from './index.js';
 
-describe('@adgate/core', () => {
+describe('@adgateio/core', () => {
   it('exports the canonical JSON and policy helpers', () => {
     expect(typeof core.canonicalize).toBe('function');
     expect(typeof core.sha256Hex).toBe('function');
@@ -167,7 +167,7 @@ describe('@adgate/core', () => {
     expect(core.createGravityAdapter({ enabled: false }).source).toBe('gravity');
   });
 
-  it('re-exports PolicyValidationError from @adgate/schemas', () => {
+  it('re-exports PolicyValidationError from @adgateio/schemas', () => {
     expect(core.PolicyValidationError).toBe(schemas.PolicyValidationError);
   });
 });

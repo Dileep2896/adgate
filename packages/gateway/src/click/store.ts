@@ -1,4 +1,4 @@
-import type { Clock } from '@adgate/core';
+import type { Clock } from '@adgateio/core';
 import { and, eq } from 'drizzle-orm';
 
 import type { DbOrTx } from '../db/client.js';

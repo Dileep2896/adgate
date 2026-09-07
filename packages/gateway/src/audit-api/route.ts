@@ -1,5 +1,5 @@
-import { type PublicKeyRing, verify } from '@adgate/core';
-import { AuditId, AuditRecord, Sha256Hash } from '@adgate/schemas';
+import { type PublicKeyRing, verify } from '@adgateio/core';
+import { AuditId, AuditRecord, Sha256Hash } from '@adgateio/schemas';
 import type { Context } from 'hono';
 
 import type { AppEnv } from '../app-env.js';

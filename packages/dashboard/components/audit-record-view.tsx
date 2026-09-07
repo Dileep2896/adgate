@@ -1,4 +1,4 @@
-import type { AuditRecord } from '@adgate/schemas';
+import type { AuditRecord } from '@adgateio/schemas';
 
 import { CopyButton } from '@/components/copy-button';
 import { formatPercent, formatReason, truncateHash } from '@/lib/format';

@@ -1,4 +1,4 @@
-import { authenticateUser, touchUserLogin } from '@adgate/gateway/admin';
+import { authenticateUser, touchUserLogin } from '@adgateio/gateway/admin';
 import type { NextRequest, NextResponse } from 'next/server';
 
 import { readCredentials } from '@/lib/account-form';

@@ -1,4 +1,4 @@
-import { AuditRecord, type Classification } from '@adgate/schemas';
+import { AuditRecord, type Classification } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { canonicalize } from '../canonical/canonicalize.js';

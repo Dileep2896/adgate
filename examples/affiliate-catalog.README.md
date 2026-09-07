@@ -7,7 +7,7 @@ productivity. Two per category so mediation has something to rank.
 Load it into a gateway:
 
 ```bash
-pnpm --filter @adgate/gateway seed-creatives --file examples/affiliate-catalog.seed.json
+pnpm --filter @adgateio/gateway seed-creatives --file examples/affiliate-catalog.seed.json
 ```
 
 The script is idempotent, so re-running after an edit updates rather than duplicates. It also
@@ -65,8 +65,8 @@ names, so it works under any single-network policy.
 To see exactly where you stand, per app and per creative:
 
 ```bash
-pnpm --filter @adgate/gateway check-catalog
-pnpm --filter @adgate/gateway check-catalog --app app_01H...
+pnpm --filter @adgateio/gateway check-catalog
+pnpm --filter @adgateio/gateway check-catalog --app app_01H...
 ```
 
 It prints `yes`/`no` per creative with the first blocking reason, never writes anything and always

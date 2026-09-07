@@ -1,4 +1,4 @@
-import type { Classification } from '@adgate/schemas';
+import type { Classification } from '@adgateio/schemas';
 
 import { PROMPT_VERSION } from './prompt.js';
 import {

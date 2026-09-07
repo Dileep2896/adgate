@@ -1,4 +1,4 @@
-import type { ImpactConfig } from '@adgate/schemas';
+import type { ImpactConfig } from '@adgateio/schemas';
 
 import { fillTemplate } from './template.js';
 import type { AffiliateUrlBuilder } from './types.js';

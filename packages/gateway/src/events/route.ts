@@ -1,4 +1,4 @@
-import { EventRequest } from '@adgate/schemas';
+import { EventRequest } from '@adgateio/schemas';
 import type { Context } from 'hono';
 
 import type { AppEnv } from '../app-env.js';

@@ -1,16 +1,16 @@
-import { loadPolicyFromYaml, PolicyValidationError } from '@adgate/core';
+import { loadPolicyFromYaml, PolicyValidationError } from '@adgateio/core';
 
 import type { PolicyIssueView } from './policy-issue';
 
 /**
  * The dashboard's view of policy validation. It does not re-implement any of it: the document
- * goes through loadPolicyFromYaml (@adgate/core), the same function the gateway and
+ * goes through loadPolicyFromYaml (@adgateio/core), the same function the gateway and
  * `create-app` use, so what the editor accepts is exactly what the gateway will parse and
  * exactly what policy_hash is computed from.
  *
  * Pure: no database, no React, no environment. The page renders the issues; this decides them.
  *
- * SERVER ONLY in practice: it pulls in @adgate/core (zod, the YAML parser, the policy schema).
+ * SERVER ONLY in practice: it pulls in @adgateio/core (zod, the YAML parser, the policy schema).
  * A client component that only needs to PRINT an issue imports lib/policy-issue.ts instead, so
  * none of that reaches the browser bundle.
  */

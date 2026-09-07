@@ -1,4 +1,4 @@
-import { type AffiliateConfig, AffiliateNetwork } from '@adgate/schemas';
+import { type AffiliateConfig, AffiliateNetwork } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import {

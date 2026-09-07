@@ -1,4 +1,4 @@
-import { GravityConfig, KEY_ID_PATTERN, KoahConfig } from '@adgate/schemas';
+import { GravityConfig, KEY_ID_PATTERN, KoahConfig } from '@adgateio/schemas';
 import { z } from 'zod';
 
 /**
@@ -12,7 +12,7 @@ import { z } from 'zod';
 export const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
 export const NODE_ENVS = ['development', 'test', 'production'] as const;
 
-export const KEYGEN_COMMAND = 'pnpm --filter @adgate/gateway keygen';
+export const KEYGEN_COMMAND = 'pnpm --filter @adgateio/gateway keygen';
 
 /** Restores the line breaks of a PEM whose newlines were flattened to `\n` escapes. */
 export const unescapeNewlines = (value: string): string => value.replace(/\\n/g, '\n');
@@ -114,7 +114,7 @@ export const GatewayConfig = GatewayEnv.transform((env) => ({
   rateLimit: { rps: env.RATE_LIMIT_RPS, burst: env.RATE_LIMIT_BURST },
   /**
    * How often the in-process retention scheduler runs (retention/scheduler.ts). 0 = never, and
-   * the timer is not registered at all: run `pnpm --filter @adgate/gateway retention` from cron
+   * the timer is not registered at all: run `pnpm --filter @adgateio/gateway retention` from cron
    * instead. A free-tier deployment with nowhere to put a cron entry sets this instead.
    */
   retentionIntervalHours: env.RETENTION_INTERVAL_HOURS,

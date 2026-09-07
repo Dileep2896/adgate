@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * CLAUDE.md: pure logic lives in packages/core with no HTTP, DB, env or network access. The
- * demand directory (affiliate/ included) may reach @adgate/schemas and node:crypto (through
+ * demand directory (affiliate/ included) may reach @adgateio/schemas and node:crypto (through
  * ../ids/ulid.ts, for creative ids) and nothing else outside src/. Same approach as
  * ../policy/evaluate-purity.test.ts. The affiliate adapter builds links, it never fetches them.
  */
@@ -14,7 +14,7 @@ const demandDir = dirname(fileURLToPath(import.meta.url));
 const srcDir = resolve(demandDir, '..');
 const SPECIFIER = /(?:\bfrom\s+|\bimport\s+|\bimport\s*\(\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]/g;
 const BANNED =
-  /^(node:(?!crypto$)|fs|path|os|http|https|net|tls|dns|child_process|worker_threads|pg|postgres|drizzle|hono|undici|redis|ioredis|zod|@adgate\/gateway|@adgate\/sdk)/;
+  /^(node:(?!crypto$)|fs|path|os|http|https|net|tls|dns|child_process|worker_threads|pg|postgres|drizzle|hono|undici|redis|ioredis|zod|@adgateio\/gateway|@adgateio\/sdk)/;
 
 const isImplementation = (name: string) =>
   name.endsWith('.ts') && !name.endsWith('.test.ts') && !name.endsWith('.fixture.ts');
@@ -88,7 +88,7 @@ describe('demand package purity', () => {
       for (const specifier of specifiersOf(join(demandDir, name))) {
         expect(specifier, `${name} imports ${specifier}`).not.toMatch(BANNED);
         expect(
-          specifier === '@adgate/schemas' || specifier.startsWith('.'),
+          specifier === '@adgateio/schemas' || specifier.startsWith('.'),
           `${name} imports ${specifier}`,
         ).toBe(true);
       }
@@ -98,18 +98,18 @@ describe('demand package purity', () => {
     }
   });
 
-  it('reaches only @adgate/schemas and node:crypto through its whole import graph', () => {
+  it('reaches only @adgateio/schemas and node:crypto through its whole import graph', () => {
     const bare = [...reachableBareImports(join(demandDir, 'index.ts'))].sort();
-    expect(bare).toEqual(['@adgate/schemas', 'node:crypto']);
-    expect([...reachableBareImports(join(demandDir, 'direct.ts'))]).toEqual(['@adgate/schemas']);
+    expect(bare).toEqual(['@adgateio/schemas', 'node:crypto']);
+    expect([...reachableBareImports(join(demandDir, 'direct.ts'))]).toEqual(['@adgateio/schemas']);
     expect([...reachableBareImports(join(demandDir, 'affiliate/index.ts'))]).toEqual([
-      '@adgate/schemas',
+      '@adgateio/schemas',
     ]);
   });
 
   it('the partner stubs (docs/decisions.md item 10) never spell out a fetch call at all', () => {
     for (const name of ['koah.ts', 'gravity.ts', 'network-stub.ts']) {
-      expect([...reachableBareImports(join(demandDir, name))]).toEqual(['@adgate/schemas']);
+      expect([...reachableBareImports(join(demandDir, name))]).toEqual(['@adgateio/schemas']);
     }
     for (const name of ['koah.ts', 'gravity.ts']) {
       const source = readFileSync(join(demandDir, name), 'utf8');

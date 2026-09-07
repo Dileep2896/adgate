@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    name: '@adgate/gateway',
+    name: '@adgateio/gateway',
     environment: 'node',
     include: ['src/**/*.test.ts'],
     setupFiles: ['./vitest.setup.ts'],

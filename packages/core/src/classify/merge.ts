@@ -1,4 +1,4 @@
-import { SENSITIVE_TAXONOMY, type Classification, type SensitiveCategory } from '@adgate/schemas';
+import { SENSITIVE_TAXONOMY, type Classification, type SensitiveCategory } from '@adgateio/schemas';
 
 import { RULES_DATA } from './rules/data/index.js';
 import type { RulesResult } from './rules/types.js';

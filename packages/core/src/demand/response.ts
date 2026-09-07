@@ -1,4 +1,4 @@
-import type { Candidate, DemandResponse, DemandSource } from '@adgate/schemas';
+import type { Candidate, DemandResponse, DemandSource } from '@adgateio/schemas';
 
 /**
  * Response assembly shared by the in-memory adapters: a clock that never throws, a latency that

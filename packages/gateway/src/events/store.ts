@@ -1,5 +1,5 @@
-import { type Clock, prefixedUlid } from '@adgate/core';
-import type { EventType } from '@adgate/schemas';
+import { type Clock, prefixedUlid } from '@adgateio/core';
+import type { EventType } from '@adgateio/schemas';
 import { and, eq } from 'drizzle-orm';
 
 import type { DbOrTx } from '../db/client.js';

@@ -1,4 +1,4 @@
-import { advertisers, apps, auditRecords, creatives } from '@adgate/gateway/schema';
+import { advertisers, apps, auditRecords, creatives } from '@adgateio/gateway/schema';
 import { asc, eq, inArray } from 'drizzle-orm';
 
 import { type DashboardDb, dashboardDb } from './db';

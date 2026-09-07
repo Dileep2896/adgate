@@ -114,7 +114,7 @@ async def test_track_reports_a_rejected_event(adgate) -> None:
 
 
 def test_hash_matches_the_typescript_sdk_and_core() -> None:
-    """Same digest as @adgate/core's sha256Prefixed over the same UTF-8 bytes."""
+    """Same digest as @adgateio/core's sha256Prefixed over the same UTF-8 bytes."""
     from adgate import CLIENT_FAILURE_PROMPT_SEED, CLIENT_FAILURE_PROMPT_VERSION
 
     assert hash_model_output("") == "sha256:" + hashlib.sha256(b"").hexdigest()

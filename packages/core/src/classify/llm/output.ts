@@ -5,7 +5,7 @@ import {
   SENSITIVE_TAXONOMY,
   type ContentCategory,
   type SensitiveCategory,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import { PROMPT_VERSION } from './prompt.js';
 import type { LlmClassification } from './types.js';

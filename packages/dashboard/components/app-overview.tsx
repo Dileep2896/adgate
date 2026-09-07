@@ -9,7 +9,7 @@ import type { AppMetrics, DailyDecisions, SuppressBreakdown } from '@/lib/metric
  *
  * Server rendered. The charts are the only client components on the page and they receive plain
  * arrays that lib/metrics.ts has already computed, so the browser bundle gets recharts and
- * nothing else - no Drizzle, no policy schema, no @adgate/core.
+ * nothing else - no Drizzle, no policy schema, no @adgateio/core.
  *
  * Every rate can be `-`, which means its denominator was 0 (lib/metrics.ts). The hints say what
  * each rate is over, because "66.7% fill" over six eligible turns is not the same claim as

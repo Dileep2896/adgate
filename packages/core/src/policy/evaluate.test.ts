@@ -4,7 +4,7 @@ import {
   type PolicyConfig,
   type PolicyRule,
   type SensitiveCategory,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { evaluatePolicy, type PolicyEvaluation } from './evaluate.js';

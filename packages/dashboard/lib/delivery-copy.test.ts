@@ -1,4 +1,4 @@
-import { DELIVERABILITY_REASONS } from '@adgate/schemas';
+import { DELIVERABILITY_REASONS } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { blockedForApps, FIX_HERE, fixLocationSentence } from './delivery-copy';

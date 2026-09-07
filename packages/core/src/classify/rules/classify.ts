@@ -1,4 +1,4 @@
-import type { ContentCategory, SensitiveCategory } from '@adgate/schemas';
+import type { ContentCategory, SensitiveCategory } from '@adgateio/schemas';
 
 import { SCORING } from './data/scoring.js';
 import { findPatterns, findPhrases, maskPhrases, padText } from './match.js';

@@ -3,7 +3,7 @@
  *
  * This is deliberately its OWN module with no imports: the forms are client components, and
  * anything they reach ends up in the browser bundle. lib/policy-validation.ts imports
- * @adgate/core (zod, the YAML parser, the whole policy schema) to decide what is valid, which
+ * @adgateio/core (zod, the YAML parser, the whole policy schema) to decide what is valid, which
  * is 200 kB the browser has no use for - validation happens in a server action. Keeping the
  * shape and the formatting here lets the forms render issues without dragging any of it in.
  */

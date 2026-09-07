@@ -3,7 +3,7 @@
  *
  * DEPENDENCY FREE, like lib/creative-issue.ts and for the same reason: the form is a client
  * component, and importing the contract schema to get the marketplace list would pull zod and
- * @adgate/schemas into the browser bundle. lib/affiliate-form.test.ts pins AMAZON_MARKETPLACE_VALUES
+ * @adgateio/schemas into the browser bundle. lib/affiliate-form.test.ts pins AMAZON_MARKETPLACE_VALUES
  * against the real enum, so the copy here cannot drift from the schema it mirrors.
  *
  * NOTHING HERE IS A SECRET. An affiliate config carries only the public identifiers that already
@@ -46,7 +46,7 @@ export const EMPTY_AFFILIATE_VALUES: AffiliateFormValues = {
 
 /**
  * Amazon storefronts, as the domain suffix after `amazon.`. A copy of AMAZON_MARKETPLACES from
- * @adgate/schemas; the test asserts the two lists are identical.
+ * @adgateio/schemas; the test asserts the two lists are identical.
  */
 export const AMAZON_MARKETPLACE_VALUES: readonly string[] = [
   'com',

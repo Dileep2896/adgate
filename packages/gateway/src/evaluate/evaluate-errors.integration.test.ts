@@ -1,5 +1,5 @@
-import { FakeLlmClassifier, fakeLlmFromFixtures, fakeLlmSuccess } from '@adgate/core';
-import { AuditRecord, ErrorResponse, EvaluateResponse } from '@adgate/schemas';
+import { FakeLlmClassifier, fakeLlmFromFixtures, fakeLlmSuccess } from '@adgateio/core';
+import { AuditRecord, ErrorResponse, EvaluateResponse } from '@adgateio/schemas';
 import { count } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 

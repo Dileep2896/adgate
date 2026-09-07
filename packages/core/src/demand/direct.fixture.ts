@@ -1,4 +1,4 @@
-import type { CatalogCreative, Classification, DemandRequest, Surface } from '@adgate/schemas';
+import type { CatalogCreative, Classification, DemandRequest, Surface } from '@adgateio/schemas';
 
 import type { UlidOptions } from '../ids/ulid.js';
 

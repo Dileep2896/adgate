@@ -1,7 +1,7 @@
-import type { DeliverabilityReason } from '@adgate/schemas';
+import type { DeliverabilityReason } from '@adgateio/schemas';
 
 /**
- * WHERE ON THIS SCREEN THE FIX IS MADE. The `detail` sentence @adgate/core produces already names
+ * WHERE ON THIS SCREEN THE FIX IS MADE. The `detail` sentence @adgateio/core produces already names
  * the change ("add an affiliate entry for impact to the app's policy demand list"); it does not
  * know that the app's page has a Policy editor and an Affiliate accounts form right below the
  * line reporting it. This is the pointer, and nothing more - the sentence itself is never

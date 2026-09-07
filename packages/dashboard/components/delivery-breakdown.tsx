@@ -11,8 +11,8 @@ import type { CreativeDelivery } from '@/lib/deliverability';
  * another's, because the policy demand list and the affiliate config are per app - so a single
  * badge could never be honest about a creative in the shared catalog.
  *
- * The reason code and the sentence beside it are produced by @adgate/core and are the SAME
- * strings `pnpm --filter @adgate/gateway check-catalog` prints, deliberately: an operator who
+ * The reason code and the sentence beside it are produced by @adgateio/core and are the SAME
+ * strings `pnpm --filter @adgateio/gateway check-catalog` prints, deliberately: an operator who
  * reads one and then the other must not have to translate.
  *
  * Server rendered from plain data. Four columns; the fix sentence is the one that matters most,
@@ -116,7 +116,7 @@ export const DeliveryBreakdown = ({ delivery, active, shared }: DeliveryBreakdow
             ? 'This creative is in the shared catalog, so it is judged against every app you can see. The same creative can serve for one app and be blocked for another: the policy demand list and the affiliate accounts are per app.'
             : 'Judged against this app’s stored policy and its affiliate accounts.'}{' '}
           {active
-            ? 'The same check runs in pnpm --filter @adgate/gateway check-catalog, in these words.'
+            ? 'The same check runs in pnpm --filter @adgateio/gateway check-catalog, in these words.'
             : 'It is paused, which blocks it everywhere: reactivate it above before changing anything else.'}
         </p>
       </>

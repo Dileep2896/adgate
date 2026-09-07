@@ -1,5 +1,5 @@
-import { buildAffiliateUrl, defaultDestination, isHttpUrl } from '@adgate/core';
-import { AffiliateConfig, AffiliateNetwork, type PolicyConfig } from '@adgate/schemas';
+import { buildAffiliateUrl, defaultDestination, isHttpUrl } from '@adgateio/core';
+import { AffiliateConfig, AffiliateNetwork, type PolicyConfig } from '@adgateio/schemas';
 
 /**
  * Where a click on a served creative goes (docs/api.md GET /c/:audit_id). Pure: the route loads

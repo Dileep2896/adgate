@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { ClassifyFixture, type ClassifyFixtureCase } from '@adgate/schemas';
+import { ClassifyFixture, type ClassifyFixtureCase } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { classifyByRules } from './classify.js';

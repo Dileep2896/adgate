@@ -1,4 +1,4 @@
-import type { PartnerStackConfig } from '@adgate/schemas';
+import type { PartnerStackConfig } from '@adgateio/schemas';
 
 import { fillTemplate } from './template.js';
 import type { AffiliateUrlBuilder } from './types.js';

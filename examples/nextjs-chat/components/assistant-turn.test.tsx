@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import type { EvaluateResult, EventType, TrackResult } from '@adgate/sdk';
-import type { SponsoredSlotClient } from '@adgate/sdk/react';
+import type { EvaluateResult, EventType, TrackResult } from '@adgateio/sdk';
+import type { SponsoredSlotClient } from '@adgateio/sdk/react';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 

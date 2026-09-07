@@ -1,10 +1,10 @@
-import { CATEGORIES_TAXONOMY, SENSITIVE_TAXONOMY } from '@adgate/schemas';
+import { CATEGORIES_TAXONOMY, SENSITIVE_TAXONOMY } from '@adgateio/schemas';
 
 import { sha256Prefixed } from '../../audit/crypto.js';
 
 /**
  * The classifier system prompt. One string constant, built from the taxonomy constants so the
- * allowed values in the text can never drift from @adgate/schemas. PROMPT_VERSION is the sha256
+ * allowed values in the text can never drift from @adgateio/schemas. PROMPT_VERSION is the sha256
  * of this exact text and is written into every Classification with method 'llm', so an audit
  * record pins the prompt that produced a decision. Any edit here changes the version.
  */

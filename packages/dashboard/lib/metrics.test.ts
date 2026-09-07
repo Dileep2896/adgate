@@ -2,7 +2,7 @@ import {
   FIXED_SUPPRESS_REASONS,
   POLICY_RULES,
   SENSITIVE_CATEGORY_REASON_PREFIX,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import {

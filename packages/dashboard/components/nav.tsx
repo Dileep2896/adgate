@@ -16,7 +16,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
  *
  * Client component only because it highlights the current section from the pathname; the
  * pages themselves are server components. It imports nothing that reaches the database or
- * @adgate/core, because whatever this file pulls in is shipped to every page.
+ * @adgateio/core, because whatever this file pulls in is shipped to every page.
  */
 
 export interface NavItem {

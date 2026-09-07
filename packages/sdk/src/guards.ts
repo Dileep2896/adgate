@@ -1,11 +1,11 @@
-import type { EvaluateResponse } from '@adgate/schemas';
+import type { EvaluateResponse } from '@adgateio/schemas';
 
 /**
  * Structural checks on a gateway answer. The gateway validates every response against the
  * contract schema before sending it (EvaluateResponse.parse), so this is a belt-and-braces
  * guard against a proxy, a captive portal or a wrong baseUrl answering in the gateway's place.
  * It checks the fields a renderer or a follow-up call would dereference and nothing more; it is
- * deliberately not a schema validation (that is @adgate/schemas' job, and it would cost zod in
+ * deliberately not a schema validation (that is @adgateio/schemas' job, and it would cost zod in
  * the browser bundle). CLAUDE.md's "no hand-written duplicate types" holds: the TYPES come from
  * the schema package, only the runtime shape check is local.
  */

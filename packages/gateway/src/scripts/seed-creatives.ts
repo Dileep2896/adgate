@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { SeedCreative } from '@adgate/schemas';
+import { SeedCreative } from '@adgateio/schemas';
 
 import {
   type AppReadiness,
@@ -17,7 +17,7 @@ import { optionalFlag, parseFlags, UsageError } from './args.js';
 import { connectFromEnv, runScript } from './run.js';
 
 /**
- * `pnpm --filter @adgate/gateway seed-creatives [--file <seed.json>] [--app <app_id>]`:
+ * `pnpm --filter @adgateio/gateway seed-creatives [--file <seed.json>] [--app <app_id>]`:
  * loads a SeedCreative[] JSON file (default examples/creatives.seed.json) into the global
  * catalog, or into one app's private catalog with --app. Re-running is a no-op.
  */

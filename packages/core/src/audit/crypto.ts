@@ -7,7 +7,11 @@ import {
   verify as ed25519Verify,
 } from 'node:crypto';
 
-import { ED25519_SIGNATURE_PATTERN, type Ed25519Signature, type Sha256Hash } from '@adgate/schemas';
+import {
+  ED25519_SIGNATURE_PATTERN,
+  type Ed25519Signature,
+  type Sha256Hash,
+} from '@adgateio/schemas';
 
 import { AuditKeyError } from './errors.js';
 

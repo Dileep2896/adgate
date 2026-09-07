@@ -1,4 +1,4 @@
-import type { CreativeRow, CreativeWriteResult } from '@adgate/gateway/admin';
+import type { CreativeRow, CreativeWriteResult } from '@adgateio/gateway/admin';
 import { describe, expect, it } from 'vitest';
 
 import type { CreativeFormContext, CreativeFormValue } from './creative-form';

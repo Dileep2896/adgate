@@ -8,7 +8,7 @@ import { AdvertiserDomain } from './policy-parts.js';
 /**
  * The `demand` block of an audit record (docs/audit.md): what mediation asked, what each source
  * answered, which candidates competitor_exclusions removed, and which source won. Written by
- * mediate() in @adgate/core and embedded in the signed AuditRecord, so every field is a number,
+ * mediate() in @adgateio/core and embedded in the signed AuditRecord, so every field is a number,
  * an enum or an identifier; never message text.
  */
 

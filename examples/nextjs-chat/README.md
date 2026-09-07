@@ -23,10 +23,10 @@ pnpm install
 pnpm db:migrate
 
 # 2. An app and its API key. The key is printed ONCE (only an argon2id hash is stored).
-pnpm --filter @adgate/gateway create-app --name nextjs-demo
+pnpm --filter @adgateio/gateway create-app --name nextjs-demo
 
 # 3. Some creatives in the global catalog (examples/creatives.seed.json)
-pnpm --filter @adgate/gateway seed-creatives
+pnpm --filter @adgateio/gateway seed-creatives
 ```
 
 Step 2 prints an `app_id` and an `api_key`. Put them in this example's env file:
@@ -37,11 +37,11 @@ cp examples/nextjs-chat/.env.local.example examples/nextjs-chat/.env.local
 ```
 
 The repo root also needs a `.env` with an Ed25519 signing key for the gateway
-(`cp .env.example .env`, then `pnpm --filter @adgate/gateway keygen` and paste the three lines
+(`cp .env.example .env`, then `pnpm --filter @adgateio/gateway keygen` and paste the three lines
 it prints). Then start both processes, in two terminals:
 
 ```bash
-pnpm --filter @adgate/gateway dev    # http://localhost:8787
+pnpm --filter @adgateio/gateway dev    # http://localhost:8787
 pnpm --filter nextjs-chat dev        # http://localhost:3001
 ```
 

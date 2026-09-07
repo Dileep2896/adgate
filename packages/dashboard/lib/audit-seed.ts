@@ -11,7 +11,7 @@ import {
   nextPrevHash,
   prefixedUlid,
   sha256Prefixed,
-} from '@adgate/core';
+} from '@adgateio/core';
 import type {
   AuditRecord,
   Classification,
@@ -19,7 +19,7 @@ import type {
   PolicyDecision,
   SuppressReason,
   Surface,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 import type { Sql } from 'postgres';
 
 import {

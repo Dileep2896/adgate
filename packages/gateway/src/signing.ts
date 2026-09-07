@@ -6,7 +6,7 @@ import {
   loadPrivateKey,
   parsePublicKeysJson,
   type PublicKeyRing,
-} from '@adgate/core';
+} from '@adgateio/core';
 
 import { ConfigError, type GatewayConfig } from './config.js';
 

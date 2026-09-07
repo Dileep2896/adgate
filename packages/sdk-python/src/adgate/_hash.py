@@ -1,7 +1,7 @@
 """sha256 of the model's answer, in the contract's on-the-wire form.
 
 Only the hash ever leaves the process: attest proves WHICH answer was on screen without
-sending the answer. Byte identical to @adgate/core's sha256Prefixed and to the TypeScript
+sending the answer. Byte identical to @adgateio/core's sha256Prefixed and to the TypeScript
 SDK's hashModelOutput over the same UTF-8 text (tests/test_hash.py pins the vector).
 """
 

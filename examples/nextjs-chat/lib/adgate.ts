@@ -1,4 +1,4 @@
-import { createClient, type AdgateClient } from '@adgate/sdk';
+import { createClient, type AdgateClient } from '@adgateio/sdk';
 
 /**
  * The server half of the integration. This module must never be imported from a client

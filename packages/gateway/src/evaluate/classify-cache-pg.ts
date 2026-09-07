@@ -1,5 +1,10 @@
-import { type ClassifyCache, type Clock, DEFAULT_CACHE_TTL_MS, type LruCache } from '@adgate/core';
-import { Classification } from '@adgate/schemas';
+import {
+  type ClassifyCache,
+  type Clock,
+  DEFAULT_CACHE_TTL_MS,
+  type LruCache,
+} from '@adgateio/core';
+import { Classification } from '@adgateio/schemas';
 import { and, eq, gt } from 'drizzle-orm';
 import type { Logger } from 'pino';
 

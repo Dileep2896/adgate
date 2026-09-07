@@ -1,7 +1,7 @@
 /**
  * SHA-256 through WebCrypto (globalThis.crypto.subtle), which Node 20 and every browser
  * provide, so this entry needs no node built-in. Output is the contract's on-the-wire form
- * `sha256:<64 lowercase hex digits>`, byte-identical to @adgate/core's sha256Prefixed over the
+ * `sha256:<64 lowercase hex digits>`, byte-identical to @adgateio/core's sha256Prefixed over the
  * UTF-8 encoding of the text (hash.test.ts checks it against node:crypto).
  */
 export const SHA256_PREFIX = 'sha256:';

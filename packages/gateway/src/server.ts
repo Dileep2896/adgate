@@ -80,7 +80,7 @@ const main = (): void => {
 
   /**
    * null unless RETENTION_INTERVAL_HOURS is set: a deployment with cron keeps running
-   * `pnpm --filter @adgate/gateway retention` and nothing here changes for it. Every run is
+   * `pnpm --filter @adgateio/gateway retention` and nothing here changes for it. Every run is
    * guarded by a Postgres advisory lock, so several instances of this process are safe.
    */
   const retention = startRetentionScheduler({

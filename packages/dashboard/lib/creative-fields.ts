@@ -1,5 +1,5 @@
-import { isHttpUrl } from '@adgate/core';
-import { AffiliateNetwork, CATEGORIES_TAXONOMY, TARGET_CATEGORY_PATTERN } from '@adgate/schemas';
+import { isHttpUrl } from '@adgateio/core';
+import { AffiliateNetwork, CATEGORIES_TAXONOMY, TARGET_CATEGORY_PATTERN } from '@adgateio/schemas';
 
 import { type FormFields, readText } from './app-form';
 import {
@@ -15,10 +15,10 @@ import {
  * it in words an operator can act on. Pure - strings and plain data only, no database, no React,
  * no environment - so every rule is unit tested (lib/creative-form.test.ts).
  *
- * lib/creative-form.ts assembles these into a SeedCreative and lets @adgate/schemas have the
+ * lib/creative-form.ts assembles these into a SeedCreative and lets @adgateio/schemas have the
  * final word; the messages here exist so a rejection names the input that caused it.
  *
- * SERVER ONLY (it imports @adgate/schemas and @adgate/core). Client components use
+ * SERVER ONLY (it imports @adgateio/schemas and @adgateio/core). Client components use
  * lib/creative-issue.ts, which imports nothing.
  */
 

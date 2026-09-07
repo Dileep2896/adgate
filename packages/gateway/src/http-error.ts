@@ -1,4 +1,4 @@
-import type { ErrorResponse } from '@adgate/schemas';
+import type { ErrorResponse } from '@adgateio/schemas';
 import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 

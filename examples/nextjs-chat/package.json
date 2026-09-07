@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Example: a Next.js chat app wired to the adgate gateway with @adgate/sdk/ai and SponsoredSlot.",
+  "description": "Example: a Next.js chat app wired to the adgate gateway with @adgateio/sdk/ai and SponsoredSlot.",
   "scripts": {
     "dev": "next dev --port ${PORT:-3001}",
     "build": "next build",
@@ -13,7 +13,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@adgate/sdk": "workspace:*",
+    "@adgateio/sdk": "workspace:*",
     "@ai-sdk/openai": "^4.0.58",
     "@ai-sdk/react": "^4.0.95",
     "ai": "^7.0.92",

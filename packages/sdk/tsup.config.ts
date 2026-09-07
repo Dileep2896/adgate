@@ -18,5 +18,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: 'es2022',
-  external: ['@adgate/schemas', 'react', 'react-dom', 'ai'],
+  external: ['@adgateio/schemas', 'react', 'react-dom', 'ai'],
 });

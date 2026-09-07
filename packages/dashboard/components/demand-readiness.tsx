@@ -1,4 +1,4 @@
-import type { AppReadiness } from '@adgate/gateway/admin';
+import type { AppReadiness } from '@adgateio/gateway/admin';
 import Link from 'next/link';
 
 import { fixLocationSentence } from '@/lib/delivery-copy';
@@ -12,7 +12,7 @@ import { fixLocationSentence } from '@/lib/delivery-copy';
  * halves of "is this working", and separating them by three sections would mean reading a 0.0%
  * fill rate first and guessing.
  *
- * The counts and the sentence come from the gateway's own appReadiness() over @adgate/core's
+ * The counts and the sentence come from the gateway's own appReadiness() over @adgateio/core's
  * creativeDeliverability(), the same function `check-catalog` prints, so the words here and the
  * words in the terminal are the same words. What this component adds is one pointer at the
  * section of THIS page that fixes it - the Policy editor or the Affiliate accounts form - which

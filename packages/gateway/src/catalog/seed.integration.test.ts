@@ -1,5 +1,5 @@
-import { creativeContentHash } from '@adgate/core';
-import { SeedCreative } from '@adgate/schemas';
+import { creativeContentHash } from '@adgateio/core';
+import { SeedCreative } from '@adgateio/schemas';
 import { asc } from 'drizzle-orm';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

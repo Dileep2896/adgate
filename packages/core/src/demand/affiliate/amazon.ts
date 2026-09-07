@@ -1,4 +1,4 @@
-import { AMAZON_MARKETPLACES, type AmazonConfig } from '@adgate/schemas';
+import { AMAZON_MARKETPLACES, type AmazonConfig } from '@adgateio/schemas';
 
 import { fillTemplate } from './template.js';
 import type { AffiliateUrlBuilder } from './types.js';

@@ -1,11 +1,11 @@
-import type { CatalogApp } from '@adgate/gateway/admin';
+import type { CatalogApp } from '@adgateio/gateway/admin';
 import { describe, expect, it } from 'vitest';
 
 import { type DeliverabilityRow, deliveryIndex, deliveryOf } from './deliverability';
 
 /**
  * The judging half of lib/deliverability.ts, driven with hand written apps and creatives so the
- * rules are pinned without a database. What each reason MEANS is @adgate/core's own test
+ * rules are pinned without a database. What each reason MEANS is @adgateio/core's own test
  * (packages/core/src/demand/deliverability.test.ts); what is asserted here is the part this
  * package adds - one creative judged against SEVERAL apps, and which of several verdicts the
  * list page is supposed to show.

@@ -22,7 +22,7 @@ import {
  *
  * Client side for the tabs and the copy button. It imports lib/integration-snippets.ts and
  * lib/doc-links.ts, both of which have no imports of their own, so nothing from
- * @adgate/core - zod, the policy schema, the YAML parser - can reach the browser through it.
+ * @adgateio/core - zod, the policy schema, the YAML parser - can reach the browser through it.
  */
 
 export interface IntegrationPanelProps {

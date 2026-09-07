@@ -1,4 +1,4 @@
-import type { AuditRecord, Decision, EventType } from '@adgate/schemas';
+import type { AuditRecord, Decision, EventType } from '@adgateio/schemas';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -23,7 +23,7 @@ import { createdAt, sqlList, timestamptz } from './columns.js';
  * positional predecessor verify() needs is the row at seq - 1, and the latest record is the
  * highest seq. Appends are serialised per app by locking the apps row (evaluate/audit-store.ts).
  *
- * Table modules import @adgate/schemas as types only: drizzle-kit loads them through a CJS
+ * Table modules import @adgateio/schemas as types only: drizzle-kit loads them through a CJS
  * hook that cannot resolve the ESM-only workspace packages. The value lists below mirror the
  * contract enums and schema.test.ts pins them to Decision.options and EventType.options.
  */

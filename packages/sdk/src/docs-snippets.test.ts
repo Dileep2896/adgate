@@ -17,10 +17,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
  * makes no network call. Every snippet must be SELF-CONTAINED - no preamble is added, so the
  * imports in the doc are the imports the block needs.
  *
- * `@adgate/sdk`, `@adgate/sdk/react` and `@adgate/sdk/ai` are mapped with `paths` onto the three
+ * `@adgateio/sdk`, `@adgateio/sdk/react` and `@adgateio/sdk/ai` are mapped with `paths` onto the three
  * entry sources, so the snippets are checked against src and not against a stale dist. The
  * snippet files live in packages/sdk/node_modules/.adgate-docs-* (like build.test.ts) so that
- * `react`, `ai` and `@adgate/schemas` resolve the way they do for the package itself.
+ * `react`, `ai` and `@adgateio/schemas` resolve the way they do for the package itself.
  */
 const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageDir, '../..');
@@ -68,9 +68,9 @@ const compilerOptions: ts.CompilerOptions = {
   // that map is built from, so the doc can never pass against yesterday's build.
   baseUrl: packageDir,
   paths: {
-    '@adgate/sdk': ['src/index.ts'],
-    '@adgate/sdk/react': ['src/react/index.ts'],
-    '@adgate/sdk/ai': ['src/ai/index.ts'],
+    '@adgateio/sdk': ['src/index.ts'],
+    '@adgateio/sdk/react': ['src/react/index.ts'],
+    '@adgateio/sdk/ai': ['src/ai/index.ts'],
   },
 };
 
@@ -120,7 +120,13 @@ describe('docs/integration.md', () => {
 
   it('imports the SDK from its public entry points only', () => {
     const SPECIFIER = /\bfrom\s+['"]([^'"]+)['"]/g;
-    const allowed = new Set(['@adgate/sdk', '@adgate/sdk/react', '@adgate/sdk/ai', 'ai', 'react']);
+    const allowed = new Set([
+      '@adgateio/sdk',
+      '@adgateio/sdk/react',
+      '@adgateio/sdk/ai',
+      'ai',
+      'react',
+    ]);
     for (const snippet of snippets) {
       for (const match of snippet.source.matchAll(SPECIFIER)) {
         const specifier = match[1] ?? '';

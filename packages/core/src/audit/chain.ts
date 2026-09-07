@@ -1,4 +1,4 @@
-import type { AuditRecord, PrevHash, Sha256Hash, UnsignedAuditRecord } from '@adgate/schemas';
+import type { AuditRecord, PrevHash, Sha256Hash, UnsignedAuditRecord } from '@adgateio/schemas';
 
 import { canonicalize } from '../canonical/canonicalize.js';
 import { sha256Prefixed, sign } from './crypto.js';

@@ -36,8 +36,8 @@ const code = (id: 'server' | 'react' | 'python'): string => byId.get(id)?.code ?
 /** Lines the guide must still contain for the dashboard's copy of it to be true. */
 const GUIDE_LINES: Record<'server' | 'react' | 'python', string[]> = {
   server: [
-    "import { createClient, type EvaluateResult } from '@adgate/sdk';",
-    "import { adgateMiddleware } from '@adgate/sdk/ai';",
+    "import { createClient, type EvaluateResult } from '@adgateio/sdk';",
+    "import { adgateMiddleware } from '@adgateio/sdk/ai';",
     "import { streamText, wrapLanguageModel } from 'ai';",
     "type ProviderModel = Parameters<typeof wrapLanguageModel>[0]['model'];",
     'middleware: adgateMiddleware(adgate, {',
@@ -47,7 +47,7 @@ const GUIDE_LINES: Record<'server' | 'react' | 'python', string[]> = {
     'turnId: () => turn.turnId,',
   ],
   react: [
-    "import { AdgateMessageBoundary, SponsoredSlot, type SponsoredSlotClient } from '@adgate/sdk/react';",
+    "import { AdgateMessageBoundary, SponsoredSlot, type SponsoredSlotClient } from '@adgateio/sdk/react';",
     '<AdgateMessageBoundary>',
     '<div data-adgate-message="assistant">',
     '<SponsoredSlot decision={props.decision} client={props.client} />',

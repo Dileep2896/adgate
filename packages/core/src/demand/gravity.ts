@@ -1,4 +1,4 @@
-import type { GravityConfig } from '@adgate/schemas';
+import type { GravityConfig } from '@adgateio/schemas';
 
 import { type NetworkAdapterOptions, NetworkStubAdapter } from './network-stub.js';
 

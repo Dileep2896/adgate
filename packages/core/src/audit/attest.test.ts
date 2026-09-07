@@ -1,4 +1,4 @@
-import { AuditRecord } from '@adgate/schemas';
+import { AuditRecord } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { attest, AuditAttestError, isAttested, isUnattested } from './attest.js';

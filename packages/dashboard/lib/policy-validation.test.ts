@@ -1,4 +1,4 @@
-import { loadPolicyFromYaml, PolicyValidationError } from '@adgate/core';
+import { loadPolicyFromYaml, PolicyValidationError } from '@adgateio/core';
 import { describe, expect, it } from 'vitest';
 
 import { issuesFromError, isPolicyValidationError, validatePolicyYaml } from './policy-validation';

@@ -1,5 +1,5 @@
-import { VERIFY_DETAIL } from '@adgate/core';
-import type { VerifyResponse } from '@adgate/schemas';
+import { VERIFY_DETAIL } from '@adgateio/core';
+import type { VerifyResponse } from '@adgateio/schemas';
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 

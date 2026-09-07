@@ -5,7 +5,7 @@ import type {
   CatalogCreative,
   DemandRequest,
   DemandResponse,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import { normalizeKeywords } from '../keywords.js';
 import { type Clock, demandResponse, describeError, latencySince, safeNow } from '../response.js';

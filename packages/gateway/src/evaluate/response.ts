@@ -1,11 +1,11 @@
-import { failClosedClassification } from '@adgate/core';
+import { failClosedClassification } from '@adgateio/core';
 import {
   type AuditRecordBody,
   type Candidate,
   type Creative,
   type DemandSource,
   EvaluateResponse,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 /**
  * The EvaluateResponse (docs/api.md) derived from the audit record, so the API answer and the

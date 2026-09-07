@@ -1,4 +1,4 @@
-import { ErrorResponse } from '@adgate/schemas';
+import { ErrorResponse } from '@adgateio/schemas';
 import { HTTPException } from 'hono/http-exception';
 import { describe, expect, it } from 'vitest';
 

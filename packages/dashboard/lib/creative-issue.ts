@@ -4,10 +4,10 @@
  *
  * Like lib/policy-issue.ts this module has NO IMPORTS on purpose. components/creative-form.tsx
  * is a client component, so everything it reaches ends up in the browser bundle;
- * lib/creative-form.ts (the validation) imports @adgate/schemas and @adgate/core, which is
+ * lib/creative-form.ts (the validation) imports @adgateio/schemas and @adgateio/core, which is
  * hundreds of kilobytes the browser has no use for - validation happens in a server action.
  *
- * The two option lists below are duplicated from @adgate/schemas (DemandSource and
+ * The two option lists below are duplicated from @adgateio/schemas (DemandSource and
  * AffiliateNetwork) for that reason, and lib/creative-form.test.ts pins them to the enums, so
  * adding a network to the contract fails a test here instead of silently missing a dropdown.
  */

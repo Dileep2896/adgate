@@ -1,4 +1,4 @@
-import type { KoahConfig } from '@adgate/schemas';
+import type { KoahConfig } from '@adgateio/schemas';
 
 import { type NetworkAdapterOptions, NetworkStubAdapter } from './network-stub.js';
 

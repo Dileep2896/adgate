@@ -1,4 +1,4 @@
-import { Classification } from '@adgate/schemas';
+import { Classification } from '@adgateio/schemas';
 
 import { createLruCache } from './cache.js';
 import { FakeLlmClassifier, fakeLlmSuccess } from './llm/fake.js';

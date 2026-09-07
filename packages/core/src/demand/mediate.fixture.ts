@@ -1,4 +1,4 @@
-import type { Candidate, DemandRequest, DemandResponse, DemandSource } from '@adgate/schemas';
+import type { Candidate, DemandRequest, DemandResponse, DemandSource } from '@adgateio/schemas';
 
 import { creative } from './direct.fixture.js';
 import { demandResponse } from './response.js';

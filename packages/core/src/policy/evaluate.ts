@@ -10,7 +10,7 @@ import {
   type SuppressReason,
   type Surface,
   type User,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import { isRegionAllowed } from './regions.js';
 

@@ -1,4 +1,4 @@
-import type { DemandTrace } from '@adgate/schemas';
+import type { DemandTrace } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import {

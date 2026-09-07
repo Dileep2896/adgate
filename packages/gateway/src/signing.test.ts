@@ -1,4 +1,4 @@
-import { generateKeypair, keyFingerprint, sha256Prefixed, sign } from '@adgate/core';
+import { generateKeypair, keyFingerprint, sha256Prefixed, sign } from '@adgateio/core';
 import { describe, expect, it } from 'vitest';
 
 import { ConfigError } from './config.js';

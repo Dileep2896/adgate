@@ -1,4 +1,4 @@
-import type { CatalogCreative } from '@adgate/schemas';
+import type { CatalogCreative } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { canonicalize } from '../canonical/canonicalize.js';

@@ -1,5 +1,5 @@
 {
-  "name": "@adgate/gateway",
+  "name": "@adgateio/gateway",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -46,8 +46,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@adgate/core": "workspace:*",
-    "@adgate/schemas": "workspace:*",
+    "@adgateio/core": "workspace:*",
+    "@adgateio/schemas": "workspace:*",
     "@hono/node-server": "^2.1.1",
     "argon2": "^0.45.1",
     "drizzle-orm": "^0.45.2",

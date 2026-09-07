@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import * as gateway from './index.js';
 
-describe('@adgate/gateway', () => {
+describe('@adgateio/gateway', () => {
   it('exposes the building blocks by name', () => {
     expect(typeof gateway.createApp).toBe('function');
     expect(typeof gateway.loadConfig).toBe('function');

@@ -1,4 +1,4 @@
-# @adgate/dashboard
+# @adgateio/dashboard
 
 The developer console and the operator dashboard, in one Next.js App Router app that reads the
 gateway's Postgres directly with Drizzle and shows what the gateway has been doing. It is private
@@ -52,7 +52,7 @@ whose `ORDER BY ... LIMIT` is the optimisation fence - and
 `lib/metrics-queries.integration.test.ts` EXPLAINs it alongside the metric queries.
 
 `/audit/[id]` runs core's `verify()` **on this request**, over the record exactly as stored,
-using the gateway's own loader and `buildVerifyContext` through the `@adgate/gateway/audit`
+using the gateway's own loader and `buildVerifyContext` through the `@adgateio/gateway/audit`
 subpath rather than a second copy that could drift: the positional predecessor at `seq - 1`,
 the content hash recomputed from the creatives row, the superseded version with its own
 predecessor, and the superseding attestation of an older version. All eight docs/audit.md
@@ -93,7 +93,7 @@ attested record, three unattested ones, a suppression and a record whose documen
 parse. `lib/report-generate.ts` does the reading: the records come from
 `audit_records_advertiser_id_ts_idx` (`(advertiser_id, ts)`, `is_latest` only, so an attested
 turn counts once) and each one is verified with the GATEWAY's own `createAuditReader` and
-`buildVerifyContext` through `@adgate/gateway/audit`, exactly as `/audit/[id]` does - a report
+`buildVerifyContext` through `@adgateio/gateway/audit`, exactly as `/audit/[id]` does - a report
 that graded records more leniently than the audit API would be worse than no report.
 
 ### The JSON bundle re-verifies offline
@@ -104,12 +104,12 @@ supersedes and that record's own predecessor), the six content fields of every c
 records name, and the public keys. That is everything the eight checks need, so:
 
 ```sh
-pnpm --filter @adgate/dashboard verify:bundle path/to/rep_....json
+pnpm --filter @adgateio/dashboard verify:bundle path/to/rep_....json
 # with the operator's published keys, which is what makes it evidence:
-pnpm --filter @adgate/dashboard verify:bundle path/to/rep_....json --keys adgate-public-keys.json
+pnpm --filter @adgateio/dashboard verify:bundle path/to/rep_....json --keys adgate-public-keys.json
 ```
 
-rebuilds each record's `VerifyContext` from the bundle itself, runs `@adgate/core`'s `verify()`
+rebuilds each record's `VerifyContext` from the bundle itself, runs `@adgateio/core`'s `verify()`
 and prints a pass/fail line per record - with no database, no network and no adgate deployment
 (`scripts/verify-bundle.ts`, `lib/bundle-check.ts`, `lib/report-bundle.ts`). Exit code 0 when
 every record verifies, 1 when one does not, 2 when the file is not a bundle, 3 when it holds no
@@ -185,11 +185,11 @@ server actions under `app/(dashboard)/{apps,creatives,reports}/actions.ts` impor
 `lib/db-write-usage.test.ts` holds that list and fails when it grows. The writes themselves are
 mostly not hand written: creating an app, issuing a key, revoking one and the whole creative
 catalog are the gateway's own functions, imported from the `./admin` subpath export
-(`@adgate/gateway/admin`). The only SQL this package owns is one `UPDATE apps` that stores an
+(`@adgateio/gateway/admin`). The only SQL this package owns is one `UPDATE apps` that stores an
 edited policy (`lib/admin-store.ts`) and one `INSERT` into `reports` (`lib/report-store.ts`).
 
 The Drizzle table definitions are not duplicated here either: they come from the gateway's
-`./schema` subpath export (`@adgate/gateway/schema`), built from
+`./schema` subpath export (`@adgateio/gateway/schema`), built from
 `packages/gateway/src/db/schema.ts`.
 
 ## The API key is shown exactly once
@@ -203,14 +203,14 @@ Playwright spec asserts exactly that.
 
 ## Policy editing
 
-Saving runs `loadPolicyFromYaml` (`@adgate/core`) - the same function the gateway parses with,
+Saving runs `loadPolicyFromYaml` (`@adgateio/core`) - the same function the gateway parses with,
 so the editor accepts exactly what the gateway will. An invalid document re-renders the page
 with the schema's own messages next to the editor and writes **nothing**; a valid one bumps
 `policy_version` by one (computed by Postgres, not read-then-written) and stores the document
 with its new `policy_hash`. A document whose `app_id` names a different app is rejected too.
 
 `lib/policy-issue.ts` exists so the client components can print an issue without pulling
-`@adgate/core` (zod, the YAML parser, the whole policy schema) into the browser bundle.
+`@adgateio/core` (zod, the YAML parser, the whole policy schema) into the browser bundle.
 
 ## Auth
 
@@ -264,13 +264,13 @@ Read from the repo-root `.env` (see `.env.example`) or from the real environment
 
 ```sh
 pnpm dev                                  # gateway on :8787 and the dashboard on :3000
-pnpm --filter @adgate/dashboard dev       # dashboard alone
-pnpm --filter @adgate/dashboard build
-pnpm --filter @adgate/dashboard test      # vitest (246): the pure unit tests, the chart
+pnpm --filter @adgateio/dashboard dev       # dashboard alone
+pnpm --filter @adgateio/dashboard build
+pnpm --filter @adgateio/dashboard test      # vitest (246): the pure unit tests, the chart
                                           # components in jsdom, and the four integration
                                           # tests, which need docker Postgres
-pnpm --filter @adgate/dashboard typecheck
-pnpm --filter @adgate/dashboard lint
+pnpm --filter @adgateio/dashboard typecheck
+pnpm --filter @adgateio/dashboard lint
 ```
 
 ## End to end smoke test
@@ -281,7 +281,7 @@ deliberately:
 ```sh
 docker compose up -d postgres
 pnpm exec playwright install chromium          # once per machine
-pnpm --filter @adgate/dashboard test:e2e
+pnpm --filter @adgateio/dashboard test:e2e
 ```
 
 `playwright.config.ts` builds the app and starts it with `next start` on `DASHBOARD_E2E_PORT`,

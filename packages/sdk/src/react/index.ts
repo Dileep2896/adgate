@@ -1,5 +1,5 @@
 /**
- * `@adgate/sdk/react`: the UI half of the SDK. Kept out of the core entry so a Node service or
+ * `@adgateio/sdk/react`: the UI half of the SDK. Kept out of the core entry so a Node service or
  * a non-React app never pays for React (build.test.ts asserts the core bundle has no react
  * import). React itself is a peer dependency: the block renders inside the host app's React.
  */

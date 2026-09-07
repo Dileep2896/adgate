@@ -16,7 +16,7 @@ import { ReportBundleSchema } from '../lib/report-bundle';
  *
  * No database, no network, no adgate deployment: it reads the file, rebuilds each record's
  * VerifyContext from the records inside the bundle itself (lib/report-bundle.ts), runs
- * @adgate/core's verify() and prints a pass/fail line per record plus a summary. Exit code 0
+ * @adgateio/core's verify() and prints a pass/fail line per record plus a summary. Exit code 0
  * when every record verifies, 1 when any does not, 2 when the file cannot be read at all and 3
  * when the bundle holds no records.
  *

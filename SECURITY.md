@@ -210,7 +210,7 @@ is not an accepted finding, it is an unread one.
   durations, never message content and never key material.
 - Run `pnpm audit:prod` in CI, and run the retention job on a schedule so stored records do not
   outlive each app's `privacy.retain_days`:
-  `pnpm --filter @adgate/gateway retention` (see `docs/privacy.md` for the crontab line, and use
+  `pnpm --filter @adgateio/gateway retention` (see `docs/privacy.md` for the crontab line, and use
   `--dry-run` first). On a host with nowhere to put a crontab, set `RETENTION_INTERVAL_HOURS=24`
   and the gateway runs it itself, one instance at a time behind a Postgres advisory lock.
 - Deploy the gateway with `NODE_ENV=production` (the image already does). It refuses to start on

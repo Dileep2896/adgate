@@ -1,4 +1,4 @@
-import type { SensitiveCategory } from '@adgate/schemas';
+import type { SensitiveCategory } from '@adgateio/schemas';
 
 import type { CommercialCategory, CommercialRuleSet, RulesData, SensitiveRuleSet } from '../types.js';
 import { ALIASES } from './aliases.js';

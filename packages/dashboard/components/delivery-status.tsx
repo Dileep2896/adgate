@@ -12,7 +12,7 @@ import { blockedForApps } from '@/lib/delivery-copy';
  * DELIVERABILITY IS PER (CREATIVE, APP). A creative in the shared catalog is judged against every
  * app the session can see, so the worst case is what shows here with the count beside it; the
  * breakdown is on the creative's own page. Server rendered from plain data (lib/deliverability.ts
- * runs the diagnostic), so nothing from @adgate/core reaches the browser.
+ * runs the diagnostic), so nothing from @adgateio/core reaches the browser.
  *
  * COLOUR IS NEVER THE ONLY SIGNAL (design.md): every state below is a word - paused, active,
  * partly blocked, cannot serve - and the reason code beside it is the same string `check-catalog`

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import * as schemas from './index.js';
 
-describe('@adgate/schemas', () => {
+describe('@adgateio/schemas', () => {
   it('exports every contract schema by name', () => {
     for (const [name, schema] of Object.entries(schemas.CONTRACT_SCHEMAS)) {
       expect(schemas[name as keyof typeof schemas]).toBe(schema);

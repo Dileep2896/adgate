@@ -1,4 +1,4 @@
-import { findUserById } from '@adgate/gateway/admin';
+import { findUserById } from '@adgateio/gateway/admin';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 

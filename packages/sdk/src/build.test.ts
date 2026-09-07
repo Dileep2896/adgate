@@ -8,10 +8,10 @@ import { build } from 'tsup';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 /**
- * Builds the package exactly as `pnpm --filter @adgate/sdk build` does (both entries, the same
+ * Builds the package exactly as `pnpm --filter @adgateio/sdk build` does (both entries, the same
  * flags as tsup.config.ts), into a temp dir, and checks the acceptance criteria on the
  * artefacts: every format plus types exists, the core entry gzips under 15 kB and carries no
- * node built-in, zod, react or @adgate/schemas runtime import, and the React entry is a
+ * node built-in, zod, react or @adgateio/schemas runtime import, and the React entry is a
  * separate file that leaves react to the host app.
  *
  * The build goes into packages/sdk/node_modules/.adgate-build-*: a directory OUTSIDE the package
@@ -40,7 +40,7 @@ beforeAll(async () => {
     clean: true,
     target: 'es2022',
     tsconfig: join(packageDir, 'tsconfig.json'),
-    external: ['@adgate/schemas', 'react', 'react-dom', 'ai'],
+    external: ['@adgateio/schemas', 'react', 'react-dom', 'ai'],
     silent: true,
     config: false,
   });
@@ -52,7 +52,7 @@ afterAll(() => {
   }
 });
 
-describe('@adgate/sdk build', () => {
+describe('@adgateio/sdk build', () => {
   it('emits ESM, CJS and type declarations for both', () => {
     for (const name of ['index.js', 'index.cjs', 'index.d.ts', 'index.d.cts']) {
       expect(existsSync(join(outDir, name)), `${name} missing`).toBe(true);
@@ -68,7 +68,7 @@ describe('@adgate/sdk build', () => {
     expect(cjs, `CJS entry is ${cjs} bytes gzipped`).toBeLessThan(MAX_GZIP_BYTES);
   });
 
-  it('pulls no zod, no node built-in, no react, no ai and no runtime @adgate/schemas into either output', () => {
+  it('pulls no zod, no node built-in, no react, no ai and no runtime @adgateio/schemas into either output', () => {
     for (const name of ['index.js', 'index.cjs']) {
       const source = read(name);
       expect(source, `${name} imports react`).not.toMatch(/['"]react/);
@@ -76,24 +76,24 @@ describe('@adgate/sdk build', () => {
       // Quoted specifiers only: esbuild's own trailer comment on the CJS output mentions "node:".
       expect(source, `${name} contains zod`).not.toMatch(/['"]zod['"/]/);
       expect(source, `${name} contains a node built-in`).not.toMatch(/['"]node:/);
-      expect(source, `${name} imports @adgate/schemas at runtime`).not.toMatch(
-        /['"]@adgate\/schemas/,
+      expect(source, `${name} imports @adgateio/schemas at runtime`).not.toMatch(
+        /['"]@adgateio\/schemas/,
       );
       expect(source, `${name} requires something`).not.toMatch(/\brequire\(/);
       expect(source, `${name} imports something`).not.toMatch(/\bfrom\s+['"]/);
     }
   });
 
-  it('references @adgate/schemas from the declarations only, and never re-exports its values', () => {
+  it('references @adgateio/schemas from the declarations only, and never re-exports its values', () => {
     for (const name of ['index.d.ts', 'index.d.cts']) {
       const declarations = read(name);
-      expect(declarations).toMatch(/from '@adgate\/schemas'/);
+      expect(declarations).toMatch(/from '@adgateio\/schemas'/);
       expect(declarations).toMatch(/createClient/);
       expect(declarations, `${name} imports zod`).not.toMatch(/['"]zod['"/]/);
-      // The bundler drops `type` on re-exports; a bare `export { X } from '@adgate/schemas'`
+      // The bundler drops `type` on re-exports; a bare `export { X } from '@adgateio/schemas'`
       // would promise the zod schema values at runtime. types.ts uses aliases instead.
       expect(declarations, `${name} re-exports schema values`).not.toMatch(
-        /^export \{[^}]*\} from '@adgate\/schemas'/m,
+        /^export \{[^}]*\} from '@adgateio\/schemas'/m,
       );
     }
   });
@@ -125,7 +125,7 @@ describe('@adgate/sdk build', () => {
   });
 });
 
-describe('@adgate/sdk/react build', () => {
+describe('@adgateio/sdk/react build', () => {
   it('emits dist/react.js, react.cjs and declarations for both', () => {
     for (const name of ['react.js', 'react.cjs', 'react.d.ts', 'react.d.cts']) {
       expect(existsSync(join(outDir, name)), `${name} missing`).toBe(true);
@@ -198,7 +198,7 @@ type Manifest = {
 const readManifest = (): Manifest =>
   JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')) as Manifest;
 
-describe('@adgate/sdk/ai build', () => {
+describe('@adgateio/sdk/ai build', () => {
   it('emits dist/ai.js, ai.cjs and declarations for both', () => {
     for (const name of ['ai.js', 'ai.cjs', 'ai.d.ts', 'ai.d.cts']) {
       expect(existsSync(join(outDir, name)), `${name} missing`).toBe(true);
@@ -256,7 +256,7 @@ describe('@adgate/sdk/ai build', () => {
   });
 });
 
-describe('@adgate/sdk resolution for older tooling', () => {
+describe('@adgateio/sdk resolution for older tooling', () => {
   it('gives every exports entry a default condition, and every target exists', () => {
     const manifest = readManifest();
     for (const [subpath, entry] of Object.entries(manifest.exports)) {

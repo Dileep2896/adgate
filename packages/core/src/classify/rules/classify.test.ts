@@ -1,4 +1,4 @@
-import { Classification } from '@adgate/schemas';
+import { Classification } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { classifyByRules } from './classify.js';

@@ -1,4 +1,4 @@
-import { loadPolicyFromYaml } from '@adgate/core';
+import { loadPolicyFromYaml } from '@adgateio/core';
 import { describe, expect, it } from 'vitest';
 
 import {

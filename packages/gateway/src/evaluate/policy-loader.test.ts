@@ -1,4 +1,4 @@
-import { PolicyValidationError } from '@adgate/core';
+import { PolicyValidationError } from '@adgateio/core';
 import { describe, expect, it } from 'vitest';
 
 import { createLogger } from '../logger.js';

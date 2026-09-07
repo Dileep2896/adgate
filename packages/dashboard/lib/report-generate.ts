@@ -1,11 +1,11 @@
-import { verify } from '@adgate/core';
+import { verify } from '@adgateio/core';
 import {
   type AuditReader,
   type AuditRecordRow,
   buildVerifyContext,
   createAuditReader,
-} from '@adgate/gateway/audit';
-import { AuditRecord } from '@adgate/schemas';
+} from '@adgateio/gateway/audit';
+import { AuditRecord } from '@adgateio/schemas';
 
 import { type DashboardDb, dashboardDb } from './db';
 import {
@@ -42,7 +42,7 @@ import { type VerifyKeys, verifyKeys } from './verify-keys';
  *
  * THE VERIFICATION IS THE GATEWAY'S (the S34 decision, and it matters more here). verify()'s
  * verdict is entirely a function of the VerifyContext it is handed, so this module uses the
- * gateway's OWN createAuditReader and buildVerifyContext through `@adgate/gateway/audit` rather
+ * gateway's OWN createAuditReader and buildVerifyContext through `@adgateio/gateway/audit` rather
  * than assembling a context of its own. A report that graded records more leniently than the
  * audit API would be worse than no report at all.
  *

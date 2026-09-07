@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { type Classification, DemandResponse, SeedCreative } from '@adgate/schemas';
+import { type Classification, DemandResponse, SeedCreative } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { classifyByRules } from '../classify/rules/classify.js';

@@ -1,4 +1,4 @@
-import type { Candidate, CatalogCreative, DemandRequest } from '@adgate/schemas';
+import type { Candidate, CatalogCreative, DemandRequest } from '@adgateio/schemas';
 
 import { targetingScore } from './match.js';
 import { creativeServesRegion } from './regions.js';

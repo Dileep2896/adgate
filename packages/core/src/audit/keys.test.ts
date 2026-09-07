@@ -1,4 +1,4 @@
-import { PublicKeyPem } from '@adgate/schemas';
+import { PublicKeyPem } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { sign, verifySignature } from './crypto.js';

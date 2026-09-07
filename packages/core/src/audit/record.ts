@@ -17,7 +17,7 @@ import type {
   Surface,
   SuppressReason,
   UnsignedAuditRecord,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import type { MediationResult } from '../demand/mediate.js';
 import type { PolicyEvaluation } from '../policy/evaluate.js';

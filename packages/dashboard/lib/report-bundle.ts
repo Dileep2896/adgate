@@ -1,5 +1,5 @@
-import { creativeContentHash, type VerifyContext } from '@adgate/core';
-import { AuditRecord } from '@adgate/schemas';
+import { creativeContentHash, type VerifyContext } from '@adgateio/core';
+import { AuditRecord } from '@adgateio/schemas';
 import { z } from 'zod';
 
 import type { ReportAdvertiser, ReportDocument, ReportPeriod } from './report';

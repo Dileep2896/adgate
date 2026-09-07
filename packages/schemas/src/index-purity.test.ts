@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 /**
- * @adgate/schemas is imported by every other package, including the SDK and the dashboard that
+ * @adgateio/schemas is imported by every other package, including the SDK and the dashboard that
  * bundle it for browsers, so nothing reachable from the package index may import a node
  * built-in. The node:fs writer (toJsonSchema) lives in json-schema-files.ts, reached only by
  * the gen-json.ts script and the tests.

@@ -1,5 +1,5 @@
-import { latencySince, prefixedUlid } from '@adgate/core';
-import { EvaluateRequest } from '@adgate/schemas';
+import { latencySince, prefixedUlid } from '@adgateio/core';
+import { EvaluateRequest } from '@adgateio/schemas';
 import type { Context } from 'hono';
 
 import type { AppEnv } from '../app-env.js';

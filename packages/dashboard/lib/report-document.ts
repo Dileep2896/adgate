@@ -5,7 +5,7 @@ import { VERIFY_CHECK_NAMES } from './verify-labels';
  * definition of every number in it. lib/report.ts computes it; this file is what it means.
  *
  * Types and two constants only, with one dependency-free import, so a client component may pull
- * a type from here without dragging @adgate/core into the browser bundle (the S31 lesson).
+ * a type from here without dragging @adgateio/core into the browser bundle (the S31 lesson).
  *
  * The field names are snake_case, unlike the rest of this package: the document is stored as
  * jsonb, downloaded as JSON and read by people outside this repo, so it reads like the audit

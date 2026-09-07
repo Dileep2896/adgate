@@ -7,7 +7,7 @@ import { optionalFlag, parseFlags, requireFlag, UsageError } from './args.js';
 import { runScript } from './run.js';
 
 /**
- * `pnpm --filter @adgate/gateway load -- --url <base> --key <api key> --app <app_id>
+ * `pnpm --filter @adgateio/gateway load -- --url <base> --key <api key> --app <app_id>
  * [--requests 200] [--concurrency 10] [--body examples/evaluate.json]`: drives POST
  * /v1/evaluate with the example body (app_id replaced, a fresh conversation_id and turn_id per
  * request so per_session caps never suppress everything) at the given concurrency and prints

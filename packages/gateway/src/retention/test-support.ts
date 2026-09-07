@@ -1,5 +1,5 @@
-import { prefixedUlid } from '@adgate/core';
-import { EvaluateResponse } from '@adgate/schemas';
+import { prefixedUlid } from '@adgateio/core';
+import { EvaluateResponse } from '@adgateio/schemas';
 import { asc, eq } from 'drizzle-orm';
 import { expect } from 'vitest';
 

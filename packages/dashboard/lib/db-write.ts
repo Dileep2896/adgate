@@ -1,5 +1,5 @@
-import type { Db } from '@adgate/gateway/admin';
-import * as schema from '@adgate/gateway/schema';
+import type { Db } from '@adgateio/gateway/admin';
+import * as schema from '@adgateio/gateway/schema';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
 
@@ -15,7 +15,7 @@ import postgres, { type Sql } from 'postgres';
  * This handle is imported by the admin server actions and nothing else (lib/db-write-usage.test.ts
  * holds the list and fails when it grows). The writes they carry out are not hand written SQL
  * either: they run the gateway's own registerApp / issueApiKey / revokeApiKey / createCreative /
- * updateCreative / setCreativeActive (`@adgate/gateway/admin`) plus one UPDATE of
+ * updateCreative / setCreativeActive (`@adgateio/gateway/admin`) plus one UPDATE of
  * apps.policy_yaml.
  *
  * Read paths must keep using dashboardDb() from lib/db.ts.

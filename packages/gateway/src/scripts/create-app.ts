@@ -6,7 +6,7 @@ import { optionalFlag, parseFlags, requireFlag } from './args.js';
 import { connectFromEnv, runScript } from './run.js';
 
 /**
- * `pnpm --filter @adgate/gateway create-app --name <name> [--policy <policy.yaml>]`:
+ * `pnpm --filter @adgateio/gateway create-app --name <name> [--policy <policy.yaml>]`:
  * registers an app and prints its id and its first app-role API key. The key is printed
  * exactly once; only an argon2id hash is stored, so it can never be shown again.
  */

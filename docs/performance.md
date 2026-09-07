@@ -19,8 +19,8 @@ rate limit raised so the run itself is not throttled:
 PORT=8799 RATE_LIMIT_RPS=10000 RATE_LIMIT_BURST=10000 tsx packages/gateway/src/server.ts
 ```
 
-App: `pnpm --filter @adgate/gateway create-app --name loadtest` (the documented default
-policy, no affiliate config), catalog `pnpm --filter @adgate/gateway seed-creatives`
+App: `pnpm --filter @adgateio/gateway create-app --name loadtest` (the documented default
+policy, no affiliate config), catalog `pnpm --filter @adgateio/gateway seed-creatives`
 (examples/creatives.seed.json). Body: examples/evaluate.json, whose message classifies as
 `software.devtools.database` by rules alone and serves the Example DB Cloud creative; every
 request gets its own conversation_id, so the per_session cap never applies and each request
@@ -29,7 +29,7 @@ writes one signed audit record under the app's chain lock.
 Command (run twice back to back; the first is the cold process, the second the warm one):
 
 ```
-pnpm --filter @adgate/gateway load -- --url http://localhost:8799 --key <api key> --app <app_id> --requests 200 --concurrency 10
+pnpm --filter @adgateio/gateway load -- --url http://localhost:8799 --key <api key> --app <app_id> --requests 200 --concurrency 10
 ```
 
 Cold (first 200 requests after boot):
@@ -72,15 +72,15 @@ The gateway log had no warn or error lines during either run and every request a
 ## Reproduce
 
 1. `docker compose up -d postgres`, `pnpm install`, `pnpm build`, `pnpm db:migrate`.
-2. Put a signing key in `.env` (`pnpm --filter @adgate/gateway keygen`).
+2. Put a signing key in `.env` (`pnpm --filter @adgateio/gateway keygen`).
 3. Start the gateway with the rate limit raised (see the command above) and wait for
    `curl localhost:8799/healthz`.
-4. `pnpm --filter @adgate/gateway create-app --name loadtest` (copy the app_id and key),
-   then `pnpm --filter @adgate/gateway seed-creatives`.
+4. `pnpm --filter @adgateio/gateway create-app --name loadtest` (copy the app_id and key),
+   then `pnpm --filter @adgateio/gateway seed-creatives`.
 5. Run the load command twice and keep the second output as the warm figure.
 6. Stop the gateway (SIGTERM) and check `lsof -nP -iTCP:8799 -sTCP:LISTEN` prints nothing.
 
-`pnpm --filter @adgate/gateway load -- --help` lists every flag (`--body` takes another
+`pnpm --filter @adgateio/gateway load -- --help` lists every flag (`--body` takes another
 EvaluateRequest JSON file; `--requests` and `--concurrency` default to 200 and 10).
 
 ## Metrics (`GET /metrics`)

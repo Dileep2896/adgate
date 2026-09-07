@@ -1,4 +1,4 @@
-import { ErrorResponse } from '@adgate/schemas';
+import { ErrorResponse } from '@adgateio/schemas';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { registerApp } from '../apps/register-app.js';

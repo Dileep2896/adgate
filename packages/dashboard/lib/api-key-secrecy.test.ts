@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { apiKeys } from '@adgate/gateway/schema';
+import { apiKeys } from '@adgateio/gateway/schema';
 import { getTableColumns } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 

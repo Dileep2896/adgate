@@ -5,7 +5,7 @@ import {
   creatives,
   events,
   reports,
-} from '@adgate/gateway/schema';
+} from '@adgateio/gateway/schema';
 import { and, asc, count, desc, eq, gte, inArray, lt, type SQL, sql } from 'drizzle-orm';
 
 import type { AppScope } from './app-scope';

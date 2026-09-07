@@ -1,4 +1,4 @@
-import { AuditRecord, PrevHash, type UnsignedAuditRecord } from '@adgate/schemas';
+import { AuditRecord, PrevHash, type UnsignedAuditRecord } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { canonicalize } from '../canonical/canonicalize.js';

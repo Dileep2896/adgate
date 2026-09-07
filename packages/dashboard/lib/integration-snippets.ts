@@ -51,8 +51,8 @@ export interface IntegrationSnippet {
 
 const serverCode = (
   appId: string,
-): string => `import { createClient, type EvaluateResult } from '@adgate/sdk';
-import { adgateMiddleware } from '@adgate/sdk/ai';
+): string => `import { createClient, type EvaluateResult } from '@adgateio/sdk';
+import { adgateMiddleware } from '@adgateio/sdk/ai';
 import { streamText, wrapLanguageModel } from 'ai';
 
 // One client per process. createClient throws at boot if the key is missing.
@@ -86,8 +86,8 @@ export const chatTurn = (
 
 const REACT_CODE = `'use client';
 
-import type { EvaluateResult } from '@adgate/sdk';
-import { AdgateMessageBoundary, SponsoredSlot, type SponsoredSlotClient } from '@adgate/sdk/react';
+import type { EvaluateResult } from '@adgateio/sdk';
+import { AdgateMessageBoundary, SponsoredSlot, type SponsoredSlotClient } from '@adgateio/sdk/react';
 import type { ReactElement } from 'react';
 
 export type AssistantTurnProps = {

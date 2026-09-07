@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { CONTRACT_SCHEMAS } from '@adgate/schemas';
+import { CONTRACT_SCHEMAS } from '@adgateio/schemas';
 import { Validator } from '@seriousme/openapi-schema-validator';
 import { describe, expect, it } from 'vitest';
 

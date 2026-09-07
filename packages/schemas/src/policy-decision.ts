@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * The policy engine's outputs and inputs that also appear in the audit record (docs/audit.md
  * policy_decisions) or are supplied by the gateway from the cap_state table. Defined here so
- * @adgate/core (the engine) and the AuditRecord schema share one definition.
+ * @adgateio/core (the engine) and the AuditRecord schema share one definition.
  */
 
 /** The docs/policy.md rules in the exact order they run. */

@@ -1,4 +1,4 @@
-import { categoryScore, creativeDeliverability } from '@adgate/core';
+import { categoryScore, creativeDeliverability } from '@adgateio/core';
 import {
   type AffiliateConfig,
   type CatalogCreative,
@@ -6,7 +6,7 @@ import {
   DELIVERABILITY_REASONS,
   type DeliverabilityReason,
   type PolicyConfig,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 import type { Logger } from 'pino';
 
 /**

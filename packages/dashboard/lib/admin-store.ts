@@ -1,5 +1,5 @@
-import type { Db } from '@adgate/gateway/admin';
-import { apps } from '@adgate/gateway/schema';
+import type { Db } from '@adgateio/gateway/admin';
+import { apps } from '@adgateio/gateway/schema';
 import { eq, sql } from 'drizzle-orm';
 
 import type { PolicyWriter } from './policy-save';
@@ -8,7 +8,7 @@ import type { PolicyWriter } from './policy-save';
  * The Postgres side of the admin actions that the gateway does not already own.
  *
  * Creating an app and issuing or revoking a key are the gateway's own functions
- * (`@adgate/gateway/admin`); the one write that has no counterpart there is replacing an app's
+ * (`@adgateio/gateway/admin`); the one write that has no counterpart there is replacing an app's
  * stored policy, so it lives here behind the PolicyWriter port that savePolicy() talks to.
  *
  * It needs a READ-WRITE handle (lib/db-write.ts). Passing the read-only one from lib/db.ts

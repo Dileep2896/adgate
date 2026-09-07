@@ -1,4 +1,4 @@
-import type { AffiliateConfig, AffiliateNetwork, CatalogCreative } from '@adgate/schemas';
+import type { AffiliateConfig, AffiliateNetwork, CatalogCreative } from '@adgateio/schemas';
 
 import type { Clock } from '../response.js';
 

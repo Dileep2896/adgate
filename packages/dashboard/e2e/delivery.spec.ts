@@ -17,7 +17,7 @@ import { resetAndSeed } from './seed';
 
 const PASSWORD = 'a passphrase of ordinary words';
 
-/** The exact sentence @adgate/core produces, which is also what check-catalog prints. */
+/** The exact sentence @adgateio/core produces, which is also what check-catalog prints. */
 const NOT_CONFIGURED = 'set affiliate_config.partnerstack';
 
 /** Fills the new-creative form for an affiliate creative on partnerstack. */

@@ -8,14 +8,14 @@ import { describe, expect, it } from 'vitest';
  * CLAUDE.md: pure logic lives in packages/core with no HTTP, DB, env or network access. The LLM
  * stage is the one place in core that can reach the network, and only through the fetch the
  * gateway injects (LlmClassifierConfig.fetch is required; there is no platform default). Its
- * import graph may reach @adgate/schemas and node:crypto (through ../../audit/crypto, for
+ * import graph may reach @adgateio/schemas and node:crypto (through ../../audit/crypto, for
  * PROMPT_VERSION) and nothing else outside src/. Same approach as ../rules/purity.test.ts.
  */
 const llmDir = dirname(fileURLToPath(import.meta.url));
 const srcDir = resolve(llmDir, '../..');
 const SPECIFIER = /(?:\bfrom\s+|\bimport\s+|\bimport\s*\(\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]/g;
 const BANNED =
-  /^(node:(?!crypto$)|fs|path|os|http|https|net|tls|dns|child_process|worker_threads|pg|postgres|drizzle|hono|undici|redis|ioredis|openai|axios|zod|@adgate\/gateway|@adgate\/sdk)/;
+  /^(node:(?!crypto$)|fs|path|os|http|https|net|tls|dns|child_process|worker_threads|pg|postgres|drizzle|hono|undici|redis|ioredis|openai|axios|zod|@adgateio\/gateway|@adgateio\/sdk)/;
 
 const isImplementation = (name: string) =>
   name.endsWith('.ts') && !name.endsWith('.test.ts') && !name.endsWith('.fixture.ts');
@@ -71,7 +71,7 @@ describe('llm classifier purity', () => {
       for (const specifier of specifiersOf(file)) {
         expect(specifier, `${file} imports ${specifier}`).not.toMatch(BANNED);
         expect(
-          specifier === '@adgate/schemas' || specifier.startsWith('.'),
+          specifier === '@adgateio/schemas' || specifier.startsWith('.'),
           `${file} imports ${specifier}`,
         ).toBe(true);
       }
@@ -87,9 +87,9 @@ describe('llm classifier purity', () => {
     }
   });
 
-  it('reaches only @adgate/schemas and node:crypto through its whole import graph', () => {
+  it('reaches only @adgateio/schemas and node:crypto through its whole import graph', () => {
     const bare = [...reachableBareImports(join(llmDir, 'index.ts'))].sort();
-    expect(bare).toEqual(['@adgate/schemas', 'node:crypto']);
+    expect(bare).toEqual(['@adgateio/schemas', 'node:crypto']);
   });
 
   it('keeps every file under 300 lines (CLAUDE.md)', () => {

@@ -1,4 +1,4 @@
-import { failClosedEvaluate, type EvaluateResult } from '@adgate/sdk';
+import { failClosedEvaluate, type EvaluateResult } from '@adgateio/sdk';
 
 /**
  * How long /api/chat waits for the gateway once the answer is complete.

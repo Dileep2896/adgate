@@ -14,15 +14,15 @@ pnpm install
 pnpm build                                  # required on a fresh clone: packages import dist/
 docker compose up -d postgres               # Postgres 16, databases adgate and adgate_test
 cp .env.example .env
-pnpm --silent --filter @adgate/gateway keygen >> .env
+pnpm --silent --filter @adgateio/gateway keygen >> .env
 pnpm db:migrate
 ```
 
 Then, in separate terminals:
 
 ```bash
-pnpm --filter @adgate/gateway dev           # :8787
-pnpm --filter @adgate/dashboard dev         # :3000  (DASHBOARD_PORT to move it)
+pnpm --filter @adgateio/gateway dev           # :8787
+pnpm --filter @adgateio/dashboard dev         # :3000  (DASHBOARD_PORT to move it)
 pnpm --filter nextjs-chat dev               # :3001  (PORT, set in the shell, to move it)
 ```
 
@@ -55,7 +55,7 @@ package entry point, because turbo builds dependencies before `test` and `typech
 | --- | --- | --- |
 | Unit tests (all TS packages) | `pnpm test` | nothing — they never touch the network and always fake the LLM |
 | Gateway and dashboard integration tests | `pnpm test` | docker Postgres, and `DATABASE_URL_TEST` in `.env` |
-| Dashboard end-to-end (Playwright) | `pnpm exec playwright install chromium` once, then `pnpm --filter @adgate/dashboard test:e2e` | docker Postgres. Deliberately **not** part of `pnpm test` |
+| Dashboard end-to-end (Playwright) | `pnpm exec playwright install chromium` once, then `pnpm --filter @adgateio/dashboard test:e2e` | docker Postgres. Deliberately **not** part of `pnpm test` |
 | Python SDK | `cd packages/sdk-python && pip install -e ".[dev]" && ruff check . && mypy && pytest` | nothing (respx fakes the gateway). Not a pnpm package, so `pnpm test` never sees it |
 | FastAPI example | `cd examples/fastapi-chat && pip install -e ../../packages/sdk-python && pip install -e ".[dev]" && ruff check . && pytest` | nothing, same reason |
 
@@ -120,10 +120,10 @@ hand-edit them; run the generator and commit the result.
 
 | What | Regenerate with | Guarded by |
 | --- | --- | --- |
-| `packages/schemas/json/*.schema.json` | `pnpm --filter @adgate/schemas gen:json` | `packages/schemas/src/json-schema.test.ts` |
+| `packages/schemas/json/*.schema.json` | `pnpm --filter @adgateio/schemas gen:json` | `packages/schemas/src/json-schema.test.ts` |
 | `docs/api-reference.md` | `pnpm docs:api` | `packages/gateway/src/openapi/reference.test.ts` |
 | `packages/sdk-python/src/adgate/models.py` | `cd packages/sdk-python && python -m scripts.generate_models` | `tests/test_models_generated.py`, and a `git diff --exit-code` step in CI |
-| `packages/gateway/drizzle/*.sql` + `meta/` | `pnpm --filter @adgate/gateway db:generate --name <change>` | the migration count in `db/migrate.integration.test.ts` |
+| `packages/gateway/drizzle/*.sql` + `meta/` | `pnpm --filter @adgateio/gateway db:generate --name <change>` | the migration count in `db/migrate.integration.test.ts` |
 
 A change to a contract schema usually touches three of those in one commit: the JSON Schema
 files, `docs/api-reference.md` (the OpenAPI document is built from the same schemas), and the
@@ -132,10 +132,10 @@ Python models.
 ## Adding a migration
 
 1. Edit the Drizzle table modules under `packages/gateway/src/db/tables/`. Those modules may
-   import `@adgate/schemas` **as types only** — drizzle-kit loads them through a CJS hook that
+   import `@adgateio/schemas` **as types only** — drizzle-kit loads them through a CJS hook that
    cannot resolve the ESM-only workspace packages, so `CHECK` lists are local tuples that
    `db/schema.test.ts` pins against the schema enums.
-2. `pnpm --filter @adgate/gateway db:generate --name <short_change_name>` (no database needed).
+2. `pnpm --filter @adgateio/gateway db:generate --name <short_change_name>` (no database needed).
 3. Commit the generated `.sql` and the `meta/` snapshot exactly as written.
 4. `pnpm db:migrate` to apply it locally. Migrations are tracked, so re-running is a no-op.
 
@@ -166,20 +166,20 @@ GitHub: this repository has no remote. The first real release is a human decisio
 
 | Artefact | Where | Versioned by |
 | --- | --- | --- |
-| `@adgate/schemas` | npm, public | changesets |
-| `@adgate/sdk` | npm, public | changesets |
+| `@adgateio/schemas` | npm, public | changesets |
+| `@adgateio/sdk` | npm, public | changesets |
 | `adgate` | PyPI | `packages/sdk-python/pyproject.toml`, by hand |
 | the gateway image | `ghcr.io/<owner>/<repo>/gateway` | the git tag |
 
-`@adgate/core`, `@adgate/gateway`, `@adgate/dashboard` and the examples are `"private": true`
-and are never published. `@adgate/core` is deliberately one of them: only the gateway and the
-dashboard import it, and `@adgate/sdk` does not — the SDK's one runtime dependency is
-`@adgate/schemas`, which is why that package has to be public. `pnpm publish -r` skips every
+`@adgateio/core`, `@adgateio/gateway`, `@adgateio/dashboard` and the examples are `"private": true`
+and are never published. `@adgateio/core` is deliberately one of them: only the gateway and the
+dashboard import it, and `@adgateio/sdk` does not — the SDK's one runtime dependency is
+`@adgateio/schemas`, which is why that package has to be public. `pnpm publish -r` skips every
 private package on its own, and they are also listed in `.changeset/config.json`'s `ignore`.
 
 ### Adding a changeset
 
-A change to `@adgate/schemas` or `@adgate/sdk` needs a changeset in the same pull request:
+A change to `@adgateio/schemas` or `@adgateio/sdk` needs a changeset in the same pull request:
 
 ```bash
 pnpm changeset      # pick the packages, pick major/minor/patch, write the entry for the changelog
@@ -199,7 +199,7 @@ pnpm run version               # changeset version + pnpm install --lockfile-onl
 `CHANGELOG.md`, and refreshes the lockfile. Use the root script, not `changeset version` on its
 own: the lockfile has to be rewritten in the same commit or CI's `--frozen-lockfile` install
 fails. Workspace dependencies stay `workspace:*` in the repository; pnpm rewrites them to the
-real version (`"@adgate/schemas": "0.1.0"`) inside the published tarball.
+real version (`"@adgateio/schemas": "0.1.0"`) inside the published tarball.
 
 Then bring the Python package to the same version by hand — changesets does not know about it:
 
@@ -280,8 +280,8 @@ fresh clone 5432. The image runs the server only; apply migrations from a checko
 
 ### What a human must do once
 
-1. Create the npm organisation `@adgate` and add a granular access token with publish rights for
-   `@adgate/schemas` and `@adgate/sdk` as the repository secret `NPM_TOKEN`.
+1. Create the npm organisation `@adgateio` and add a granular access token with publish rights for
+   `@adgateio/schemas` and `@adgateio/sdk` as the repository secret `NPM_TOKEN`.
 2. Claim the `adgate` name on PyPI and add a project-scoped API token as the repository secret
    `PYPI_API_TOKEN`.
 3. Nothing for GHCR: the image is pushed with the built-in `GITHUB_TOKEN`. After the first push,
@@ -289,5 +289,5 @@ fresh clone 5432. The image runs the server only; apply migrations from a checko
    you want.
 4. Run the workflow manually once with `dry_run` left at true, confirm all three jobs are green,
    then tag `v0.1.0`.
-5. Verify from a clean machine: `npm view @adgate/sdk`, `pip install adgate`, and
+5. Verify from a clean machine: `npm view @adgateio/sdk`, `pip install adgate`, and
    `docker pull ghcr.io/<owner>/<repo>/gateway:0.1.0`.

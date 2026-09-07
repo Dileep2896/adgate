@@ -3,7 +3,7 @@
 ```
   AI app (chat UI, agent, coding tool)
         |
-        |  @adgate/sdk (TS) or adgate (Python)
+        |  @adgateio/sdk (TS) or adgate (Python)
         |  evaluate(turn, user) in parallel with the model call
         v
   +------------------------------------------------------------+
@@ -29,7 +29,7 @@
 - `packages/schemas`: Zod schemas for the contract, JSON Schema export, PolicyConfig loader. No logic beyond validation and defaults.
 - `packages/core`: pure logic. `classify/`, `policy/`, `demand/`, `audit/`, `canonical/`. No HTTP, no DB, no env, no network in tests.
 - `packages/gateway`: Hono app, Drizzle schema and migrations, auth, rate limiting, routes, seed and load scripts.
-- `packages/sdk`: `@adgate/sdk` with `react` and `ai` sub-entries.
+- `packages/sdk`: `@adgateio/sdk` with `react` and `ai` sub-entries.
 - `packages/sdk-python`: `adgate` on PyPI.
 - `packages/dashboard`: Next.js admin and reports.
 

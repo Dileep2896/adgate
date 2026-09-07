@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 
-import { loadPolicyFromYaml, prefixedUlid, type UlidOptions } from '@adgate/core';
-import type { PolicyConfig } from '@adgate/schemas';
+import { loadPolicyFromYaml, prefixedUlid, type UlidOptions } from '@adgateio/core';
+import type { PolicyConfig } from '@adgateio/schemas';
 
 import { type IssuedApiKey, issueApiKey } from '../auth/repository.js';
 import type { Db } from '../db/client.js';

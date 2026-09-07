@@ -1,4 +1,4 @@
-import { Classification, type Message } from '@adgate/schemas';
+import { Classification, type Message } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { classifyCacheKey, createLruCache } from './cache.js';

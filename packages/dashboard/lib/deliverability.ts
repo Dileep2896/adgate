@@ -1,10 +1,10 @@
-import { appReadiness, type AppReadiness, type CatalogApp } from '@adgate/gateway/admin';
-import { apps, creatives } from '@adgate/gateway/schema';
+import { appReadiness, type AppReadiness, type CatalogApp } from '@adgateio/gateway/admin';
+import { apps, creatives } from '@adgateio/gateway/schema';
 import {
   AffiliateNetwork,
   DELIVERABILITY_REASONS,
   type DeliverabilityReason,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 import { and, asc, eq, isNull, or } from 'drizzle-orm';
 
 import type { AppScope } from './app-scope';
@@ -14,14 +14,14 @@ import { appScopeCondition } from './scope-queries';
 /**
  * WHY A CREATIVE THAT LOOKS HEALTHY NEVER SERVES, for the three screens that show a creative.
  *
- * The decision is not made here: it is `creativeDeliverability()` in @adgate/core, reached
+ * The decision is not made here: it is `creativeDeliverability()` in @adgateio/core, reached
  * through the gateway's own `appReadiness()` (packages/gateway/src/catalog/readiness.ts), which
  * is the SAME function `check-catalog` and `seed-creatives` print. That is deliberate - the
  * `detail` sentence an operator reads in the dashboard is byte-identical to the one the CLI
  * prints, so there is one vocabulary and not two. This module only loads the rows, judges each
  * (creative, app) pair and shapes the answer for a page.
  *
- * SERVER ONLY. It reaches @adgate/core through @adgate/gateway/admin (zod, the YAML parser, the
+ * SERVER ONLY. It reaches @adgateio/core through @adgateio/gateway/admin (zod, the YAML parser, the
  * policy schema), so every function here runs on the server and the pages pass PLAIN DATA down
  * to the components. Nothing in this file may be imported by a client component.
  *

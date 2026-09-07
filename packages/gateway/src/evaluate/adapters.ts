@@ -5,14 +5,14 @@ import {
   createGravityAdapter,
   createKoahAdapter,
   type DemandAdapter,
-} from '@adgate/core';
+} from '@adgateio/core';
 import {
   AffiliateConfig,
   CatalogCreative,
   type GravityConfig,
   type KoahConfig,
   type PolicyConfig,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 import { and, eq, isNull, or } from 'drizzle-orm';
 import type { Logger } from 'pino';
 

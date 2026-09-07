@@ -1,5 +1,5 @@
-import { isUnattested } from '@adgate/core';
-import type { AuditRecord } from '@adgate/schemas';
+import { isUnattested } from '@adgateio/core';
+import type { AuditRecord } from '@adgateio/schemas';
 import { and, eq } from 'drizzle-orm';
 
 import type { Db } from '../db/client.js';

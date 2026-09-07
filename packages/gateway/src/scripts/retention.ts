@@ -5,7 +5,7 @@ import { optionalFlag, parseFlags, UsageError } from './args.js';
 import { connectFromEnv, runScript } from './run.js';
 
 /**
- * `pnpm --filter @adgate/gateway retention [--dry-run] [--app <app_id>] [--now <iso>]`: the
+ * `pnpm --filter @adgateio/gateway retention [--dry-run] [--app <app_id>] [--now <iso>]`: the
  * cron entry of the retention job. Deletes each app's audit records older than its own
  * policy.privacy.retain_days, from the oldest end of its chain only, together with the events
  * and raw text that belonged to them, and records the watermark that lets verification report

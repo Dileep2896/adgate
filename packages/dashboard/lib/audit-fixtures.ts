@@ -1,5 +1,5 @@
-import { creativeContentHash } from '@adgate/core';
-import type { Candidate } from '@adgate/schemas';
+import { creativeContentHash } from '@adgateio/core';
+import type { Candidate } from '@adgateio/schemas';
 import type { Sql } from 'postgres';
 
 /**

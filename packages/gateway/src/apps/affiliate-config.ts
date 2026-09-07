@@ -1,4 +1,4 @@
-import { AffiliateConfig } from '@adgate/schemas';
+import { AffiliateConfig } from '@adgateio/schemas';
 import { eq } from 'drizzle-orm';
 
 import type { DbOrTx } from '../db/client.js';

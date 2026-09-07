@@ -1,4 +1,4 @@
-import { apps, reports } from '@adgate/gateway/schema';
+import { apps, reports } from '@adgateio/gateway/schema';
 import { eq, type SQL } from 'drizzle-orm';
 
 import { type AppScope, scopeOwnerId } from './app-scope';

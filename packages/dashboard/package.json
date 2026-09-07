@@ -1,5 +1,5 @@
 {
-  "name": "@adgate/dashboard",
+  "name": "@adgateio/dashboard",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -15,9 +15,9 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@adgate/core": "workspace:*",
-    "@adgate/gateway": "workspace:*",
-    "@adgate/schemas": "workspace:*",
+    "@adgateio/core": "workspace:*",
+    "@adgateio/gateway": "workspace:*",
+    "@adgateio/schemas": "workspace:*",
     "argon2": "^0.45.1",
     "drizzle-orm": "^0.45.2",
     "next": "^15.5.25",

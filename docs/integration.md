@@ -11,12 +11,12 @@ versions of the first. The contract is `docs/api.md`, the policy `docs/policy.md
 ## Before you start
 
 You need a gateway URL (`http://localhost:8787` locally), an app id (`app_01J...`) and an API key
-(`ak_<prefix>_<secret>`); `pnpm --filter @adgate/gateway create-app` prints all three. The key has
+(`ak_<prefix>_<secret>`); `pnpm --filter @adgateio/gateway create-app` prints all three. The key has
 the `app` role — evaluate, attest, send events, read its own audit records — and is a server-side
 secret: it must never reach a browser or a user's machine.
 
 ```bash
-pnpm add @adgate/sdk     # TypeScript, Node 20+ and browsers
+pnpm add @adgateio/sdk     # TypeScript, Node 20+ and browsers
 pip install adgate       # Python 3.10+
 ```
 
@@ -58,8 +58,8 @@ answer afterwards. It never touches the model's text: the decision arrives on
 `providerMetadata.adgate`, and `onDecision` fires once as soon as the gateway answers.
 
 ```ts
-import { createClient, type EvaluateResult } from '@adgate/sdk';
-import { adgateMiddleware } from '@adgate/sdk/ai';
+import { createClient, type EvaluateResult } from '@adgateio/sdk';
+import { adgateMiddleware } from '@adgateio/sdk/ai';
 import { streamText, wrapLanguageModel } from 'ai';
 
 // One client per process. createClient throws at boot if the key is missing.
@@ -100,8 +100,8 @@ The slot needs an object with a `track` method, not the whole client, so the API
 server and events go through a route of your own:
 
 ```ts
-import type { EventType } from '@adgate/sdk';
-import type { SponsoredSlotClient } from '@adgate/sdk/react';
+import type { EventType } from '@adgateio/sdk';
+import type { SponsoredSlotClient } from '@adgateio/sdk/react';
 
 /** POST /api/adgate/events forwards to the gateway's /v1/events with the server-side key. */
 export const browserTrackClient: SponsoredSlotClient = {
@@ -121,8 +121,8 @@ serialized into the HTML. Put the slot outside it, as a sibling that follows the
 ```tsx
 'use client';
 
-import type { EvaluateResult } from '@adgate/sdk';
-import { AdgateMessageBoundary, SponsoredSlot, type SponsoredSlotClient } from '@adgate/sdk/react';
+import type { EvaluateResult } from '@adgateio/sdk';
+import { AdgateMessageBoundary, SponsoredSlot, type SponsoredSlotClient } from '@adgateio/sdk/react';
 import type { ReactElement } from 'react';
 
 export type AssistantTurnProps = {
@@ -228,7 +228,7 @@ what `per_session` counts) and `turn_id` = the id of this task, one per user goa
 `surface.type: "agent"`.
 
 ```ts
-import { createClient, type EvaluateResult } from '@adgate/sdk';
+import { createClient, type EvaluateResult } from '@adgateio/sdk';
 
 const baseUrl = process.env.ADGATE_BASE_URL ?? 'http://localhost:8787';
 const adgate = createClient({ apiKey: process.env.ADGATE_API_KEY ?? '', baseUrl });
@@ -317,7 +317,7 @@ http://localhost:8787/c/aud_01J...
 the whole integration is one call plus one print.
 
 ```ts
-import { createClient, withGeneration, type EvaluateResult } from '@adgate/sdk';
+import { createClient, withGeneration, type EvaluateResult } from '@adgateio/sdk';
 
 const baseUrl = process.env.ADGATE_BASE_URL ?? 'http://localhost:8787';
 const adgate = createClient({ apiKey: process.env.ADGATE_API_KEY ?? '', baseUrl });

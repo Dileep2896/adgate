@@ -1,4 +1,4 @@
-import type { CreativeWriteFailure, CreativeWriteResult } from '@adgate/gateway/admin';
+import type { CreativeWriteFailure, CreativeWriteResult } from '@adgateio/gateway/admin';
 
 import type { FormFields } from './app-form';
 import {

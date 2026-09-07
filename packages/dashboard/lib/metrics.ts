@@ -1,4 +1,4 @@
-import type { Decision, EventType } from '@adgate/schemas';
+import type { Decision, EventType } from '@adgateio/schemas';
 
 /**
  * The dashboard's metric arithmetic, and the only place that defines what each number means.
@@ -6,7 +6,7 @@ import type { Decision, EventType } from '@adgate/schemas';
  * PURE: no database, no React, no environment, no clock. Every function takes plain rows -
  * already grouped and counted by Postgres (lib/metrics-queries.ts) - and returns numbers, so
  * the definitions below are unit tested against a hand written fixture rather than against a
- * database. The type-only imports from @adgate/schemas are erased at compile time, so this
+ * database. The type-only imports from @adgateio/schemas are erased at compile time, so this
  * module ships nothing to the browser and a client component may import its types freely.
  *
  * ------------------------------------------------------------------------------------------

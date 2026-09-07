@@ -13,7 +13,7 @@ const policyDir = dirname(fileURLToPath(import.meta.url));
 const srcDir = resolve(policyDir, '..');
 const SPECIFIER = /(?:\bfrom\s+|\bimport\s+|\bimport\s*\(\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]/g;
 const BANNED =
-  /^(node:|fs|path|os|http|https|net|tls|dns|child_process|worker_threads|pg|postgres|drizzle|hono|undici|redis|ioredis|@adgate\/gateway|@adgate\/sdk)/;
+  /^(node:|fs|path|os|http|https|net|tls|dns|child_process|worker_threads|pg|postgres|drizzle|hono|undici|redis|ioredis|@adgateio\/gateway|@adgateio\/sdk)/;
 
 const isImplementation = (name: string) =>
   name.endsWith('.ts') && !name.endsWith('.test.ts') && !name.endsWith('.fixture.ts');
@@ -51,7 +51,7 @@ describe('policy package purity', () => {
       for (const specifier of specifiersOf(join(policyDir, name))) {
         expect(specifier, `${name} imports ${specifier}`).not.toMatch(BANNED);
         expect(
-          specifier === '@adgate/schemas' || specifier.startsWith('.'),
+          specifier === '@adgateio/schemas' || specifier.startsWith('.'),
           `${name} imports ${specifier}`,
         ).toBe(true);
       }
@@ -60,7 +60,9 @@ describe('policy package purity', () => {
     }
   });
 
-  it('the engine reaches only @adgate/schemas through its whole import graph', () => {
-    expect([...reachableBareImports(join(policyDir, 'evaluate.ts'))]).toEqual(['@adgate/schemas']);
+  it('the engine reaches only @adgateio/schemas through its whole import graph', () => {
+    expect([...reachableBareImports(join(policyDir, 'evaluate.ts'))]).toEqual([
+      '@adgateio/schemas',
+    ]);
   });
 });

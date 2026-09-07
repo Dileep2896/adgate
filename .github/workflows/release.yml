@@ -3,7 +3,7 @@
 # Triggered by a version tag (`git tag v0.1.0 && git push --follow-tags`), which publishes three
 # kinds of artefact from one commit:
 #
-#   npm    @adgate/schemas and @adgate/sdk        secret: NPM_TOKEN
+#   npm    @adgateio/schemas and @adgateio/sdk    secret: NPM_TOKEN
 #   PyPI   adgate (packages/sdk-python)           secret: PYPI_API_TOKEN
 #   GHCR   ghcr.io/<owner>/<repo>/gateway         no secret: the built in GITHUB_TOKEN
 #
@@ -44,7 +44,7 @@ env:
 
 jobs:
   npm:
-    name: npm (@adgate/schemas, @adgate/sdk)
+    name: npm (@adgateio/schemas, @adgateio/sdk)
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

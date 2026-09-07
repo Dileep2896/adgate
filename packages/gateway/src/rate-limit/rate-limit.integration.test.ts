@@ -1,4 +1,4 @@
-import { ErrorResponse } from '@adgate/schemas';
+import { ErrorResponse } from '@adgateio/schemas';
 import { count } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 

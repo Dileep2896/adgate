@@ -242,7 +242,7 @@
     },
     {
       "id": "S22", "priority": 22, "dependsOn": ["S03"], "passes": true,
-      "title": "@adgate/sdk core client",
+      "title": "@adgateio/sdk core client",
       "description": "createClient({ apiKey, baseUrl, timeoutMs }) with evaluate (never rejects; resolves to suppress with reason error on any failure), attest(auditId, modelOutputText) hashing locally with SubtleCrypto or node:crypto, track(auditId, type). tsup build to ESM and CJS with types. Works in Node 20 and browsers.",
       "acceptanceCriteria": [
         "Network error, timeout, and non-JSON response all resolve to a suppress decision",
@@ -263,7 +263,7 @@
     {
       "id": "S24", "priority": 24, "dependsOn": ["S22"], "passes": true,
       "title": "React SponsoredSlot component",
-      "description": "@adgate/sdk/react exports SponsoredSlot({ decision, client, onDismiss }). Renders nothing on suppress. On serve: separate block, label from disclosure_label, headline, body, CTA link with rel sponsored noopener, aria-label Sponsored content, dismiss button firing a dismiss event, impression event once on viewport entry (IntersectionObserver, SSR safe). Refuses to render inside an ancestor with data-adgate-message=assistant and logs a warning.",
+      "description": "@adgateio/sdk/react exports SponsoredSlot({ decision, client, onDismiss }). Renders nothing on suppress. On serve: separate block, label from disclosure_label, headline, body, CTA link with rel sponsored noopener, aria-label Sponsored content, dismiss button firing a dismiss event, impression event once on viewport entry (IntersectionObserver, SSR safe). Refuses to render inside an ancestor with data-adgate-message=assistant and logs a warning.",
       "acceptanceCriteria": [
         "Testing Library tests for suppress, serve, dismiss, single impression, and the separation guard",
         "No inline styles beyond a minimal default; accepts className",
@@ -273,7 +273,7 @@
     {
       "id": "S25", "priority": 25, "dependsOn": ["S23"], "passes": true,
       "title": "Vercel AI SDK middleware",
-      "description": "@adgate/sdk/ai exports adgateMiddleware(client, { getUser, appId }) usable with wrapLanguageModel: runs evaluate on the latest user message in parallel with generation, attaches the decision to providerMetadata, attests with the final text (streaming and non streaming).",
+      "description": "@adgateio/sdk/ai exports adgateMiddleware(client, { getUser, appId }) usable with wrapLanguageModel: runs evaluate on the latest user message in parallel with generation, attaches the decision to providerMetadata, attests with the final text (streaming and non streaming).",
       "acceptanceCriteria": [
         "Works with a fake language model in tests for both generate and stream paths",
         "Decision is available to the caller without changing the model output text",
@@ -417,7 +417,7 @@
     {
       "id": "S40", "priority": 40, "dependsOn": ["S39", "S26"], "passes": true,
       "title": "Release pipeline",
-      "description": "Changesets for versioning; GitHub Actions publish @adgate/sdk and @adgate/schemas to npm and adgate to PyPI on tag; Dockerfile for the gateway published to GHCR; tag v0.1.0 instructions in CONTRIBUTING.md.",
+      "description": "Changesets for versioning; GitHub Actions publish @adgateio/sdk and @adgateio/schemas to npm and adgate to PyPI on tag; Dockerfile for the gateway published to GHCR; tag v0.1.0 instructions in CONTRIBUTING.md.",
       "acceptanceCriteria": [
         "Dry run publish jobs succeed in CI (use --dry-run flags; real publish requires secrets the human adds)",
         "Docker image builds and /healthz responds when run with docker",

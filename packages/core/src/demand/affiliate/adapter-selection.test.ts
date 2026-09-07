@@ -1,4 +1,4 @@
-import type { CatalogCreative, DemandResponse } from '@adgate/schemas';
+import type { CatalogCreative, DemandResponse } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { createDirectAdapter } from '../direct.js';

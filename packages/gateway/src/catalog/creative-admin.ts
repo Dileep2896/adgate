@@ -1,5 +1,5 @@
-import { creativeId, prefixedUlid, type UlidOptions } from '@adgate/core';
-import type { SeedCreative } from '@adgate/schemas';
+import { creativeId, prefixedUlid, type UlidOptions } from '@adgateio/core';
+import type { SeedCreative } from '@adgateio/schemas';
 import { and, eq, isNull, ne } from 'drizzle-orm';
 
 import type { Db, DbOrTx } from '../db/client.js';

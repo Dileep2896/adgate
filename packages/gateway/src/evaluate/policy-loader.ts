@@ -1,5 +1,5 @@
-import { loadPolicyFromYaml } from '@adgate/core';
-import type { PolicyConfig } from '@adgate/schemas';
+import { loadPolicyFromYaml } from '@adgateio/core';
+import type { PolicyConfig } from '@adgateio/schemas';
 import type { Logger } from 'pino';
 
 import type { AppRow } from '../db/tables/apps.js';

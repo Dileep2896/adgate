@@ -1,4 +1,4 @@
-import { AffiliateConfig, AMAZON_MARKETPLACES } from '@adgate/schemas';
+import { AffiliateConfig, AMAZON_MARKETPLACES } from '@adgateio/schemas';
 
 import type { FormFields } from './app-form';
 import { readText } from './app-form';

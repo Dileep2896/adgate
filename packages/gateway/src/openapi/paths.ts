@@ -1,4 +1,4 @@
-import type { ContractSchemaName } from '@adgate/schemas';
+import type { ContractSchemaName } from '@adgateio/schemas';
 
 import { BODY_LIMIT_BYTES } from '../body-limit.js';
 import { REMAINING_HEADER, RETRY_AFTER_HEADER } from '../rate-limit/middleware.js';

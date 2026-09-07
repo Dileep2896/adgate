@@ -1,4 +1,4 @@
-import { createKeyRing, verify } from '@adgate/core';
+import { createKeyRing, verify } from '@adgateio/core';
 import { describe, expect, it } from 'vitest';
 
 import { FIXTURE_RECORDS, fixtureInput, fixtureRecord, invalidWith } from './report-fixture';

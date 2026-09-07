@@ -1,4 +1,4 @@
-import { type AffiliateConfig, DemandResponse } from '@adgate/schemas';
+import { type AffiliateConfig, DemandResponse } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { request } from '../direct.fixture.js';

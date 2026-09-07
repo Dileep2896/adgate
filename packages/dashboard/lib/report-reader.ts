@@ -1,4 +1,4 @@
-import type { AuditReader, AuditRecordRow, RetentionWatermark } from '@adgate/gateway/audit';
+import type { AuditReader, AuditRecordRow, RetentionWatermark } from '@adgateio/gateway/audit';
 
 /**
  * The plumbing one report generation runs on: a memoising wrapper around the gateway's

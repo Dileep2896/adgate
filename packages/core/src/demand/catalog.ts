@@ -1,4 +1,4 @@
-import type { CatalogCreative, SeedCreative } from '@adgate/schemas';
+import type { CatalogCreative, SeedCreative } from '@adgateio/schemas';
 
 import { prefixedUlid, type UlidOptions } from '../ids/ulid.js';
 

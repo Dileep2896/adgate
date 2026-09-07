@@ -1,4 +1,4 @@
-import { AuditRecord, type UnsignedAuditRecord } from '@adgate/schemas';
+import { AuditRecord, type UnsignedAuditRecord } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { evaluatePolicy } from '../policy/evaluate.js';

@@ -1,4 +1,4 @@
-import type { CapState } from '@adgate/schemas';
+import type { CapState } from '@adgateio/schemas';
 
 /**
  * Frequency-cap counter semantics (docs/policy.md frequency_caps), pure so the gateway's SQL

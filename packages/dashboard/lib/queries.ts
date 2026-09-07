@@ -1,5 +1,5 @@
-import { apiKeys, apps, creatives } from '@adgate/gateway/schema';
-import type { AffiliateConfig } from '@adgate/schemas';
+import { apiKeys, apps, creatives } from '@adgateio/gateway/schema';
+import type { AffiliateConfig } from '@adgateio/schemas';
 import { and, count, desc, eq, isNotNull } from 'drizzle-orm';
 
 import type { AppScope } from './app-scope';

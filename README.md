@@ -53,7 +53,7 @@ docker compose up -d postgres
 ```
 
 `pnpm build` is not optional on a fresh clone: the gateway, the SDK and the example resolve
-`@adgate/core` and friends through their `dist/` directories, so the scripts below fail with
+`@adgateio/core` and friends through their `dist/` directories, so the scripts below fail with
 `ERR_MODULE_NOT_FOUND` until they exist. `docker compose` starts Postgres 16 with the databases
 `adgate` and `adgate_test` (created by `scripts/db/init.sql`) and publishes it on host port 5432.
 
@@ -90,14 +90,14 @@ docker exec <postgres container> psql -U adgate -d postgres -c 'CREATE DATABASE 
 
 ```bash
 cp .env.example .env
-pnpm --silent --filter @adgate/gateway keygen >> .env
+pnpm --silent --filter @adgateio/gateway keygen >> .env
 ```
 
 `.env.example` is the annotated list of every variable; the defaults are all local dev values.
 `keygen` prints three lines — `ADGATE_SIGNING_KEY_ID`, `ADGATE_SIGNING_KEY_PEM` and
 `ADGATE_PUBLIC_KEYS_JSON` — and writes nothing itself. Appending them to `.env` is enough: the
 last assignment of a name in the file wins, so they replace the empty placeholders above them.
-**Keep `--silent`**, or pnpm's own `> @adgate/gateway keygen` banner lands in `.env` too. (Prefer
+**Keep `--silent`**, or pnpm's own `> @adgateio/gateway keygen` banner lands in `.env` too. (Prefer
 to paste the three lines over the placeholders by hand? Run it without the redirect.) The private
 key never leaves your machine and `.env` is git ignored; the gateway refuses to start without it.
 
@@ -105,8 +105,8 @@ key never leaves your machine and `.env` is git ignored; the gateway refuses to 
 
 ```bash
 pnpm db:migrate
-pnpm --filter @adgate/gateway create-app --name my-app
-pnpm --filter @adgate/gateway seed-creatives
+pnpm --filter @adgateio/gateway create-app --name my-app
+pnpm --filter @adgateio/gateway seed-creatives
 ```
 
 `create-app` prints an `app_id` and an `api_key`. **The key is shown once** — only an argon2id
@@ -117,7 +117,7 @@ any of these three commands is a no-op.
 ### 4. Start the gateway
 
 ```bash
-pnpm --filter @adgate/gateway dev        # http://localhost:8787
+pnpm --filter @adgateio/gateway dev        # http://localhost:8787
 ```
 
 Leave it running and check it in another terminal:
@@ -179,7 +179,7 @@ key, anyone can run the same checks on the record.
 ### 7. Open the dashboard
 
 ```bash
-pnpm --filter @adgate/dashboard dev      # http://localhost:3000
+pnpm --filter @adgateio/dashboard dev      # http://localhost:3000
 ```
 
 Sign up at `/signup` to get a developer account that owns its own apps, or sign in as the
@@ -187,7 +187,7 @@ operator at `/admin/login` with `ADMIN_PASSWORD` from `.env` (`change-me` by def
 app on the gateway. It reads the same Postgres read-only: headline metrics, the app list, the
 policy editor, the creative catalog, the audit search with live verification, and advertiser
 verification reports. If something else owns 3000,
-set `DASHBOARD_PORT` (`DASHBOARD_PORT=3020 pnpm --filter @adgate/dashboard dev`).
+set `DASHBOARD_PORT` (`DASHBOARD_PORT=3020 pnpm --filter @adgateio/dashboard dev`).
 
 ### Where to go next
 
@@ -217,8 +217,8 @@ checkout, as the Quickstart does.
 
 | Artifact | Where it will live | Once released |
 | --- | --- | --- |
-| `@adgate/schemas` | npm | `npm i @adgate/schemas` |
-| `@adgate/sdk`, `@adgate/sdk/react`, `@adgate/sdk/ai` | npm | `npm i @adgate/sdk` |
+| `@adgateio/schemas` | npm | `npm i @adgateio/schemas` |
+| `@adgateio/sdk`, `@adgateio/sdk/react`, `@adgateio/sdk/ai` | npm | `npm i @adgateio/sdk` |
 | `adgate` (Python SDK) | PyPI | `pip install adgate` |
 | the gateway service | GHCR | `docker pull ghcr.io/<owner>/<repo>/gateway:0.1.0` |
 
@@ -239,8 +239,8 @@ default (`http://localhost:8787`) would hand every user a click link back into t
 Add `-e NODE_ENV=development` to poke at the image locally without them.
 [docs/deploy.md](docs/deploy.md) has the complete environment table and a hosted walkthrough.
 
-`@adgate/core`, `@adgate/gateway`, `@adgate/dashboard` and the examples are private and are never
-published; the SDK's only runtime dependency is `@adgate/schemas`.
+`@adgateio/core`, `@adgateio/gateway`, `@adgateio/dashboard` and the examples are private and are never
+published; the SDK's only runtime dependency is `@adgateio/schemas`.
 
 ## Repo layout
 
@@ -248,7 +248,7 @@ published; the SDK's only runtime dependency is `@adgate/schemas`.
 packages/schemas    Zod contract, JSON Schema export
 packages/core       classify, policy, demand, audit (pure)
 packages/gateway    Hono service, Drizzle, migrations
-packages/sdk        @adgate/sdk (+ react, + ai entries)
+packages/sdk        @adgateio/sdk (+ react, + ai entries)
 packages/sdk-python adgate on PyPI
 packages/dashboard  Next.js admin and verification reports
 examples/           nextjs-chat, fastapi-chat

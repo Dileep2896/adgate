@@ -1,4 +1,4 @@
-import { DemandTrace } from '@adgate/schemas';
+import { DemandTrace } from '@adgateio/schemas';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDirectAdapter } from './direct.js';

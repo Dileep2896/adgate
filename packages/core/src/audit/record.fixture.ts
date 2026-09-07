@@ -6,7 +6,7 @@ import type {
   PolicyDecision,
   Surface,
   SuppressReason,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import { sha256Prefixed } from './crypto.js';
 import { TEST_KEYS } from './crypto.fixture.js';

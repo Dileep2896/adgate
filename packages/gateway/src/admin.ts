@@ -1,5 +1,5 @@
 /**
- * `@adgate/gateway/admin`: the small set of WRITE operations an operator tool needs, exposed
+ * `@adgateio/gateway/admin`: the small set of WRITE operations an operator tool needs, exposed
  * as its own entry point so the dashboard can call the real thing instead of reimplementing
  * it. Registering an app mints a salt, validates and hashes the policy and issues the first
  * API key in one transaction (apps/register-app.ts); getting any of that subtly wrong in a
@@ -11,9 +11,9 @@
  * a blocked creative in the same words `check-catalog` prints rather than a second wording of
  * its own - the dashboard ACCOUNT logic of accounts/*.ts, plus the types they
  * need, and nothing that serves traffic. Importing
- * the package root (`@adgate/gateway`) from
+ * the package root (`@adgateio/gateway`) from
  * a Next.js app would drag Hono, the evaluate pipeline and the signing keys into a bundle
- * that has no use for them. Reads have their own subpath already: `@adgate/gateway/schema`
+ * that has no use for them. Reads have their own subpath already: `@adgateio/gateway/schema`
  * is the one copy of the Drizzle tables.
  *
  * The accounts live here rather than in packages/dashboard for the same reason registerApp

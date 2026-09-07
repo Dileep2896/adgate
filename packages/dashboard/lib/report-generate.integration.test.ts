@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createKeyRing, derivePublicPem, generateKeypair } from '@adgate/core';
+import { createKeyRing, derivePublicPem, generateKeypair } from '@adgateio/core';
 import type { Sql } from 'postgres';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 

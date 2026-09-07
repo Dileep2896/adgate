@@ -1,4 +1,4 @@
-import type { Clock } from '@adgate/core';
+import type { Clock } from '@adgateio/core';
 import type { Context } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';

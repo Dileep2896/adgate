@@ -7,7 +7,7 @@ import { buildOpenApiDocument } from '../openapi/document.js';
 import { renderApiReference } from '../openapi/reference.js';
 
 /**
- * `pnpm docs:api` (root) / `pnpm --filter @adgate/gateway docs:api`: regenerates
+ * `pnpm docs:api` (root) / `pnpm --filter @adgateio/gateway docs:api`: regenerates
  * docs/api-reference.md from the OpenAPI document. Touches no database and no network.
  * The rendering lives in src/openapi/reference.ts; packages/gateway/scripts/api-reference.ts
  * is the entry point pnpm runs, and openapi/reference.test.ts fails when the committed file

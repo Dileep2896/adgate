@@ -1,4 +1,4 @@
-import type { Message } from '@adgate/schemas';
+import type { Message } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { CLASSIFIED_ROLES, DEFAULT_PREPARE_OPTIONS, prepareText } from './prepare.js';

@@ -81,7 +81,7 @@ dist/db/migrate.js`.)
 Every audit record is signed with an Ed25519 key that only the gateway holds. Generate it once:
 
 ```bash
-pnpm --filter @adgate/gateway keygen --key-id k_2026_09
+pnpm --filter @adgateio/gateway keygen --key-id k_2026_09
 ```
 
 It prints exactly three lines, ready to paste:
@@ -118,7 +118,7 @@ verify.
 ## 3. The gateway container
 
 Build from the repo root — the build context is the whole workspace, because the gateway imports
-`@adgate/core` and `@adgate/schemas`:
+`@adgateio/core` and `@adgateio/schemas`:
 
 ```bash
 docker build -f packages/gateway/Dockerfile -t adgate-gateway .
@@ -179,7 +179,7 @@ Each app's policy promises `privacy.retain_days` (`docs/policy.md`, `docs/privac
 has to keep it. The best answer is still cron:
 
 ```
-17 4 * * *  cd /srv/adgate && pnpm --filter @adgate/gateway retention
+17 4 * * *  cd /srv/adgate && pnpm --filter @adgateio/gateway retention
 ```
 
 A free tier usually has nowhere to put that line, so the gateway can run the job itself:
@@ -207,7 +207,7 @@ can exceed it; that app comes back as `failed` in the summary and nothing is del
 because each app's deletion and its watermark commit together. The next run picks up where it
 stopped, since deletion is always a prefix of the chain. If a backlog never drains, run the CLI
 once from a checkout with a larger timeout (`DB_STATEMENT_TIMEOUT_MS=60000 pnpm --filter
-@adgate/gateway retention`) and let the timer keep up from there. Try `--dry-run` first: it does
+@adgateio/gateway retention`) and let the timer keep up from there. Try `--dry-run` first: it does
 the same work and rolls it back.
 
 ## 5. The dashboard on Vercel
@@ -281,7 +281,7 @@ the proxy that wrote it, and an allowlist does nothing about a stolen session co
 `users` (added by migration `0006_self_serve_accounts`) holds one row per console account: a
 lowercased unique email, an argon2id password hash, and a role of `member` or `admin`. `apps` and
 `reports` gained a nullable `owner_user_id`; **null means "operator-created"**, which is what
-`pnpm --filter @adgate/gateway create-app` writes and what only an admin can see. Existing apps
+`pnpm --filter @adgateio/gateway create-app` writes and what only an admin can see. Existing apps
 therefore become operator-only when you apply this migration — expected, and the fix is either to
 keep using the operator login or to hand an app to an account with one `UPDATE`:
 
@@ -307,7 +307,7 @@ needed to run the console.
 | `DASHBOARD_ALLOWED_IPS` | recommended | IP/CIDR allowlist over `/admin/**` ONLY. Empty means no allowlist. Needs `TRUST_PROXY`. Read at middleware start. |
 | `ADGATE_PUBLIC_KEYS_JSON` | recommended | So `/audit` can verify signatures. Public keys only — never give the dashboard the private one. |
 | `ADGATE_SIGNING_KEY_ID` | with the above | Names the current key in that map. |
-| `DASHBOARD_PORT` | self-hosting only | Port for `pnpm --filter @adgate/dashboard start`. Vercel ignores it. |
+| `DASHBOARD_PORT` | self-hosting only | Port for `pnpm --filter @adgateio/dashboard start`. Vercel ignores it. |
 
 The dashboard never needs `ADGATE_SIGNING_KEY_PEM`. If you set it anyway (a shared `.env` on one
 machine), it derives the public half and uses only that — but on a hosted deployment, don't.
@@ -371,7 +371,7 @@ Some other free-tier realities:
       SECOND account, and confirm it cannot open the first one's app id.
 - [ ] Retention scheduled: a crontab line, or `RETENTION_INTERVAL_HOURS`, and the first
       `retention scheduled run finished` line seen in the logs.
-- [ ] An app registered and an API key issued (`pnpm --filter @adgate/gateway create-app`), with
+- [ ] An app registered and an API key issued (`pnpm --filter @adgateio/gateway create-app`), with
       the key stored somewhere it can be rotated.
 - [ ] One end-to-end turn through your own app: an ad renders in its own labeled block after the
       answer, `GET /v1/audit/:id` returns the record and `GET /v1/verify/:id` says valid.

@@ -1,4 +1,4 @@
-import type { AffiliateConfig } from '@adgate/schemas';
+import type { AffiliateConfig } from '@adgateio/schemas';
 
 import type { FormFields } from './app-form';
 import { parseAffiliateForm } from './affiliate-form';

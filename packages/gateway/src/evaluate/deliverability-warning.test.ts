@@ -1,4 +1,4 @@
-import { type CatalogCreative, type Classification, PolicyConfig } from '@adgate/schemas';
+import { type CatalogCreative, type Classification, PolicyConfig } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
 import { createLogger, type Logger } from '../logger.js';

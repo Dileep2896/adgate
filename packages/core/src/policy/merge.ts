@@ -4,7 +4,7 @@ import type {
   OverrideRejection,
   PolicyConfig,
   PolicyOverrides,
-} from '@adgate/schemas';
+} from '@adgateio/schemas';
 
 import { expandRegions } from './regions.js';
 
