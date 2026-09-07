@@ -55,7 +55,7 @@ from .models import (
 )
 from .results import EvaluateResult, PostResult, TurnResult, fail_closed_evaluate
 
-__version__ = "0.1.0"
+__version__ = "0.1.0-alpha.1"
 
 __all__ = [
     "ATTEST_PATH",

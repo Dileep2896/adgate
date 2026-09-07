@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "adgate"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 description = "adgate client for Python: evaluate a turn, attest the model output hash, track events. Never raises."
 readme = "README.md"
 # FSL-1.1-Apache-2.0 is not an SPDX identifier, so the licence is declared by file rather than by

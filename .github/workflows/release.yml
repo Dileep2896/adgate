@@ -145,8 +145,23 @@ jobs:
         # exactly as the upload would, without contacting PyPI.
         run: twine check dist/*
 
+      - name: Is a PyPI token configured?
+        # A missing PYPI_API_TOKEN must skip the upload, not fail the release. npm and the image
+        # publish independently, and turning the whole run red for an unconfigured registry
+        # teaches people to ignore red releases.
+        id: pypi_token
+        env:
+          TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::PYPI_API_TOKEN is not set; skipping the PyPI upload. The distributions were still built and checked."
+          fi
+
       - name: Upload to PyPI
-        if: env.DRY_RUN != 'true'
+        if: env.DRY_RUN != 'true' && steps.pypi_token.outputs.configured == 'true'
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}

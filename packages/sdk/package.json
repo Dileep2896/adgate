@@ -1,6 +1,6 @@
 {
   "name": "@adgateio/sdk",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "adgate client for Node and browsers: evaluate a turn, attest the model output hash, track events. Never throws.",
   "license": "SEE LICENSE IN LICENSE.md",
   "homepage": "https://github.com/Dileep2896/adgate/tree/main/packages/sdk",

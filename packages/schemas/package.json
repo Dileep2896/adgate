@@ -1,6 +1,6 @@
 {
   "name": "@adgateio/schemas",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "The adgate contract as Zod schemas and JSON Schema: evaluate, policy, audit record, verify. Runtime dependency of @adgateio/sdk.",
   "license": "SEE LICENSE IN LICENSE.md",
   "homepage": "https://github.com/Dileep2896/adgate/tree/main/packages/schemas",
