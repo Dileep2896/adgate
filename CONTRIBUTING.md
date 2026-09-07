@@ -162,6 +162,27 @@ belongs in `docs/privacy.md`, which is the data inventory. A stale inventory is 
   dependency and why, and show that all four gates are green.
 - Security issues do **not** go in a public issue or pull request. See [SECURITY.md](SECURITY.md).
 
+## Licence
+
+adgate is source available under [FSL-1.1-Apache-2.0](LICENSE.md), which is not the same thing as
+open source: read it, self host it, modify it, use it commercially inside your own product; do not
+offer adgate itself to third parties as a competing hosted service. Each released version
+additionally becomes Apache 2.0 two years after its release. The reasoning is
+[docs/decisions.md](docs/decisions.md) item 11, and the README's License section is the
+plain-language summary.
+
+By opening a pull request you agree that your contribution is licensed to the project under those
+same terms, so the project can keep releasing it under FSL-1.1-Apache-2.0 and under the Apache 2.0
+future licence. There is no separate CLA.
+
+`LICENSE.md` is the canonical licence text from [fsl.software](https://fsl.software) with only the
+copyright line filled in; do not reword it. `packages/sdk/LICENSE.md`,
+`packages/schemas/LICENSE.md` and `packages/sdk-python/LICENSE.md` are byte-identical copies, so
+the licence ships inside the published artefacts: change the root file and copy it across, which
+their `license-file.test.ts` and `tests/test_license.py` will insist on. FSL has no SPDX
+identifier, so published manifests say `"license": "SEE LICENSE IN LICENSE.md"` and
+`license = { file = "LICENSE.md" }`, never an SPDX-looking string, which npm rejects.
+
 ## Releasing
 
 **Nothing has been published yet.** The pipeline below is built and exercised, but no version of

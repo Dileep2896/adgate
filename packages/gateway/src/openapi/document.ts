@@ -19,7 +19,14 @@ export type JsonSchema = Record<string, unknown>;
 
 export interface OpenApiDocument {
   openapi: string;
-  info: { title: string; version: string; description: string; license: { name: string } };
+  info: {
+    title: string;
+    version: string;
+    description: string;
+    // OpenAPI 3.1 allows `identifier` (SPDX) or `url`, never both. FSL-1.1-Apache-2.0 has no SPDX
+    // identifier, so the name is qualified by a url pointing at the licence text itself.
+    license: { name: string; url?: string };
+  };
   jsonSchemaDialect: string;
   servers?: { url: string }[];
   paths: PathsObject;
@@ -108,7 +115,10 @@ export const buildOpenApiDocument = (options: OpenApiDocumentOptions = {}): Open
         'Neutral policy, verification and mediation gateway for ads inside AI chat and agents. ' +
         'docs/api.md is the contract; this document is generated from the Zod schemas that ' +
         'implement it. Every non-2xx body except /v1/evaluate is { error: { code, message } }.',
-      license: { name: 'Apache-2.0' },
+      license: {
+        name: 'FSL-1.1-Apache-2.0',
+        url: 'https://github.com/Dileep2896/adgate/blob/main/LICENSE.md',
+      },
     },
     jsonSchemaDialect: JSON_SCHEMA_DIALECT,
     ...(options.serverUrl === undefined ? {} : { servers: [{ url: options.serverUrl }] }),

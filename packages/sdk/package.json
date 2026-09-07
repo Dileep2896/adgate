@@ -2,7 +2,7 @@
   "name": "@adgateio/sdk",
   "version": "0.1.0",
   "description": "adgate client for Node and browsers: evaluate a turn, attest the model output hash, track events. Never throws.",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE.md",
   "homepage": "https://github.com/Dileep2896/adgate/tree/main/packages/sdk",
   "repository": {
     "type": "git",
@@ -60,7 +60,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE.md"
   ],
   "publishConfig": {
     "access": "public"

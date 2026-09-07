@@ -1,7 +1,9 @@
 # adgate
 
 Neutral policy, verification, and mediation gateway for ads inside AI chat and agents.
-Open source (Apache 2.0). We are NOT an ad network. We decide whether an ad is allowed
+Source available (FSL-1.1-Apache-2.0: every line readable, self hosting and commercial use
+inside your own product allowed, reselling adgate itself as a competing service is not, and each
+version converts to Apache 2.0 two years after release). We are NOT an ad network. We decide whether an ad is allowed
 in a conversation turn, fetch a candidate from demand sources, render a separate labeled
 slot, and write a signed audit record proving what happened.
 

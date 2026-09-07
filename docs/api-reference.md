@@ -15,7 +15,7 @@ Where the two disagree, docs/api.md is right and the code is wrong.
 | API version | `1` |
 | OpenAPI | `3.1.0` |
 | JSON Schema dialect | `https://json-schema.org/draft/2020-12/schema` |
-| Licence | `Apache-2.0` |
+| Licence | `FSL-1.1-Apache-2.0` |
 | Regenerate | `pnpm docs:api` |
 
 ## Authentication

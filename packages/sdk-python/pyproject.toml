@@ -7,7 +7,10 @@ name = "adgate"
 version = "0.1.0"
 description = "adgate client for Python: evaluate a turn, attest the model output hash, track events. Never raises."
 readme = "README.md"
-license = "Apache-2.0"
+# FSL-1.1-Apache-2.0 is not an SPDX identifier, so the licence is declared by file rather than by
+# expression. LICENSE.md is a copy of the repository root LICENSE.md (tests/test_license.py keeps
+# the two byte identical) and ships in both the sdist and the wheel's .dist-info.
+license = { file = "LICENSE.md" }
 requires-python = ">=3.10"
 keywords = ["ads", "advertising", "llm", "policy", "audit", "adgate"]
 classifiers = [
@@ -42,7 +45,7 @@ Source = "https://github.com/Dileep2896/adgate/tree/main/packages/sdk-python"
 packages = ["src/adgate"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/adgate", "tests", "scripts", "README.md"]
+include = ["src/adgate", "tests", "scripts", "README.md", "LICENSE.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -7,7 +7,9 @@ name = "adgate-fastapi-chat"
 version = "0.0.0"
 description = "adgate example: a FastAPI chat that streams the answer over SSE and emits the sponsored slot as its own event afterwards."
 readme = "README.md"
-license = "Apache-2.0"
+# This example is never published; it is covered by the repository licence, which is not an SPDX
+# identifier, so it is named here rather than expressed as an SPDX string.
+license = { text = "FSL-1.1-Apache-2.0; see LICENSE.md at the repository root" }
 requires-python = ">=3.10"
 # `adgate` is this repo's Python SDK and is NOT on PyPI yet: install it from the local path in
 # the same pip command, which is what satisfies this requirement.

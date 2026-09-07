@@ -2,7 +2,7 @@
   "name": "@adgateio/schemas",
   "version": "0.1.0",
   "description": "The adgate contract as Zod schemas and JSON Schema: evaluate, policy, audit record, verify. Runtime dependency of @adgateio/sdk.",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE.md",
   "homepage": "https://github.com/Dileep2896/adgate/tree/main/packages/schemas",
   "repository": {
     "type": "git",
@@ -23,7 +23,8 @@
   },
   "files": [
     "dist",
-    "json"
+    "json",
+    "LICENSE.md"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --sourcemap --clean",

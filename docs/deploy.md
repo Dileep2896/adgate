@@ -8,6 +8,13 @@ an ordinary Next.js app.
 This is not a contract document. `docs/api.md`, `docs/policy.md` and `docs/audit.md` are, and
 nothing below changes them.
 
+Deploying it for yourself is what the licence is for. adgate is source available under
+[FSL-1.1-Apache-2.0](../LICENSE.md): run it for your own app and your own users, in production, at
+any scale, commercially, modified however you like. The one deployment it does not permit is
+offering adgate itself to third parties as a hosted or managed service that competes with it —
+and even that restriction expires, since each version also becomes Apache 2.0 two years after its
+release. The README's License section is the plain-language summary.
+
 **Before you start, read the last two sections.** [What degrades on a free
 tier](#what-degrades-on-a-free-tier) explains what your users see when a suspended database wakes
 up mid-request, and the [go-live checklist](#go-live-checklist) is the short version of this

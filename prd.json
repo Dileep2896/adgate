@@ -24,12 +24,12 @@
     {
       "id": "S02", "priority": 2, "dependsOn": ["S01"], "passes": true,
       "title": "Local infra, CI, license, README",
-      "description": "docker-compose.yml with Postgres 16 (healthcheck, volume, POSTGRES_DB adgate and adgate_test created via init script), .env.example, GitHub Actions workflow running install, typecheck, lint, test with a Postgres service, Apache 2.0 LICENSE text, README describing what adgate is and is not.",
+      "description": "docker-compose.yml with Postgres 16 (healthcheck, volume, POSTGRES_DB adgate and adgate_test created via init script), .env.example, GitHub Actions workflow running install, typecheck, lint, test with a Postgres service, the project LICENSE text, README describing what adgate is and is not.",
       "acceptanceCriteria": [
         "docker compose up -d postgres starts a healthy Postgres with databases adgate and adgate_test",
         ".env.example lists every env var the gateway will need with comments (DATABASE_URL, DATABASE_URL_TEST, ADGATE_SIGNING_KEY_PEM, ADGATE_SIGNING_KEY_ID, CLASSIFIER_BASE_URL, CLASSIFIER_API_KEY, CLASSIFIER_MODEL, ADMIN_PASSWORD, PORT)",
         ".github/workflows/ci.yml runs on push and PR and passes on this commit",
-        "LICENSE contains the full Apache License 2.0 text",
+        "LICENSE.md contains the full licence text, verbatim from its canonical source (Apache 2.0 originally; FSL-1.1-Apache-2.0 since the 2026-09-07 relicence, see docs/decisions.md item 11)",
         "README.md has sections: What adgate is, What it is not, Quickstart (placeholder steps allowed until S39), Repo layout"
       ]
     },

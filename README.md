@@ -1,7 +1,9 @@
 # adgate
 
 Neutral policy, verification, and mediation gateway for ads inside AI chat and agents.
-Open source under Apache 2.0.
+Source available under the Functional Source License (FSL-1.1-Apache-2.0): read every line, self
+host it, use it in your own product, and each version turns into Apache 2.0 two years after its
+release. See [License](#license).
 
 ## What adgate is
 
@@ -282,4 +284,30 @@ privately are in [SECURITY.md](SECURITY.md). Run `pnpm audit:prod` before a rele
 
 ## License
 
-Apache 2.0. See [LICENSE](LICENSE).
+[FSL-1.1-Apache-2.0](LICENSE.md) — the Functional Source License, version 1.1, with an Apache 2.0
+future license. On [fsl.software](https://fsl.software), where the text comes from, the same
+license is abbreviated `FSL-1.1-ALv2`; the two names mean one license.
+
+What you may do:
+
+- Run it. Self host adgate next to your own app, for as many of your own users as you like.
+- Read it. Every line of the policy engine, the classifier and the audit chain is here to be
+  inspected, because a verification gateway you cannot audit is worth nothing.
+- Change it. Fork it, patch it, write your own demand adapters and classifier stages.
+- Make money with it. Using adgate inside your own product or service is a permitted purpose,
+  commercial or not, including serving ads through it and keeping the revenue.
+- Wait two years and do anything. Each released version is additionally licensed under Apache
+  2.0 on the second anniversary of its release. The grant is irrevocable.
+
+What you may not do:
+
+- Sell adgate itself. Offering adgate to third parties as a hosted, managed or otherwise
+  packaged product that substitutes for it — a competing use — is not permitted while the
+  version you are using is still inside its two year window.
+
+That is the whole of the restriction: it is aimed at someone reselling this gateway as a service,
+not at anyone running it, changing it or earning from it.
+
+All of that is a plain summary written for readers, not the license itself. Only
+[LICENSE.md](LICENSE.md) has legal effect, and none of this is legal advice: if you are relying on
+the terms, read `LICENSE.md`, and ask a lawyer about your own situation.
