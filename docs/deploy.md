@@ -217,55 +217,94 @@ the repository, set **Root Directory** to `packages/dashboard`, and leave the bu
 alone — Vercel detects Next and pnpm workspaces on its own.
 
 It talks to the same Postgres **directly**, not through the gateway, so it needs `DATABASE_URL`
-too. It reads for every page and writes only for the admin actions (creating apps, issuing API
-keys, editing creatives). Give it the pooled connection string.
+too. It reads for every page and writes for the admin actions (creating apps, issuing API keys,
+editing creatives), for signup (one `users` row) and for a sign-in (`users.last_login_at`). Give
+it the pooled connection string.
 
-Two things are not optional on a public host:
+### Two surfaces, two postures
+
+The dashboard is a **developer console** with an **operator surface** inside it, and they are
+deployed differently:
+
+- **Members** — `/signup`, `/login` and everything under them. A third-party developer signs up
+  with an email and a password, owns the apps they create, and sees nothing else. **This is meant
+  to be internet-facing.** Serve it over TLS and put platform rate limiting or a WAF in front of
+  it if you expect abuse; adgate's own limiter is one in-memory fixed window per instance.
+  Addresses are **not verified** — this build sends no email — so if you need verified identities,
+  put an SSO proxy in front of the whole console.
+- **The operator** — `/admin` and `/admin/login`. `ADMIN_PASSWORD` still works and is the
+  break-glass path: it needs no account row, so an empty or broken `users` table cannot lock you
+  out. This is the surface `DASHBOARD_ALLOWED_IPS` guards.
+
+Three variables are not optional on a public host:
 
 ```
 ADMIN_PASSWORD=<openssl rand -base64 24>
+DASHBOARD_SESSION_SECRET=<openssl rand -base64 32>
 TRUST_PROXY=true
 DASHBOARD_ALLOWED_IPS=203.0.113.7, 198.51.100.0/24
 ```
 
-**The password.** It is the entire authentication model: one shared password, no accounts, no
-roles (see SECURITY.md). With `NODE_ENV=production` the dashboard **refuses to start** on
-`change-me` or on anything shorter than 16 characters, and says so on stderr before serving
-anything.
+**The password.** It is the operator's whole authentication model (see SECURITY.md). With
+`NODE_ENV=production` the dashboard **refuses to start** on `change-me` or on anything shorter
+than 16 characters, and says so on stderr before serving anything. Rotating it signs every
+outstanding operator session out on its next request, because the cookie carries a digest of the
+password it was minted against.
 
 **`TRUST_PROXY=true` is required for the allowlist to work at all on Vercel.** The allowlist
 needs to know who the client is, and the only evidence is `x-forwarded-for` — a request header,
 which a client talking to the process directly can write itself. With no trusted hop the
 dashboard refuses to believe it and reports the client as `unknown`, which is on no allowlist, so
-**every request gets 403**. That looks exactly like an outage. Vercel always sits in front of the
-app and rewrites the header, so one hop is correct there; use `TRUSTED_PROXY_HOPS=2` if you have
-put your own CDN in front of Vercel.
+**every request to `/admin/**` gets 403**. That looks exactly like an outage. Vercel always sits
+in front of the app and rewrites the header, so one hop is correct there; use
+`TRUSTED_PROXY_HOPS=2` if you have put your own CDN in front of Vercel.
 
 **`DASHBOARD_ALLOWED_IPS`** is a comma-separated list of IPs and CIDR ranges, v4 or v6
 (`203.0.113.7, 198.51.100.0/24, 2001:db8::/32`). Set it and the Edge middleware answers 403 to
-everything from outside the list *before* `/login` is reachable. Leave it empty and behaviour is
-unchanged. Two properties worth knowing:
+anything from outside the list *before* `/admin/login` is reachable. **It no longer covers the
+member surface**: signup, the member login and a developer's own pages are reachable from
+anywhere, which is the point of self-serve. Leave it empty and nothing is restricted. Two
+properties worth knowing:
 
 - It is read **once, when the middleware instance starts**, not per request. Changing it is a
   restart on a self-hosted deployment and a **redeploy** on Vercel.
-- If the variable is set but every entry is unparseable, the list matches nothing and everyone is
-  refused. That is deliberate: a typo should lock you out of your own dashboard rather than
-  quietly let the internet in.
+- If the variable is set but every entry is unparseable, the list matches nothing and every admin
+  request is refused. That is deliberate: a typo should lock you out of your own operator page
+  rather than quietly let the internet in. The member surface stays up either way, so a bad
+  allowlist cannot take the console down for your users.
 
 It is a second lock, never a replacement for the password. A source address is only as honest as
 the proxy that wrote it, and an allowlist does nothing about a stolen session cookie.
+
+### Accounts
+
+`users` (added by migration `0006_self_serve_accounts`) holds one row per console account: a
+lowercased unique email, an argon2id password hash, and a role of `member` or `admin`. `apps` and
+`reports` gained a nullable `owner_user_id`; **null means "operator-created"**, which is what
+`pnpm --filter @adgate/gateway create-app` writes and what only an admin can see. Existing apps
+therefore become operator-only when you apply this migration — expected, and the fix is either to
+keep using the operator login or to hand an app to an account with one `UPDATE`:
+
+```sql
+update apps set owner_user_id = (select id from users where email = 'dev@example.com')
+where id = 'app_...';
+```
+
+Promoting an account to `admin` is the same shape (`update users set role = 'admin' where email =
+...`). There is no UI for either: both are decisions about other people's data, and neither is
+needed to run the console.
 
 ### Dashboard environment
 
 | Variable | Required | What it does |
 | --- | --- | --- |
 | `DATABASE_URL` | **yes** | The same Postgres the gateway uses. |
-| `ADMIN_PASSWORD` | **yes** | The login. ≥ 16 characters in production, never `change-me`. |
+| `ADMIN_PASSWORD` | **yes** | The operator's break-glass login at `/admin/login`. ≥ 16 characters in production, never `change-me`. |
 | `DASHBOARD_SESSION_SECRET` | recommended | HMAC key for the session cookie (`openssl rand -base64 32`). Unset, it is derived from `ADMIN_PASSWORD`, so changing the password signs everyone out. |
 | `NODE_ENV` | set by the host | `production` on Vercel. Turns on secure cookies and the password rule. |
 | `TRUST_PROXY` | **yes behind a proxy** | `true` when a proxy you control (Vercel included) rewrites `x-forwarded-for`. Default is to trust nothing. |
 | `TRUSTED_PROXY_HOPS` | optional | Integer; wins over `TRUST_PROXY`. `2` for a CDN in front of your load balancer. |
-| `DASHBOARD_ALLOWED_IPS` | recommended | IP/CIDR allowlist. Empty means no allowlist. Needs `TRUST_PROXY`. Read at middleware start. |
+| `DASHBOARD_ALLOWED_IPS` | recommended | IP/CIDR allowlist over `/admin/**` ONLY. Empty means no allowlist. Needs `TRUST_PROXY`. Read at middleware start. |
 | `ADGATE_PUBLIC_KEYS_JSON` | recommended | So `/audit` can verify signatures. Public keys only — never give the dashboard the private one. |
 | `ADGATE_SIGNING_KEY_ID` | with the above | Names the current key in that map. |
 | `DASHBOARD_PORT` | self-hosting only | Port for `pnpm --filter @adgate/dashboard start`. Vercel ignores it. |
@@ -324,8 +363,12 @@ Some other free-tier realities:
 - [ ] `CORS_ALLOWED_ORIGINS` set to the exact browser origins, or deliberately empty.
 - [ ] `METRICS_TOKEN` set to a random value, or deliberately unset (then `/metrics` is a 404).
 - [ ] `ADMIN_PASSWORD` ≥ 16 random characters, `DASHBOARD_SESSION_SECRET` independent of it.
-- [ ] `TRUST_PROXY=true` on the dashboard, and `DASHBOARD_ALLOWED_IPS` set — then load `/login`
-      from an address that is *not* on the list and confirm the 403.
+- [ ] `TRUST_PROXY=true` on the dashboard, and `DASHBOARD_ALLOWED_IPS` set — then load
+      `/admin/login` from an address that is *not* on the list and confirm the 403, and `/login`
+      from the same address and confirm it still loads (the allowlist covers `/admin/**` only).
+- [ ] `/signup` reached from a browser you have never signed in from: an account is created, the
+      first app is registered, the key is shown once and the snippet carries the app id. Then a
+      SECOND account, and confirm it cannot open the first one's app id.
 - [ ] Retention scheduled: a crontab line, or `RETENTION_INTERVAL_HOURS`, and the first
       `retention scheduled run finished` line seen in the logs.
 - [ ] An app registered and an API key issued (`pnpm --filter @adgate/gateway create-app`), with

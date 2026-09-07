@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { ReportView } from '@/components/report-view';
+import { requireSession } from '@/lib/auth';
 import { getReport } from '@/lib/report-queries';
 
 /**
@@ -22,7 +23,10 @@ export const dynamic = 'force-dynamic';
 
 const ReportPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
-  const report = await getReport(id);
+  // Another account's report id answers null, and this page renders the same not-found as an id
+  // that was never generated.
+  const session = await requireSession(`/reports/${id}`);
+  const report = await getReport(session.scope, id);
   if (report === null) {
     notFound();
   }

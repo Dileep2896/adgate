@@ -6,6 +6,9 @@
 
 export const DEFAULT_LANDING_PATH = '/apps';
 
+/** The forms themselves: landing on one would bounce the visitor straight back to it. */
+const NEVER_LAND_ON = ['/login', '/signup', '/admin/login'] as const;
+
 export const safeRedirectPath = (
   candidate: string | null | undefined,
   fallback: string = DEFAULT_LANDING_PATH,
@@ -20,8 +23,7 @@ export const safeRedirectPath = (
   if (candidate.includes('\n') || candidate.includes('\r') || candidate.includes('\t')) {
     return fallback;
   }
-  // The login page itself would bounce the visitor straight back to the form.
-  if (candidate === '/login' || candidate.startsWith('/login?')) {
+  if (NEVER_LAND_ON.some((path) => candidate === path || candidate.startsWith(`${path}?`))) {
     return fallback;
   }
   return candidate;

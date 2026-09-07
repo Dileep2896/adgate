@@ -1,6 +1,7 @@
 import { apps, auditRecords } from '@adgate/gateway/schema';
 import { and, asc, desc, eq, gt, gte, isNotNull, lt, lte, or, type SQL } from 'drizzle-orm';
 
+import type { AppScope } from './app-scope';
 import {
   ALL_APPS,
   ANY_DECISION,
@@ -12,6 +13,7 @@ import {
   encodeCursor,
 } from './audit-filters';
 import { type DashboardDb, dashboardDb } from './db';
+import { appScopeCondition } from './scope-queries';
 
 /**
  * The SQL behind /audit. Reads only (lib/db.ts).
@@ -49,6 +51,12 @@ export interface AuditPageRow {
 }
 
 export interface AuditPageOptions {
+  /**
+   * Whose records these are. It becomes one predicate on the OUTER `apps` scan, which is the
+   * same scan the `?app=` filter narrows - so a member asking for another member's app id gets
+   * an empty page, exactly as they would for an app id that never existed.
+   */
+  scope: AppScope;
   filters: AuditFilters;
   cursor: AuditCursor | null;
   /** Rows to fetch. The page asks for one more than it shows, to know if there is a next one. */
@@ -132,8 +140,11 @@ export const auditPageQuery = (db: DashboardDb, options: AuditPageOptions) => {
     })
     .from(apps)
     .crossJoinLateral(slice);
-  const scoped =
-    options.filters.appId === ALL_APPS ? base : base.where(eq(apps.id, options.filters.appId));
+  const owned = appScopeCondition(options.scope);
+  const appFilter =
+    options.filters.appId === ALL_APPS ? undefined : eq(apps.id, options.filters.appId);
+  const condition = and(appFilter, owned);
+  const scoped = condition === undefined ? base : base.where(condition);
   return scoped.orderBy(direction(slice.ts), direction(slice.recordHash)).limit(options.limit);
 };
 
@@ -150,12 +161,14 @@ export interface AuditPage {
  * rendered, it only answers "is there another page in this direction".
  */
 export const listAuditPage = async (
+  scope: AppScope,
   filters: AuditFilters,
   cursor: AuditCursor | null = null,
   db: DashboardDb = dashboardDb(),
   pageSize: number = AUDIT_PAGE_SIZE,
 ): Promise<AuditPage> => {
   const fetched = (await auditPageQuery(db, {
+    scope,
     filters,
     cursor,
     limit: pageSize + 1,
@@ -193,7 +206,7 @@ export const rowCursor = (row: AuditPageRow): string => encodeCursor(row);
  * hardcoded list that would drift from the taxonomy. Same lateral shape as the search: the
  * GROUP BY inside it is the optimisation fence.
  */
-export const auditReasonsQuery = (db: DashboardDb, filters: AuditFilters) => {
+export const auditReasonsQuery = (db: DashboardDb, scope: AppScope, filters: AuditFilters) => {
   const window = auditWindow(filters);
   const slice = db
     .select({ reason: auditRecords.reason })
@@ -209,14 +222,17 @@ export const auditReasonsQuery = (db: DashboardDb, filters: AuditFilters) => {
     .groupBy(auditRecords.reason)
     .as('app_reasons');
   const base = db.selectDistinct({ reason: slice.reason }).from(apps).crossJoinLateral(slice);
-  const scoped = filters.appId === ALL_APPS ? base : base.where(eq(apps.id, filters.appId));
+  const appFilter = filters.appId === ALL_APPS ? undefined : eq(apps.id, filters.appId);
+  const condition = and(appFilter, appScopeCondition(scope));
+  const scoped = condition === undefined ? base : base.where(condition);
   return scoped.orderBy(asc(slice.reason));
 };
 
 export const listAuditReasons = async (
+  scope: AppScope,
   filters: AuditFilters,
   db: DashboardDb = dashboardDb(),
 ): Promise<string[]> => {
-  const rows = await auditReasonsQuery(db, filters);
+  const rows = await auditReasonsQuery(db, scope, filters);
   return rows.flatMap((row) => (row.reason === null ? [] : [row.reason]));
 };

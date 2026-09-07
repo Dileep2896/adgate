@@ -30,6 +30,7 @@ const CONTEXT: CreativeFormContext = {
     { id: 'adv_2', name: 'Example Deploy', domain: 'exampledeploy.dev' },
   ],
   appIds: [APP_ID],
+  allowGlobalCatalog: true,
 };
 
 /** A FormData-shaped stub. Absent fields answer null, exactly like FormData.get does. */

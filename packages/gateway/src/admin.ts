@@ -6,16 +6,54 @@
  * second copy is exactly the kind of drift this subpath exists to prevent.
  *
  * It is deliberately narrow: registerApp, issueApiKey and revokeApiKey, the creative editor of
- * catalog/creative-admin.ts plus the types they need, and nothing that serves traffic. Importing
+ * catalog/creative-admin.ts, the dashboard ACCOUNT logic of accounts/*.ts, plus the types they
+ * need, and nothing that serves traffic. Importing
  * the package root (`@adgate/gateway`) from
  * a Next.js app would drag Hono, the evaluate pipeline and the signing keys into a bundle
  * that has no use for them. Reads have their own subpath already: `@adgate/gateway/schema`
  * is the one copy of the Drizzle tables.
  *
+ * The accounts live here rather than in packages/dashboard for the same reason registerApp
+ * does: they are writes with rules (normalization, argon2id, one address per account, an
+ * enumeration-safe failure), and a rule that only a Next.js server action can reach is a rule
+ * no test can exercise without a browser.
+ *
  * Whatever calls this needs a READ-WRITE database handle. The dashboard's default handle is
  * opened read only on purpose (packages/dashboard/lib/db.ts); see lib/db-write.ts there.
  */
 
+export {
+  EMAIL_TAKEN_MESSAGE,
+  INVALID_CREDENTIALS_MESSAGE,
+  INVALID_EMAIL_MESSAGE,
+  isValidEmail,
+  MAX_EMAIL_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  normalizeEmail,
+  passwordIssues,
+  USER_ID_PREFIX,
+} from './accounts/credentials.js';
+export {
+  authenticateUser,
+  changeUserPassword,
+  findUserByEmail,
+  findUserById,
+  listUsers,
+  registerUser,
+  touchUserLogin,
+} from './accounts/users.js';
+export type {
+  AccountUser,
+  AuthenticateUserInput,
+  AuthenticateUserResult,
+  ChangePasswordResult,
+  RegisterUserFailure,
+  RegisterUserInput,
+  RegisterUserResult,
+  UserRole,
+  UserRow,
+} from './accounts/users.js';
 export {
   APP_ID_PREFIX,
   APP_SALT_BYTES,

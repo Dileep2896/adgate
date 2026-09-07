@@ -4,6 +4,7 @@ import { generateReportAction } from '@/app/(dashboard)/reports/actions';
 import { DocRef } from '@/components/doc-ref';
 import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
+import { requireSession } from '@/lib/auth';
 import { defaultReportForm, reportFormMessage, type ReportFormValues } from '@/lib/report-form';
 import { listReportAdvertisers } from '@/lib/report-queries';
 import { verifyKeys } from '@/lib/verify-keys';
@@ -26,7 +27,8 @@ const NewReportPage = async ({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) => {
-  const params = await searchParams;
+  const [session, params] = await Promise.all([requireSession('/reports/new'), searchParams]);
+  const admin = session.role === 'admin';
   const advertisers = await listReportAdvertisers();
   // Said BEFORE the operator generates: with no public keys every record fails the signature
   // check and the report reads BROKEN for a configuration reason (lib/verify-keys.ts). The
@@ -45,7 +47,11 @@ const NewReportPage = async ({
       <PageHeader
         title="New verification report"
         back={{ href: '/reports', label: 'All reports' }}
-        lede="Every audit record referencing this advertiser’s creatives in the period is loaded, verified against the signed chain, and aggregated into one document."
+        lede={
+          admin
+            ? 'Every audit record referencing this advertiser’s creatives in the period is loaded, verified against the signed chain, and aggregated into one document.'
+            : 'Every audit record from your apps referencing this advertiser’s creatives in the period is loaded, verified against the signed chain, and aggregated into one document. Turns from other accounts’ apps are not in it and are not counted.'
+        }
       />
 
       {keyIssue === null ? null : (

@@ -159,6 +159,8 @@ const TOOLING_ALLOWED: Readonly<Record<string, string>> = {
     'Creates the metrics test database; CREATE DATABASE takes no parameters, and the name comes from DATABASE_URL_TEST with quotes doubled.',
   'packages/dashboard/e2e/seed.ts':
     'Playwright fixture: TRUNCATE of the TABLE_NAMES constant, quoted.',
+  'packages/dashboard/lib/scope.integration.test.ts':
+    'Ownership fixture: every statement is a constant with $1 bind parameters, and the ids it binds are module constants declared in the test itself.',
 };
 
 const ALLOWED: Readonly<Record<string, string>> = { ...RUNTIME_ALLOWED, ...TOOLING_ALLOWED };

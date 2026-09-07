@@ -23,6 +23,12 @@ export interface RegisterAppInput {
   name: string;
   /** The operator's policy document, stored verbatim. Omitted = the documented defaults. */
   policyYaml?: string | undefined;
+  /**
+   * The dashboard account this app belongs to, or null/omitted for an operator-created app.
+   * A null owner is the CLI path (`create-app`) and is visible in the dashboard to admins only;
+   * every dashboard read a member makes is filtered on this column.
+   */
+  ownerUserId?: string | null | undefined;
   ulid?: UlidOptions | undefined;
 }
 
@@ -56,7 +62,15 @@ export const registerApp = async (db: Db, input: RegisterAppInput): Promise<Regi
   return db.transaction(async (tx) => {
     const [app] = await tx
       .insert(apps)
-      .values({ id, name, salt, policyYaml, policyHash: policy_hash, policyVersion: 1 })
+      .values({
+        id,
+        name,
+        salt,
+        policyYaml,
+        policyHash: policy_hash,
+        policyVersion: 1,
+        ownerUserId: input.ownerUserId ?? null,
+      })
       .returning();
     if (app === undefined) {
       throw new Error('registerApp: insert returned no row');

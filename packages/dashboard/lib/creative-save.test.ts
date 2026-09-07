@@ -14,6 +14,7 @@ import { type CreativeWriter, issueForFailure, saveCreative } from './creative-s
 const CONTEXT: CreativeFormContext = {
   advertisers: [{ id: 'adv_1', name: 'Example DB Cloud', domain: 'exampledb.dev' }],
   appIds: ['app_1'],
+  allowGlobalCatalog: true,
 };
 
 const VALID: Record<string, string> = {

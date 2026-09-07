@@ -37,10 +37,16 @@ const POLICY_PLACEHOLDER = [
   'min_commercial_intent: 0.75',
 ].join('\n');
 
-const CreatedKey = ({ state }: { state: Extract<CreateAppState, { status: 'created' }> }) => (
+const CreatedKey = ({
+  state,
+  first,
+}: {
+  state: Extract<CreateAppState, { status: 'created' }>;
+  first: boolean;
+}) => (
   <section data-testid="app-created" className="space-y-8">
     <PageHeader
-      title={`${state.app.name} created`}
+      title={first ? `${state.app.name} is live` : `${state.app.name} created`}
       back={{ href: '/apps', label: 'All apps' }}
       meta={
         <>
@@ -90,19 +96,28 @@ const CreatedKey = ({ state }: { state: Extract<CreateAppState, { status: 'creat
   </section>
 );
 
-export const NewAppForm = () => {
+export interface NewAppFormProps {
+  /** The first-run wording: this account has no apps yet and arrived here from signup. */
+  first?: boolean;
+}
+
+export const NewAppForm = ({ first = false }: NewAppFormProps) => {
   const [state, formAction, pending] = useActionState(createAppAction, INITIAL_CREATE_APP_STATE);
 
   if (state.status === 'created') {
-    return <CreatedKey state={state} />;
+    return <CreatedKey state={state} first={first} />;
   }
 
   return (
     <section>
       <PageHeader
-        title="New app"
-        back={{ href: '/apps', label: 'All apps' }}
-        lede="Registers a tenant and issues its first app-role API key. The key is shown once, on the next screen, together with the snippets that use it."
+        title={first ? 'Create your first app' : 'New app'}
+        back={first ? undefined : { href: '/apps', label: 'All apps' }}
+        lede={
+          first
+            ? 'One app is one place ads can appear: your chat product, your agent, one surface of it. It gets its own policy, its own API key and its own signed audit chain. Name it and the next screen has the key and the code.'
+            : 'Registers a tenant and issues its first app-role API key. The key is shown once, on the next screen, together with the snippets that use it.'
+        }
       />
 
       <form action={formAction} className="card max-w-3xl space-y-5">
@@ -125,8 +140,16 @@ export const NewAppForm = () => {
           </p>
         </div>
 
-        <div>
-          <label htmlFor="policy_yaml" className="ag-label-plain">
+        {/*
+          On the first run the policy editor is folded away. It is genuinely optional - a blank
+          document stores the documented defaults - and ten rows of YAML in front of somebody who
+          signed up ninety seconds ago is the step where they stop. It is open by default
+          everywhere else, where an operator came here to paste one.
+        */}
+        <details open={!first} className="space-y-2">
+          <summary className="ag-label-plain cursor-pointer">Starting policy (optional)</summary>
+          {/* The summary is the visible heading; the control still needs a label of its own. */}
+          <label htmlFor="policy_yaml" className="sr-only">
             Starting policy (optional)
           </label>
           <textarea
@@ -139,9 +162,10 @@ export const NewAppForm = () => {
             className="ag-input ag-input-mono mt-1"
           />
           <p id="policy-hint" className="ag-hint">
-            Blank stores the documented defaults (docs/policy.md) with this app&apos;s id.
+            Blank stores the documented defaults (docs/policy.md) with this app&apos;s id. You can
+            edit it on the app page whenever you like.
           </p>
-        </div>
+        </details>
 
         {state.status === 'invalid' ? (
           <FormIssues errors={state.errors} issues={state.issues} testId="new-app-errors" />
@@ -157,7 +181,7 @@ export const NewAppForm = () => {
             {pending ? 'Creating…' : 'Create app'}
           </button>
           <Link href="/apps" className="ag-link-quiet text-xs">
-            Cancel
+            {first ? 'Skip for now' : 'Cancel'}
           </Link>
         </div>
       </form>

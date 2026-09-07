@@ -186,6 +186,14 @@ export interface GenerateReportInput {
   since: Date;
   /** Exclusive. */
   until: Date;
+  /**
+   * The apps whose records may be reported on, or null for every app. Resolved from the
+   * generating session's scope, so a member's report is about their own traffic even though the
+   * advertiser it names may also have served somebody else's app.
+   */
+  appIds: string[] | null;
+  /** The account the stored report belongs to, or null when the operator generated it. */
+  ownerUserId: string | null;
   /** Passed in so the document's generated_at is the caller's clock, never this module's. */
   now?: Date;
 }
@@ -215,6 +223,7 @@ export const generateReport = async (
     advertiserId: input.advertiser.id,
     since: input.since,
     until: input.until,
+    appIds: input.appIds,
   };
   // Resolved here so the document can SAY which keys graded it, rather than leaving a reader to
   // guess why every record failed `signature` (see reportVerifier).
@@ -233,6 +242,7 @@ export const generateReport = async (
     advertiserId: input.advertiser.id,
     periodStart: input.since,
     periodEnd: input.until,
+    ownerUserId: input.ownerUserId,
     document,
   });
   return { id, document };
@@ -253,6 +263,8 @@ export const generateReport = async (
  */
 export const loadReportBundle = async (
   report: StoredReport,
+  /** The apps the DOWNLOADER may see; null for an admin. Re-scoped, not trusted to the report. */
+  appIds: string[] | null,
   context: ReportContext = {},
 ): Promise<ReportBundle> => {
   const db = context.db ?? dashboardDb();
@@ -263,7 +275,12 @@ export const loadReportBundle = async (
     domain: report.advertiserDomain,
   };
   const data = await collectReportData(
-    { advertiserId: report.advertiserId, since: report.periodStart, until: report.periodEnd },
+    {
+      advertiserId: report.advertiserId,
+      since: report.periodStart,
+      until: report.periodEnd,
+      appIds,
+    },
     { ...context, db, keys },
   );
   const creatives = await listReportCreatives(data.creativeIds, db);

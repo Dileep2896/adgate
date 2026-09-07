@@ -7,6 +7,7 @@ import { CopyButton } from '@/components/copy-button';
 import { PageHeader } from '@/components/page-header';
 import { VerifyChecks } from '@/components/verify-checks';
 import { loadAuditDetail } from '@/lib/audit-detail';
+import { requireSession } from '@/lib/auth';
 import { formatTimestamp, truncateHash } from '@/lib/format';
 
 /**
@@ -35,7 +36,10 @@ const AuditDetailPage = async ({
   const requested = query['version'];
   const version = Array.isArray(requested) ? requested[0] : requested;
 
-  const detail = await loadAuditDetail({ auditId: id, version });
+  // A record of another account's app answers null, which is the same not-found an audit id that
+  // was never written gets: the id space says nothing about what exists.
+  const session = await requireSession(`/audit/${id}`);
+  const detail = await loadAuditDetail({ auditId: id, version, scope: session.scope });
   if (detail === null) {
     notFound();
   }

@@ -43,6 +43,13 @@
       "when": 1788580190576,
       "tag": "0005_retention_state",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788727969727,
+      "tag": "0006_self_serve_accounts",
+      "breakpoints": true
     }
   ]
 }

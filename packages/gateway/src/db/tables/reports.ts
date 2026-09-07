@@ -2,6 +2,7 @@ import { index, jsonb, pgTable, text } from 'drizzle-orm/pg-core';
 
 import { advertisers } from './apps.js';
 import { createdAt, timestamptz } from './columns.js';
+import { users } from './users.js';
 
 /**
  * Verification reports generated for an advertiser (docs/BUILD_GUIDE.md Phase 8, story S35).
@@ -28,10 +29,18 @@ export const reports = pgTable(
     periodEnd: timestamptz('period_end').notNull(),
     /** The generated report document. S35 defines its contract; nothing here reads inside it. */
     report: jsonb('report').$type<Record<string, unknown>>().notNull(),
+    /**
+     * The dashboard account that generated it, or NULL for one the operator generated. A report
+     * is not a property of the advertiser alone: a member's report covers only the records of
+     * the member's own apps, so two accounts asking about the same advertiser and period hold
+     * two different documents and each may only open their own.
+     */
+    ownerUserId: text('owner_user_id').references(() => users.id),
     createdAt: createdAt(),
   },
   (table) => [
     index('reports_advertiser_id_created_at_idx').on(table.advertiserId, table.createdAt),
+    index('reports_owner_user_id_idx').on(table.ownerUserId),
   ],
 );
 

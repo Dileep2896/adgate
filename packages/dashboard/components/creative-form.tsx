@@ -34,6 +34,13 @@ export interface CreativeFormProps {
   /** The content taxonomy, so the operator can see what a valid category looks like. */
   categories: readonly string[];
   mode: 'create' | 'edit';
+  /**
+   * Whether the shared catalog (`app_id` null) is an option. Operators only: a global creative is
+   * inventory every app on this gateway can serve. The server enforces the same rule
+   * (lib/creative-fields.ts readAppId); this only stops the form offering a choice that would be
+   * refused.
+   */
+  allowGlobalCatalog: boolean;
 }
 
 interface CreativeFormBodyProps extends CreativeFormProps {
@@ -54,6 +61,7 @@ const CreativeFormBody = ({
   apps,
   categories,
   mode,
+  allowGlobalCatalog,
   issues,
   formAction,
   pending,
@@ -231,6 +239,7 @@ const CreativeFormBody = ({
         values={values}
         issues={issues}
         apps={apps}
+        allowGlobalCatalog={allowGlobalCatalog}
         source={source}
         onSourceChange={setSource}
       />

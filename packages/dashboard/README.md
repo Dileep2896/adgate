@@ -1,15 +1,20 @@
 # @adgate/dashboard
 
-The operator dashboard. A Next.js App Router app that reads the gateway's Postgres directly
-with Drizzle and shows what the gateway has been doing. It is private to this repo and is
-never published.
+The developer console and the operator dashboard, in one Next.js App Router app that reads the
+gateway's Postgres directly with Drizzle and shows what the gateway has been doing. It is private
+to this repo and is never published.
 
-## What it does today (S30 - S35)
+## What it does today (S30 - S35, plus self-serve accounts)
 
-- `/login` - one admin password, a signed cookie session.
-- `/apps` - the five gateway-wide numbers (apps integrated, turns in the last 30 days, ad
-  eligible rate, RPM, advertisers with a generated report) over every app registered against
-  this gateway: name, app id, policy version and hash (truncated, with a copy button), when it
+- `/signup`, `/login` - a developer creates an account with an email and a password (argon2id,
+  minimum 12 characters) and owns the apps they create. No email verification: this build sends
+  no email, and the form says so.
+- `/admin/login`, `/admin` - the operator's break-glass `ADMIN_PASSWORD` login (it needs no
+  account row) and the view over every account and every app, including the ones the CLI wrote
+  with no owner. `DASHBOARD_ALLOWED_IPS` guards these two paths and nothing else.
+- `/apps` - the five numbers (apps integrated, turns in the last 30 days, ad eligible rate, RPM,
+  advertisers with a generated report) over every app THIS ACCOUNT can see - every app on the
+  gateway for an operator, the account's own for a member - name, app id, policy version and hash (truncated, with a copy button), when it
   was created, the size of its private creative catalog and how many turns it evaluated in the
   last 30 days.
 - `/apps/new` - register an app and read its first API key, once.
@@ -207,16 +212,36 @@ with its new `policy_hash`. A document whose `app_id` names a different app is r
 
 ## Auth
 
-`ADMIN_PASSWORD` is the whole authentication model for the MVP. The password is compared in
-constant time and never logged. On success `/api/login` sets `adgate_dashboard_session`:
-`httpOnly`, `sameSite=lax`, `secure` in production, holding `v1.<expiry>.<HMAC-SHA256>` signed
-with `DASHBOARD_SESSION_SECRET` (or, unset, a key derived from `ADMIN_PASSWORD`). Sessions
-last 12 hours. Login attempts are rate limited in memory to 10 per minute per client address.
+Two ways in. `/login` takes an email and a password and checks them with the gateway's
+`authenticateUser` (argon2id, and a decoy verify for an address that does not exist, so an
+unknown email and a wrong password cost the same and say the same thing). `/admin/login` takes
+`ADMIN_PASSWORD`, is compared in constant time, and mints an operator session that needs no
+account row - the break-glass path, so an empty `users` table cannot lock an operator out.
 
-`middleware.ts` runs in the Edge runtime, where the signing secret is not available, so it
-only checks that a session cookie is _present_ and redirects to `/login?from=...` when it is
-not. The signature and expiry are verified in the Node runtime by `requireSession()` in
-`app/(dashboard)/layout.tsx`, which every protected page renders under.
+On success the endpoint sets `adgate_dashboard_session`: `httpOnly`, `sameSite=lax`, `secure` in
+production, holding `v2.<expiry>.<user id>.<role>.<credential digest>.<HMAC-SHA256>` signed with
+`DASHBOARD_SESSION_SECRET` (or, unset, a key derived from `ADMIN_PASSWORD`). Sessions last 12
+hours. Attempts on all three credential endpoints share one in-memory limiter, 10 per minute per
+client address, and each checks the request origin.
+
+THE COOKIE IS NOT THE LAST WORD. `lib/auth.ts` re-reads the account on every request and compares
+the credential digest, so changing a password (or rotating `ADMIN_PASSWORD`) invalidates every
+outstanding session for it, and the role comes from the database rather than from the token.
+
+`middleware.ts` runs in the Edge runtime, where the signing secret is not available, so it only
+checks that a session cookie is _present_ and redirects to `/login?from=...` (or `/admin/login`
+for an admin-only path). Everything real happens in the Node runtime: `requireSession()` in
+`app/(dashboard)/layout.tsx` and in every server action and route handler, and `requireAdmin()`
+on `/admin`.
+
+## Scoping
+
+`lib/app-scope.ts` is the ownership rule and `lib/scope-queries.ts` is its SQL. Every read takes
+an `AppScope` as a REQUIRED argument - none of them defaults to the admin scope - and a member's
+scope becomes one predicate on `apps.owner_user_id`, which every audit and metrics query already
+reaches `audit_records` through. An admin's predicate is `undefined`, which drizzle drops, so the
+operator's queries are byte-identical to the ones the EXPLAIN suite plans. `reports` carries its
+own `owner_user_id`, because a report is generated by an account over that account's apps.
 
 ## Environment
 
@@ -225,7 +250,7 @@ Read from the repo-root `.env` (see `.env.example`) or from the real environment
 | Variable                   | Required | Meaning                                                                                                                                                                                                                                                |
 | -------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `DATABASE_URL`             | yes      | The gateway's Postgres. Read only from here.                                                                                                                                                                                                           |
-| `ADMIN_PASSWORD`           | yes      | The dashboard login.                                                                                                                                                                                                                                   |
+| `ADMIN_PASSWORD`           | yes      | The operator's break-glass login at `/admin/login`.                                                                                                                                                                                                                                   |
 | `DASHBOARD_SESSION_SECRET` | no       | Session HMAC key; derived from the password if unset.                                                                                                                                                                                                  |
 | `DASHBOARD_PORT`           | no       | `pnpm dev` port, default 3000.                                                                                                                                                                                                                         |
 | `DASHBOARD_E2E_PORT`       | no       | Playwright port, default 3210.                                                                                                                                                                                                                         |

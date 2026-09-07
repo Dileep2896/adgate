@@ -7,8 +7,10 @@ import {
 } from '@adgate/gateway/audit';
 import { AuditRecord } from '@adgate/schemas';
 
+import type { AppScope } from './app-scope';
 import { appNameOf, type AuditVersionSummary, listAuditVersions } from './audit-lookups';
 import { type DashboardDb, dashboardDb } from './db';
+import { appIsVisible } from './scope-queries';
 import { describeCheck } from './verify-labels';
 import { type VerifyKeys, verifyKeys } from './verify-keys';
 
@@ -93,6 +95,16 @@ export interface AuditDetailOptions {
   keys?: VerifyKeys;
 }
 
+export interface AuditDetailQueryScoped extends AuditDetailQuery {
+  /**
+   * Whose record this must be. The record is looked up by id FIRST (the gateway's reader is the
+   * one that knows about versions) and the app it belongs to is checked immediately afterwards;
+   * a record outside the scope returns null - the same answer as an id that does not exist - and
+   * nothing about it is read, verified or rendered.
+   */
+  scope: AppScope;
+}
+
 const neighbourOf = (row: AuditRecordRow | null): ChainNeighbour | null =>
   row === null
     ? null
@@ -119,7 +131,7 @@ const parseRecord = (record: unknown): AuditRecord | null => {
 };
 
 export const loadAuditDetail = async (
-  query: AuditDetailQuery,
+  query: AuditDetailQueryScoped,
   options: AuditDetailOptions = {},
 ): Promise<AuditDetail | null> => {
   const db = options.db ?? dashboardDb();
@@ -131,6 +143,9 @@ export const loadAuditDetail = async (
     return null;
   }
   const { row } = found;
+  if (!(await appIsVisible(query.scope, row.appId, db))) {
+    return null;
+  }
 
   const [ctx, previous, next, versions, appName, latest] = await Promise.all([
     buildVerifyContext(reader, row),

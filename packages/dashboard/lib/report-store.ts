@@ -23,6 +23,12 @@ export interface SaveReportInput {
   periodStart: Date;
   /** Exclusive end of the period. */
   periodEnd: Date;
+  /**
+   * The account that generated it, or null for the operator. It is what /reports filters on: a
+   * member's report covers only their own apps' records, so it is their document rather than the
+   * advertiser's, and another account may not open it.
+   */
+  ownerUserId: string | null;
   document: ReportDocument;
 }
 
@@ -39,6 +45,7 @@ export const createReportWriter = (db: Db): ReportWriter => ({
       advertiserId: input.advertiserId,
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,
+      ownerUserId: input.ownerUserId,
       report: input.document as unknown as Record<string, unknown>,
     });
     return id;

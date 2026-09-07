@@ -10,6 +10,7 @@ import {
   AUDIT_PAGE_SIZE,
 } from './audit-filters';
 import { type AuditPageRow, listAuditPage, listAuditReasons } from './audit-queries';
+import { ADMIN_SCOPE } from './app-scope';
 import { seedAuditVolume } from './audit-volume-seed';
 import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
 import { truncateAll } from './metrics-seed';
@@ -88,7 +89,7 @@ const walkOlder = async (filters: AuditFilters): Promise<Walk> => {
   let cursor: AuditCursor | null = null;
   let pages = 0;
   for (;;) {
-    const page = await listAuditPage(filters, cursor, db);
+    const page = await listAuditPage(ADMIN_SCOPE, filters, cursor, db);
     rows.push(...page.rows);
     pages += 1;
     if (page.older === null) {
@@ -107,6 +108,7 @@ const walkNewer = async (filters: AuditFilters, from: AuditCursor): Promise<Walk
   let pages = 0;
   while (cursor !== null) {
     const page: Awaited<ReturnType<typeof listAuditPage>> = await listAuditPage(
+      ADMIN_SCOPE,
       filters,
       cursor,
       db,
@@ -169,10 +171,10 @@ describe('paging through 1 200 records', () => {
     const forward = await walkOlder(filtersFor());
     // Stand on the last page and click Previous until there is no Previous left.
     let cursor: AuditCursor | null = null;
-    let last = await listAuditPage(filtersFor(), cursor, db);
+    let last = await listAuditPage(ADMIN_SCOPE, filtersFor(), cursor, db);
     while (last.older !== null) {
       cursor = last.older;
-      last = await listAuditPage(filtersFor(), cursor, db);
+      last = await listAuditPage(ADMIN_SCOPE, filtersFor(), cursor, db);
     }
     expect(last.newer).not.toBeNull();
 
@@ -184,7 +186,7 @@ describe('paging through 1 200 records', () => {
   it('never returns a partial page except the last one', async () => {
     let cursor: AuditCursor | null = null;
     for (;;) {
-      const page = await listAuditPage(filtersFor(), cursor, db);
+      const page = await listAuditPage(ADMIN_SCOPE, filtersFor(), cursor, db);
       if (page.older === null) {
         expect(page.rows.length).toBeLessThanOrEqual(AUDIT_PAGE_SIZE);
         return;
@@ -210,7 +212,7 @@ describe('the filters over the same volume', () => {
   });
 
   it('offers exactly the reasons the records carry', async () => {
-    expect(await listAuditReasons(filtersFor(), db)).toEqual([
+    expect(await listAuditReasons(ADMIN_SCOPE, filtersFor(), db)).toEqual([
       'no_fill',
       'paid_user',
       'sensitive_category:health',
@@ -219,6 +221,7 @@ describe('the filters over the same volume', () => {
 
   it('excludes everything outside the date range', async () => {
     const empty = await listAuditPage(
+      ADMIN_SCOPE,
       filtersFor({ from: '2020-01-01', to: '2020-01-02' }),
       null,
       db,
@@ -229,8 +232,8 @@ describe('the filters over the same volume', () => {
   });
 
   it('gives the same first page with no app selected, through the lateral over every app', async () => {
-    const scoped = await listAuditPage(filtersFor(), null, db);
-    const global = await listAuditPage(filtersFor({ appId: ALL_APPS }), null, db);
+    const scoped = await listAuditPage(ADMIN_SCOPE, filtersFor(), null, db);
+    const global = await listAuditPage(ADMIN_SCOPE, filtersFor({ appId: ALL_APPS }), null, db);
     expect(hashesOf(global.rows)).toEqual(hashesOf(scoped.rows));
     expect(global.rows[0]?.appName).toBe('Audit volume app');
   });

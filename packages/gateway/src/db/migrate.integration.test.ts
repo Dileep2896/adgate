@@ -53,7 +53,7 @@ describe('migrations', () => {
       const [applied] = await handle.sql<{ n: number }[]>`
         select count(*)::int as n from drizzle.__drizzle_migrations
       `;
-      expect(applied?.n).toBe(6);
+      expect(applied?.n).toBe(7);
       expect(await seqColumn(handle)).toEqual({
         nullable: 'NO',
         index: expect.stringMatching(/UNIQUE.*\(app_id, seq\)/s),

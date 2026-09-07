@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { check, index, integer, jsonb, pgTable, text } from 'drizzle-orm/pg-core';
 
 import { createdAt, sqlList, timestamptz, updatedAt } from './columns.js';
+import { users } from './users.js';
 
 /**
  * Tenants and their credentials. Ids are prefixed ULIDs (app_, key_, adv_) minted by the
@@ -12,21 +13,31 @@ import { createdAt, sqlList, timestamptz, updatedAt } from './columns.js';
 export const API_KEY_ROLES = ['app', 'advertiser_read'] as const;
 export type ApiKeyRole = (typeof API_KEY_ROLES)[number];
 
-export const apps = pgTable('apps', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  /** Per-app secret that salts conversation and user hashes (docs/audit.md). Never in a record. */
-  salt: text('salt').notNull(),
-  /** The stored policy as the operator wrote it (docs/policy.md). */
-  policyYaml: text('policy_yaml').notNull(),
-  /** policyHash() of the fully defaulted policy; written into every audit record. */
-  policyHash: text('policy_hash').notNull(),
-  policyVersion: integer('policy_version').notNull().default(1),
-  /** The app owner's own affiliate ids (AffiliateConfig), validated at write time. Null = none. */
-  affiliateConfig: jsonb('affiliate_config').$type<AffiliateConfig>(),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-});
+export const apps = pgTable(
+  'apps',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    /** Per-app secret that salts conversation and user hashes (docs/audit.md). Never in a record. */
+    salt: text('salt').notNull(),
+    /** The stored policy as the operator wrote it (docs/policy.md). */
+    policyYaml: text('policy_yaml').notNull(),
+    /** policyHash() of the fully defaulted policy; written into every audit record. */
+    policyHash: text('policy_hash').notNull(),
+    policyVersion: integer('policy_version').notNull().default(1),
+    /** The app owner's own affiliate ids (AffiliateConfig), validated at write time. Null = none. */
+    affiliateConfig: jsonb('affiliate_config').$type<AffiliateConfig>(),
+    /**
+     * The dashboard account that created this app, or NULL for an operator-created app (the
+     * `create-app` CLI path). The gateway never reads it: it is the dashboard's ownership
+     * boundary, and a null owner is visible to admins only.
+     */
+    ownerUserId: text('owner_user_id').references(() => users.id),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [index('apps_owner_user_id_idx').on(table.ownerUserId)],
+);
 
 export const advertisers = pgTable('advertisers', {
   id: text('id').primaryKey(),

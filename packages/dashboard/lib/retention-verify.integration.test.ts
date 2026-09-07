@@ -10,6 +10,7 @@ import {
   type SeededAuditChain,
   type SeedTurn,
 } from './audit-seed';
+import { ADMIN_SCOPE } from './app-scope';
 import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
 import { truncateAll } from './metrics-seed';
 import {
@@ -84,7 +85,7 @@ const detailAt = async (chain: SeededAuditChain, seq: number) => {
     throw new Error(`no record at seq ${seq}`);
   }
   const detail = await loadAuditDetail(
-    { auditId: record.id, version: record.record_hash },
+    { auditId: record.id, version: record.record_hash, scope: ADMIN_SCOPE },
     { db, keys: chain.keys },
   );
   if (detail === null) {
@@ -163,6 +164,8 @@ describe('a verification report over a pruned chain', () => {
         since: new Date('2026-05-01T00:00:00.000Z'),
         until: new Date('2026-06-01T00:00:00.000Z'),
         now: new Date('2026-06-01T00:00:00.000Z'),
+        appIds: null,
+        ownerUserId: null,
       },
       writer,
       { db, keys: chain.keys },

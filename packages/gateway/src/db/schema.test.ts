@@ -14,8 +14,9 @@ import {
 } from './schema.js';
 
 describe('schema', () => {
-  it('lists the ten tables of the story plus rate_limits (S21), reports (S32) and retention_state (S37)', () => {
+  it('lists the ten tables of the story plus rate_limits (S21), reports (S32), retention_state (S37) and users (self-serve accounts)', () => {
     expect(TABLE_NAMES).toEqual([
+      'users',
       'apps',
       'advertisers',
       'api_keys',

@@ -182,9 +182,11 @@ key, anyone can run the same checks on the record.
 pnpm --filter @adgate/dashboard dev      # http://localhost:3000
 ```
 
-Log in with `ADMIN_PASSWORD` from `.env` (`change-me` by default). It reads the same Postgres
-read-only: headline metrics, the app list, the policy editor, the creative catalog, the audit
-search with live verification, and advertiser verification reports. If something else owns 3000,
+Sign up at `/signup` to get a developer account that owns its own apps, or sign in as the
+operator at `/admin/login` with `ADMIN_PASSWORD` from `.env` (`change-me` by default) to see every
+app on the gateway. It reads the same Postgres read-only: headline metrics, the app list, the
+policy editor, the creative catalog, the audit search with live verification, and advertiser
+verification reports. If something else owns 3000,
 set `DASHBOARD_PORT` (`DASHBOARD_PORT=3020 pnpm --filter @adgate/dashboard dev`).
 
 ### Where to go next

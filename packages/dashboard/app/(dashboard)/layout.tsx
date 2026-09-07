@@ -15,21 +15,35 @@ import { requireSession } from '@/lib/auth';
  * document and nothing else.
  */
 
+/**
+ * NOTHING UNDER THIS LAYOUT IS EVER PRERENDERED. requireSession() reads the session cookie AND
+ * the environment, and `next build` runs with NODE_ENV=production, where a placeholder
+ * ADMIN_PASSWORD is a fatal configuration error (lib/admin-password.ts) - so a page Next tried
+ * to render at build time would fail the build for a reason that has nothing to do with the
+ * deployment. Every route below is dynamic anyway; saying it here makes it true for the
+ * redirect-only `/` as well, which has no data of its own to mark dynamic.
+ */
+export const dynamic = 'force-dynamic';
+
 const DashboardLayout = async ({ children }: { children: ReactNode }) => {
-  await requireSession();
+  const session = await requireSession();
   return (
     <div className="ag-shell">
       <a href="#main" className="ag-skip no-print">
         Skip to content
       </a>
-      <Nav />
+      <Nav who={session.email ?? 'operator'} admin={session.role === 'admin'} />
       <div className="ag-column">
         <main id="main" className="ag-main">
           {children}
         </main>
         <footer className="ag-foot no-print">
           <span>adgate dashboard</span>
-          <span>Read only view of the gateway database.</span>
+          <span>
+            {session.role === 'admin'
+              ? 'Operator view: every app on this gateway.'
+              : 'Your apps, their creatives, their audit records.'}
+          </span>
           <span>
             Wiring an app: <DocRef doc="integration" />
           </span>

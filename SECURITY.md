@@ -95,35 +95,60 @@ What adgate trusts, and what it does not.
   never written to a log line. `docs/privacy.md` inventories every stored field, says which ones
   can hold user-derived data, and documents the retention job that enforces `retain_days`.
 
-### The dashboard is an admin surface, not a public site
+### The dashboard is a developer console with an operator surface inside it
 
-`packages/dashboard` authenticates with **one shared password** (`ADMIN_PASSWORD`) and a signed
-session cookie. There are no user accounts, no roles and no audit of who did what. It reads and
-writes the same database as the gateway, so it can create apps, issue API keys and edit creatives.
+`packages/dashboard` has **two front doors**, and they have different postures. This section
+replaces the earlier "not for the public internet" rule, which stopped being true when self-serve
+signup landed: a console third-party developers cannot reach is not a console.
 
-Run it on a private network, behind a VPN, an SSO proxy or an IP allowlist. Putting it on the
-public internet with only its password in front is outside the model this repository defends. Use
-a long random `ADMIN_PASSWORD` and a `DASHBOARD_SESSION_SECRET` that is not derived from it, and
-serve it over TLS: the session cookie is a bearer token for the whole admin surface. With
-`NODE_ENV=production` the dashboard **refuses to start** on the `change-me` placeholder or on any
-password shorter than 16 characters, so that mistake is a failed deploy rather than a live one.
+**The member surface — `/signup`, `/login`, `/apps`, `/creatives`, `/audit`, `/reports`.** A
+developer creates an account with an email and a password (argon2id, minimum 12 characters, the
+same hashing parameters as an API key secret), and from then on every read and every write is
+filtered on `apps.owner_user_id`: their apps, their apps' creatives, their apps' audit records,
+the reports they generated. An app id, an audit id, a creative id or a report id belonging to
+another account answers exactly what a nonexistent id answers, so the id space is not an
+existence oracle. **This surface is meant to be on the internet.** Put TLS in front of it, and
+platform rate limiting or a WAF if you expect abuse; adgate's own limiter is one in-memory fixed
+window per instance and is friction, not a boundary.
 
-`DASHBOARD_ALLOWED_IPS` is the built-in allowlist, for a host where a VPN or an SSO proxy is not
-on offer. Set it to a comma separated list of IPs and CIDR ranges (`203.0.113.7,
-198.51.100.0/24, 2001:db8::/32`) and the Edge middleware answers **403 to everything else before
-`/login` is reachable** — the login form, the login endpoint and every page. Left empty, nothing
-changes. Three things to know before relying on it:
+**Addresses are not verified.** This change ships no email provider, so signing up proves only
+that somebody typed an address. If you need verified identities, put an SSO proxy in front of the
+console and treat `ADMIN_PASSWORD` as the only credential adgate itself checks.
+
+**The operator surface — `/admin` and `/admin/login`.** `ADMIN_PASSWORD` is still here and it is
+the **break-glass path**: it needs no row in `users`, so an empty accounts table, a deleted admin
+account or a database restored from a backup cannot lock an operator out of their own deployment.
+An operator session sees every app — including the ones `create-app` wrote, which have no owner
+and are invisible to every member — plus the gateway-wide numbers and the list of accounts.
+
+`DASHBOARD_ALLOWED_IPS` now guards **`/admin/**` only**, the break-glass login included. That is
+the deliberate consequence of the split: an admin session can only be *obtained* from an
+allowlisted address, while signup and the member login stay reachable from anywhere. Set it to a
+comma separated list of IPs and CIDR ranges (`203.0.113.7, 198.51.100.0/24, 2001:db8::/32`) and
+the Edge middleware answers 403 to anything off the list before `/admin/login` is reachable. Left
+empty, nothing is restricted. Three things to know before relying on it:
 
 - It needs a client address it can believe, which means **`TRUST_PROXY=true`** (or
   `TRUSTED_PROXY_HOPS=<n>`) wherever a proxy or a platform sits in front. Without one the address
-  is `unknown`, which is on no allowlist, and every request is refused — the safe half of the
-  mistake, but it will look like an outage. See the trusted-proxy notes in `.env.example`.
+  is `unknown`, which is on no allowlist, and every admin request is refused — the safe half of
+  the mistake, but it will look like an outage. See the trusted-proxy notes in `.env.example`.
 - The list is read **once, when the middleware instance starts**, not per request: a change is a
   restart when self-hosted and a redeploy on Vercel.
 - It is a second lock, never a replacement for the password: a source address is only as honest
   as the proxy that wrote it, and an allowlist does nothing about a stolen session cookie.
 
-`docs/deploy.md` walks through setting both on a hosted dashboard.
+Use a long random `ADMIN_PASSWORD` and a `DASHBOARD_SESSION_SECRET` that is not derived from it,
+and serve the whole thing over TLS: the session cookie is a bearer token for whatever the account
+it names can see. With `NODE_ENV=production` the dashboard **refuses to start** on the `change-me`
+placeholder or on any password shorter than 16 characters, so that mistake is a failed deploy
+rather than a live one.
+
+**What ends a session.** The cookie carries the user id, the role and a digest of the credential
+it was minted against, and every request re-reads the account: changing a password (or rotating
+`ADMIN_PASSWORD`) invalidates every outstanding session for it at once, and a role change takes
+effect on the next request rather than at the next sign-in. There is no session table.
+
+`docs/deploy.md` walks through setting all of this on a hosted dashboard.
 
 ### Known limits (by design, for now)
 

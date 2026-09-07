@@ -3,13 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { requireSession } from '@/lib/auth';
+import { requireSession, sessionOwnerId } from '@/lib/auth';
 import { dashboardWriteDb } from '@/lib/db-write';
 import { dashboardEnv } from '@/lib/env';
 import { parseReportForm, readReportForm } from '@/lib/report-form';
 import { generateReport } from '@/lib/report-generate';
 import { listReportAdvertisers } from '@/lib/report-queries';
 import { createReportWriter } from '@/lib/report-store';
+import { visibleAppIds } from '@/lib/scope-queries';
 
 /**
  * Generating a verification report. The third module allowed to import lib/db-write.ts
@@ -36,7 +37,7 @@ const back = (error: string, values: { advertiserId: string; from: string; to: s
 };
 
 export const generateReportAction = async (formData: FormData): Promise<void> => {
-  await requireSession();
+  const session = await requireSession();
   const values = readReportForm(formData);
   const advertisers = await listReportAdvertisers();
   const parsed = parseReportForm(
@@ -57,7 +58,15 @@ export const generateReportAction = async (formData: FormData): Promise<void> =>
   let reportId: string;
   try {
     const result = await generateReport(
-      { advertiser, since: parsed.range.since, until: parsed.range.until },
+      {
+        advertiser,
+        since: parsed.range.since,
+        until: parsed.range.until,
+        // The records a MEMBER may report on are their own apps' - an advertiser's creatives can
+        // have served somebody else's app too, and those turns are nobody else's business.
+        appIds: await visibleAppIds(session.scope),
+        ownerUserId: sessionOwnerId(session),
+      },
       createReportWriter(dashboardWriteDb(dashboardEnv().databaseUrl)),
     );
     reportId = result.id;

@@ -37,8 +37,18 @@ export const DOMAIN_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9
 export interface CreativeFormContext {
   /** Every advertiser already in the database: the select's options and the domain rule. */
   advertisers: readonly AdvertiserOption[];
-  /** Every app id, so "private catalog of app X" cannot name an app that is not there. */
+  /**
+   * The app ids this account may write into, so "private catalog of app X" cannot name an app
+   * that is not there - or, for a member, an app that is not theirs (listAppOptions is scoped,
+   * and the server action builds this list from it).
+   */
   appIds: readonly string[];
+  /**
+   * Whether this account may write the SHARED catalog (`app_id` null). Only an operator may: a
+   * global creative is inventory every app on the gateway can serve, so one developer editing it
+   * would change what everybody else's users see.
+   */
+  allowGlobalCatalog: boolean;
 }
 
 export const issue = (field: CreativeField, message: string): CreativeFieldIssue => ({
@@ -283,6 +293,14 @@ export const readAppId = (
 ): string | null => {
   const appId = readText(form, 'app_id').trim();
   if (appId === '') {
+    if (!context.allowGlobalCatalog) {
+      issues.push(
+        issue(
+          'app_id',
+          'Choose one of your apps. The shared catalog is inventory every app on this gateway can serve, and only the operator edits it.',
+        ),
+      );
+    }
     return null;
   }
   if (!context.appIds.includes(appId)) {

@@ -7,6 +7,7 @@ import { IntegrationPanel } from '@/components/integration-panel';
 import { IntegrationStatus } from '@/components/integration-status';
 import { PageHeader } from '@/components/page-header';
 import { PolicyEditor } from '@/components/policy-editor';
+import { requireSession } from '@/lib/auth';
 import { formatTimestamp } from '@/lib/format';
 import { computeMetrics, decisionsPerDay, suppressBreakdown } from '@/lib/metrics';
 import {
@@ -32,19 +33,24 @@ import { getApp, listApiKeys } from '@/lib/queries';
  * line saying whether the gateway has ever seen a turn from this app. That line is derived
  * from the audit chain itself (appLastTurn), because an audit record IS the evidence a turn
  * was evaluated; there is no heartbeat table and there does not need to be one.
+ *
+ * SCOPE. getApp() carries the session's scope, so an app id belonging to another account answers
+ * null and this page renders the ordinary not-found - the same page an id that was never
+ * registered gets. The per-app queries below take the id getApp() has already authorised.
  */
 
 export const dynamic = 'force-dynamic';
 
 const AppDetailPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
-  const app = await getApp(id);
+  const session = await requireSession(`/apps/${id}`);
+  const app = await getApp(session.scope, id);
   if (app === null) {
     notFound();
   }
   const metricWindow = defaultMetricsWindow();
   const [keys, decisions, eventCounts, lastTurnAt] = await Promise.all([
-    listApiKeys(app.id),
+    listApiKeys(session.scope, app.id),
     appDecisionCounts(app.id, metricWindow),
     appEventCounts(app.id, metricWindow),
     appLastTurn(app.id),

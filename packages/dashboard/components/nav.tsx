@@ -31,11 +31,21 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: '/reports', label: 'Reports' },
 ];
 
+/** The fifth item, for an operator only: every account and every app on this gateway. */
+export const ADMIN_NAV_ITEM: NavItem = { href: '/admin', label: 'Operator' };
+
+export interface NavProps {
+  /** The signed-in account's address, or 'operator' for the ADMIN_PASSWORD login. */
+  who: string;
+  admin: boolean;
+}
+
 const isActive = (pathname: string, href: string): boolean =>
   pathname === href || pathname.startsWith(`${href}/`);
 
-export const Nav = () => {
+export const Nav = ({ who, admin }: NavProps) => {
   const pathname = usePathname();
+  const items = admin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
   return (
     <header className="ag-rail no-print">
       <Link href="/apps" className="ag-wordmark">
@@ -43,7 +53,7 @@ export const Nav = () => {
       </Link>
 
       <nav aria-label="Sections" className="ag-rail-nav">
-        {NAV_ITEMS.map((item) => (
+        {items.map((item) => (
           <Link
             key={item.href}
             href={item.href}
@@ -56,7 +66,10 @@ export const Nav = () => {
       </nav>
 
       <div className="ag-rail-aside">
-        <p className="ag-rail-meta">Read only · gateway database</p>
+        <p className="ag-rail-meta" data-testid="session-who" title={who}>
+          <span className="ag-truncate">{who}</span>
+          {admin ? ' · operator' : ''}
+        </p>
         <ThemeToggle />
         <form action="/api/logout" method="post">
           <button type="submit" className="ag-btn ag-btn-quiet">

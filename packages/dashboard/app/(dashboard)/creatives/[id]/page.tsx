@@ -5,6 +5,7 @@ import { CopyButton } from '@/components/copy-button';
 import { CreativeActiveToggle } from '@/components/creative-active-toggle';
 import { CreativeForm } from '@/components/creative-form';
 import { PageHeader } from '@/components/page-header';
+import { requireSession } from '@/lib/auth';
 import {
   creativeFormValues,
   getCreative,
@@ -37,19 +38,29 @@ const CreativePage = async ({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) => {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const creative = await getCreative(id);
+  const session = await requireSession(`/creatives/${id}`);
+  const creative = await getCreative(session.scope, id);
   if (creative === null) {
     notFound();
   }
-  const [advertisers, apps] = await Promise.all([listAdvertiserOptions(), listAppOptions()]);
+  const [advertisers, apps] = await Promise.all([
+    listAdvertiserOptions(),
+    listAppOptions(session.scope),
+  ]);
   const saved = typeof query['saved'] === 'string' ? SAVED_MESSAGE[query['saved']] : undefined;
+  const admin = session.role === 'admin';
+  // Shared inventory is the operator's. A member may read it - it is what their apps serve - but
+  // editing or pausing it would change what every other app on this gateway shows.
+  const writable = admin || creative.appId !== null;
 
   return (
     <section className="space-y-6">
       <PageHeader
         title={creative.headline}
         back={{ href: '/creatives', label: 'All creatives' }}
-        actions={<CreativeActiveToggle id={creative.id} active={creative.active} />}
+        actions={
+          writable ? <CreativeActiveToggle id={creative.id} active={creative.active} /> : undefined
+        }
         meta={
           <>
             <span data-testid="creative-id" className="ag-mono-2xs">
@@ -90,13 +101,22 @@ const CreativePage = async ({
         </p>
       </div>
 
-      <CreativeForm
-        mode="edit"
-        values={creativeFormValues(creative)}
-        advertisers={advertisers}
-        apps={apps}
-        categories={CATEGORIES_TAXONOMY}
-      />
+      {writable ? (
+        <CreativeForm
+          mode="edit"
+          values={creativeFormValues(creative)}
+          advertisers={advertisers}
+          apps={apps}
+          allowGlobalCatalog={admin}
+          categories={CATEGORIES_TAXONOMY}
+        />
+      ) : (
+        <p data-testid="creative-read-only" className="ag-note">
+          This creative is in the shared catalog: every app on this gateway may serve it, and the
+          operator maintains it. Yours live in your own app&apos;s catalog, where editing one
+          changes nothing for anybody else.
+        </p>
+      )}
     </section>
   );
 };

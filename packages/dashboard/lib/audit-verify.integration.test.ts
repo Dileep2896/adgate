@@ -2,6 +2,7 @@ import type { Sql } from 'postgres';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { loadAuditDetail } from './audit-detail';
+import { ADMIN_SCOPE } from './app-scope';
 import {
   attestRecord,
   CREATIVE_ID,
@@ -60,7 +61,7 @@ const verifyOf = async (chain: SeededAuditChain, seq: number, version?: string) 
     throw new Error(`no record at seq ${seq}`);
   }
   const detail = await loadAuditDetail(
-    { auditId: record.id, version: version ?? record.record_hash },
+    { auditId: record.id, version: version ?? record.record_hash, scope: ADMIN_SCOPE },
     { db, keys: chain.keys },
   );
   if (detail === null) {
@@ -105,9 +106,14 @@ describe('an untouched chain', () => {
   it('serves the latest version when no version is asked for', async () => {
     const chain = await seedAuditChain(seed, { turns: [SUPPRESS] });
     const record = chain.records[0]!;
-    const detail = await loadAuditDetail({ auditId: record.id }, { db, keys: chain.keys });
+    const detail = await loadAuditDetail(
+      { auditId: record.id, scope: ADMIN_SCOPE },
+      { db, keys: chain.keys },
+    );
     expect(detail?.recordHash).toBe(record.record_hash);
-    expect(await loadAuditDetail({ auditId: 'aud_nope' }, { db, keys: chain.keys })).toBeNull();
+    expect(
+      await loadAuditDetail({ auditId: 'aud_nope', scope: ADMIN_SCOPE }, { db, keys: chain.keys }),
+    ).toBeNull();
   });
 });
 
@@ -192,7 +198,10 @@ describe('an attested turn', () => {
     const original = chain.records[0]!;
     const attested = await attestRecord(seed, chain, 1);
 
-    const latest = await loadAuditDetail({ auditId: original.id }, { db, keys: chain.keys });
+    const latest = await loadAuditDetail(
+      { auditId: original.id, scope: ADMIN_SCOPE },
+      { db, keys: chain.keys },
+    );
     expect(latest?.recordHash).toBe(attested.record_hash);
     expect(latest?.isLatest).toBe(true);
     expect(latest?.verification.failed).toEqual([]);
@@ -201,7 +210,7 @@ describe('an attested turn', () => {
     expect(latest?.attestRendered).toBe(true);
 
     const older = await loadAuditDetail(
-      { auditId: original.id, version: original.record_hash },
+      { auditId: original.id, version: original.record_hash, scope: ADMIN_SCOPE },
       { db, keys: chain.keys },
     );
     expect(older?.isLatest).toBe(false);
@@ -218,7 +227,10 @@ describe('the key ring', () => {
     const { loadVerifyKeys } = await import('./verify-keys');
     const empty = loadVerifyKeys({});
 
-    const detail = await loadAuditDetail({ auditId: record.id }, { db, keys: empty });
+    const detail = await loadAuditDetail(
+      { auditId: record.id, scope: ADMIN_SCOPE },
+      { db, keys: empty },
+    );
     expect(detail?.verification.failed).toEqual(['signature']);
     expect(detail?.verification.keyIssue).toContain('ADGATE_PUBLIC_KEYS_JSON');
   });

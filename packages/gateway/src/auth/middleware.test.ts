@@ -22,6 +22,8 @@ const appRow: AppRow = {
   policyHash: `sha256:${'0'.repeat(64)}`,
   policyVersion: 1,
   affiliateConfig: null,
+  // The gateway never reads owner_user_id: it is the dashboard's ownership boundary.
+  ownerUserId: null,
   createdAt: new Date('2026-09-02T00:00:00Z'),
   updatedAt: new Date('2026-09-02T00:00:00Z'),
 };

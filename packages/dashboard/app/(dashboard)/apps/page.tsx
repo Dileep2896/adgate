@@ -13,6 +13,7 @@ import {
   formatTimestamp,
   truncateHash,
 } from '@/lib/format';
+import { requireSession } from '@/lib/auth';
 import { computeGlobalMetrics, type GlobalMetrics } from '@/lib/metrics';
 import { defaultMetricsWindow, globalMetricRows, METRICS_WINDOW_DAYS } from '@/lib/metrics-queries';
 import { listAppsWithCounts } from '@/lib/queries';
@@ -71,17 +72,30 @@ const headlineMetrics = (metrics: GlobalMetrics): Metric[] => [
 ];
 
 const AppsPage = async () => {
+  // EVERY NUMBER ON THIS PAGE IS SCOPED TO THE SIGNED-IN ACCOUNT. An admin's scope is "every
+  // app", so the operator still sees the gateway-wide header this dashboard has always shown; a
+  // member sees the same five numbers over their own apps, which is the only honest thing to put
+  // in front of them - a gateway-wide RPM is somebody else's business.
+  const session = await requireSession('/apps');
   // ONE window for the whole page: the header's "Turns (30d)" and the per-app column below it
   // are the same 30 whole UTC days, so the column really does add up to the headline.
   const period = defaultMetricsWindow();
-  const [apps, rows] = await Promise.all([listAppsWithCounts(period), globalMetricRows(period)]);
+  const [apps, rows] = await Promise.all([
+    listAppsWithCounts(session.scope, period),
+    globalMetricRows(session.scope, period),
+  ]);
   const now = new Date();
+  const admin = session.role === 'admin';
 
   return (
     <section>
       <PageHeader
         title="Apps"
-        lede={`${String(apps.length)} ${apps.length === 1 ? 'app' : 'apps'} registered against this gateway.`}
+        lede={
+          admin
+            ? `${String(apps.length)} ${apps.length === 1 ? 'app' : 'apps'} registered against this gateway.`
+            : `${String(apps.length)} ${apps.length === 1 ? 'app' : 'apps'} on your account. Every number below counts only your apps.`
+        }
         actions={
           <Link href="/apps/new" className="ag-btn ag-btn-primary">
             New app
@@ -104,12 +118,17 @@ const AppsPage = async () => {
           >
             An app is one tenant of this gateway: it owns a policy, a private creative catalog and
             its own hash chain of audit records. Registering one issues its first API key and gives
-            you the app id the SDK sends on every evaluate call. You can also do it from the command
-            line:{' '}
-            <span className="ag-code">
-              pnpm --filter @adgate/gateway create-app --name &quot;My chat app&quot;
-            </span>
-            .
+            you the app id the SDK sends on every evaluate call.
+            {admin ? (
+              <>
+                {' '}
+                You can also do it from the command line:{' '}
+                <span className="ag-code">
+                  pnpm --filter @adgate/gateway create-app --name &quot;My chat app&quot;
+                </span>
+                . Apps created that way have no owner and are visible here only to an operator.
+              </>
+            ) : null}
           </EmptyState>
         ) : (
           <div className="ag-table-scroll">

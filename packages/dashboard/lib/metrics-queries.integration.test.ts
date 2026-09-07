@@ -12,6 +12,7 @@ import {
   utcDay,
 } from './audit-filters';
 import { auditPageQuery, auditReasonsQuery } from './audit-queries';
+import { ADMIN_SCOPE } from './app-scope';
 import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
 import { computeMetrics, computeGlobalMetrics, metricsWindow, suppressBreakdown } from './metrics';
 import {
@@ -117,25 +118,29 @@ const REPORT_RANGE: ReportRange = {
   advertiserId: FIXTURE_ADVERTISER_ID,
   since: new Date(Date.now() - 500 * 24 * 60 * 60 * 1000),
   until: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  // null = every app: the ADMIN shape, which is the one whose plan is pinned here. A member's
+  // report adds an `app_id in (...)` filter on top of the same index range.
+  appIds: null,
 };
 
 /** Every query that reads audit_records, by name. */
 const AUDIT_QUERIES: [string, (db: DashboardDb) => SQLWrapper][] = [
   ['app decision counts', (handle) => appDecisionCountsQuery(handle, BULK_APP_ID, WINDOW)],
   ['app event counts', (handle) => appEventCountsQuery(handle, BULK_APP_ID, WINDOW)],
-  ['global decision counts', (handle) => globalDecisionCountsQuery(handle, WINDOW)],
-  ['global event counts', (handle) => globalEventCountsQuery(handle, WINDOW)],
-  ['apps integrated', (handle) => appsIntegratedQuery(handle)],
+  ['global decision counts', (handle) => globalDecisionCountsQuery(handle, ADMIN_SCOPE, WINDOW)],
+  ['global event counts', (handle) => globalEventCountsQuery(handle, ADMIN_SCOPE, WINDOW)],
+  ['apps integrated', (handle) => appsIntegratedQuery(handle, ADMIN_SCOPE)],
   // The two columns of the /apps table. They used to be `group by app_id` with no app_id
   // predicate, which is a full scan of the chain by construction.
-  ['app list turn counts', (handle) => appWindowCountsQuery(handle, WINDOW)],
-  ['app list last turn', (handle) => appLastTurnsQuery(handle)],
+  ['app list turn counts', (handle) => appWindowCountsQuery(handle, ADMIN_SCOPE, WINDOW)],
+  ['app list last turn', (handle) => appLastTurnsQuery(handle, ADMIN_SCOPE)],
   // The /apps/[id] Integration section's "has a turn ever arrived" line.
   ['app detail last turn', (handle) => appLastTurnQuery(handle, BULK_APP_ID)],
   [
     'audit search, one app',
     (handle) =>
       auditPageQuery(handle, {
+        scope: ADMIN_SCOPE,
         filters: auditFilters(),
         cursor: null,
         limit: AUDIT_PAGE_SIZE + 1,
@@ -145,6 +150,7 @@ const AUDIT_QUERIES: [string, (db: DashboardDb) => SQLWrapper][] = [
     'audit search, every app',
     (handle) =>
       auditPageQuery(handle, {
+        scope: ADMIN_SCOPE,
         filters: auditFilters({ appId: ALL_APPS }),
         cursor: null,
         limit: AUDIT_PAGE_SIZE + 1,
@@ -154,6 +160,7 @@ const AUDIT_QUERIES: [string, (db: DashboardDb) => SQLWrapper][] = [
     'audit search, deep page',
     (handle) =>
       auditPageQuery(handle, {
+        scope: ADMIN_SCOPE,
         filters: auditFilters({ appId: ALL_APPS, decision: 'suppress' }),
         cursor: DEEP_CURSOR,
         limit: AUDIT_PAGE_SIZE + 1,
@@ -161,7 +168,7 @@ const AUDIT_QUERIES: [string, (db: DashboardDb) => SQLWrapper][] = [
   ],
   [
     'audit reason options',
-    (handle) => auditReasonsQuery(handle, auditFilters({ appId: ALL_APPS })),
+    (handle) => auditReasonsQuery(handle, ADMIN_SCOPE, auditFilters({ appId: ALL_APPS })),
   ],
   ['report records', (handle) => reportRecordsQuery(handle, REPORT_RANGE)],
   ['report event counts', (handle) => reportEventCountsQuery(handle, REPORT_RANGE)],
@@ -180,6 +187,7 @@ describe('every query that touches audit_records', () => {
     for (const appId of [BULK_APP_ID, ALL_APPS]) {
       const plan = await planOf(
         auditPageQuery(db, {
+          scope: ADMIN_SCOPE,
           filters: auditFilters({ appId }),
           cursor: null,
           limit: AUDIT_PAGE_SIZE + 1,
@@ -273,18 +281,18 @@ describe('the app list', () => {
    * is_latest one, so an attested turn is one turn in both.
    */
   it('counts each turn once, over the window the header uses', async () => {
-    const rows = await listAppsWithCounts(WINDOW, db);
+    const rows = await listAppsWithCounts(ADMIN_SCOPE, WINDOW, db);
     const fixture = rows.find((row) => row.id === FIXTURE_APP_ID);
 
     expect(fixture?.auditCount30d).toBe(10);
     expect(fixture?.lastTurnAt).toBeInstanceOf(Date);
 
-    const header = computeGlobalMetrics(await globalMetricRows(WINDOW, db));
+    const header = computeGlobalMetrics(await globalMetricRows(ADMIN_SCOPE, WINDOW, db));
     expect(rows.reduce((sum, row) => sum + row.auditCount30d, 0)).toBe(header.turnsEvaluated);
   });
 
   it('lists every app, including the ones that have never written a record', async () => {
-    const rows = await listAppsWithCounts(WINDOW, db);
+    const rows = await listAppsWithCounts(ADMIN_SCOPE, WINDOW, db);
     expect(rows).toHaveLength(BULK_APPS + 1);
     expect(rows.every((row) => row.auditCount30d >= 0)).toBe(true);
   });
@@ -295,7 +303,7 @@ describe('the app list', () => {
    * be null - not an epoch, not a throw - for an app that has never evaluated anything.
    */
   it('agrees with the list about one app, and is null for an app with no records', async () => {
-    const rows = await listAppsWithCounts(WINDOW, db);
+    const rows = await listAppsWithCounts(ADMIN_SCOPE, WINDOW, db);
     const fixture = rows.find((row) => row.id === FIXTURE_APP_ID);
     expect(await appLastTurn(FIXTURE_APP_ID, db)).toEqual(fixture?.lastTurnAt);
     expect(await appLastTurn('app_00000000000000000000000000', db)).toBeNull();
@@ -304,17 +312,17 @@ describe('the app list', () => {
 
 describe('the global overview', () => {
   it('counts every integrated app and the advertisers with a report', async () => {
-    const before = await globalMetricRows(WINDOW, db);
+    const before = await globalMetricRows(ADMIN_SCOPE, WINDOW, db);
     expect(before.appsIntegrated).toBe(BULK_APPS + 1);
     expect(before.advertisersWithReport).toBe(0);
 
     await seedReport(seed);
-    const [after] = await advertisersWithReportQuery(db);
+    const [after] = await advertisersWithReportQuery(db, ADMIN_SCOPE);
     expect(after?.total).toBe(1);
   });
 
   it('adds the turns of every app together', async () => {
-    const rows = await globalMetricRows(WINDOW, db);
+    const rows = await globalMetricRows(ADMIN_SCOPE, WINDOW, db);
     const global = computeGlobalMetrics(rows);
     const fixture = computeMetrics(
       await appDecisionCounts(FIXTURE_APP_ID, WINDOW, db),

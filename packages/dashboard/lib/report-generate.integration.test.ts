@@ -23,6 +23,7 @@ import {
   type SeededAuditChain,
   type SeedTurn,
 } from './audit-seed';
+import { ADMIN_SCOPE } from './app-scope';
 import { createReadOnlyDb, type DashboardDb, type DashboardDbHandle } from './db';
 import { createWriteDb, type DashboardWriteDbHandle } from './db-write';
 import { advertisersWithReportQuery } from './metrics-queries';
@@ -148,6 +149,9 @@ const generate = async (chain: SeededAuditChain) =>
       advertiser: ADVERTISER,
       since: SINCE,
       until: UNTIL,
+      // The operator shape: every app, and a report with no owner.
+      appIds: null,
+      ownerUserId: null,
       now: new Date('2026-06-03T00:00:00.000Z'),
     },
     createReportWriter(writeHandle.db),
@@ -225,17 +229,17 @@ describe('generating a report', () => {
   it('stores the document under a rep_ id and moves the advertisers-with-report metric', async () => {
     const chain = await seedTraffic([SERVE_SEQS[0]!]);
 
-    const [before] = await advertisersWithReportQuery(db);
+    const [before] = await advertisersWithReportQuery(db, ADMIN_SCOPE);
     expect(before?.total).toBe(0);
 
     const { id, document } = await generate(chain);
     expect(id).toMatch(/^rep_[0-9A-HJKMNP-TV-Z]{26}$/);
 
     // The /apps header number is this query; a generated report has to land in it.
-    const [after] = await advertisersWithReportQuery(db);
+    const [after] = await advertisersWithReportQuery(db, ADMIN_SCOPE);
     expect(after?.total).toBe(1);
 
-    const stored = await getReport(id, db);
+    const stored = await getReport(ADMIN_SCOPE, id, db);
     expect(stored).not.toBeNull();
     expect(stored?.advertiserId).toBe(ADVERTISER_ID);
     expect(stored?.advertiserName).toBe(ADVERTISER_NAME);
@@ -252,6 +256,8 @@ describe('generating a report', () => {
         // A month with records neither side of it: the range filter is doing the work.
         since: new Date('2019-01-01T00:00:00.000Z'),
         until: new Date('2019-02-01T00:00:00.000Z'),
+        appIds: null,
+        ownerUserId: null,
       },
       createReportWriter(writeHandle.db),
       { db, keys: chain.keys },
@@ -269,8 +275,8 @@ describe('the JSON bundle', () => {
     // checks and "every record valid" is a claim with no asterisk.
     const chain = await seedTraffic(SERVE_SEQS);
     const { id } = await generate(chain);
-    const stored = await getReport(id, db);
-    const bundle = await loadReportBundle(stored!, { db, keys: chain.keys });
+    const stored = await getReport(ADMIN_SCOPE, id, db);
+    const bundle = await loadReportBundle(stored!, null, { db, keys: chain.keys });
 
     expect(bundle.records).toHaveLength(3);
     expect(bundle.records.every((record) => record.is_latest)).toBe(true);
@@ -292,7 +298,7 @@ describe('the JSON bundle', () => {
   it('fails offline when a record was edited after the report was generated', async () => {
     const chain = await seedTraffic(SERVE_SEQS);
     const { id } = await generate(chain);
-    const stored = await getReport(id, db);
+    const stored = await getReport(ADMIN_SCOPE, id, db);
 
     // The exact attack the hash chain exists to catch, applied underneath the dashboard.
     const target = newestRecordHash(chain);
@@ -302,7 +308,7 @@ describe('the JSON bundle', () => {
       where record_hash = ${target}
     `;
 
-    const bundle = await loadReportBundle(stored!, { db, keys: chain.keys });
+    const bundle = await loadReportBundle(stored!, null, { db, keys: chain.keys });
     const { output, code } = runVerifyBundle(writeBundle('tampered.json', bundle));
     expect(output).toContain('verified 2 of 3 records');
     expect(output).toContain('RESULT: FAIL');
@@ -327,8 +333,8 @@ describe('the JSON bundle', () => {
   it('carries nothing of the other advertiser in the same chain, and still verifies', async () => {
     const chain = await seedTraffic(SERVE_SEQS);
     const { id } = await generate(chain);
-    const stored = await getReport(id, db);
-    const bundle = await loadReportBundle(stored!, { db, keys: chain.keys });
+    const stored = await getReport(ADMIN_SCOPE, id, db);
+    const bundle = await loadReportBundle(stored!, null, { db, keys: chain.keys });
 
     const serialized = JSON.stringify(bundle);
     for (const secret of [
@@ -357,9 +363,13 @@ describe('the JSON bundle', () => {
   it('dates the claim and the evidence separately', async () => {
     const chain = await seedTraffic(SERVE_SEQS);
     const { id } = await generate(chain);
-    const stored = await getReport(id, db);
+    const stored = await getReport(ADMIN_SCOPE, id, db);
     const collectedAt = new Date('2026-07-15T09:30:00.000Z');
-    const bundle = await loadReportBundle(stored!, { db, keys: chain.keys, now: collectedAt });
+    const bundle = await loadReportBundle(stored!, null, {
+      db,
+      keys: chain.keys,
+      now: collectedAt,
+    });
 
     // generated_at is the stored report's; collected_at is this download, days later.
     expect(bundle.generated_at).toBe(stored!.createdAt.toISOString());
@@ -370,8 +380,8 @@ describe('the JSON bundle', () => {
   it('warns that it authenticated itself, unless it is given the keys', async () => {
     const chain = await seedTraffic(SERVE_SEQS);
     const { id } = await generate(chain);
-    const stored = await getReport(id, db);
-    const bundle = await loadReportBundle(stored!, { db, keys: chain.keys });
+    const stored = await getReport(ADMIN_SCOPE, id, db);
+    const bundle = await loadReportBundle(stored!, null, { db, keys: chain.keys });
     const path = writeBundle('selfsigned.json', bundle);
 
     const alone = runVerifyBundle(path);
@@ -413,6 +423,8 @@ describe('a dashboard with no verification keys', () => {
         since: SINCE,
         until: UNTIL,
         now: new Date('2026-06-03T00:00:00.000Z'),
+        appIds: null,
+        ownerUserId: null,
       },
       createReportWriter(writeHandle.db),
       { db, keys: { ring: createKeyRing({}), issue, pems: {} } },

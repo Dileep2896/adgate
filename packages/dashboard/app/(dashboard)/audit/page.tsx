@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/page-header';
 import { parseAuditCursor, parseAuditFilters } from '@/lib/audit-filters';
 import { listAuditCreatives } from '@/lib/audit-lookups';
 import { listAuditPage, listAuditReasons } from '@/lib/audit-queries';
+import { requireSession } from '@/lib/auth';
 import { listAppOptions } from '@/lib/creative-queries';
 
 /**
@@ -26,14 +27,16 @@ const AuditPage = async ({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) => {
-  const params = await searchParams;
+  const [session, params] = await Promise.all([requireSession('/audit'), searchParams]);
   const filters = parseAuditFilters(params);
   const cursor = parseAuditCursor(params);
 
+  // `?app=` is a filter, not an authorisation: the scope is a second predicate on the same
+  // `apps` scan, so naming another account's app id narrows the page to nothing.
   const [page, apps, reasons] = await Promise.all([
-    listAuditPage(filters, cursor),
-    listAppOptions(),
-    listAuditReasons(filters),
+    listAuditPage(session.scope, filters, cursor),
+    listAppOptions(session.scope),
+    listAuditReasons(session.scope, filters),
   ]);
   const creatives = await listAuditCreatives(
     page.rows.flatMap((row) => (row.creativeId === null ? [] : [row.creativeId])),

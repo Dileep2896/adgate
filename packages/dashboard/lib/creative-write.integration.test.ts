@@ -86,7 +86,11 @@ const directCandidates = async (): Promise<string[]> => {
 };
 
 const save = () =>
-  saveCreative(createCreativeWriter(handle.db), formOf(FORM), { advertisers: [], appIds: [appId] });
+  saveCreative(createCreativeWriter(handle.db), formOf(FORM), {
+    advertisers: [],
+    appIds: [appId],
+    allowGlobalCatalog: true,
+  });
 
 beforeAll(async () => {
   await prepareMetricsTestDatabase(url);
@@ -140,7 +144,7 @@ describe('a creative saved through the server action’s own function', () => {
     const result = await saveCreative(
       createCreativeWriter(handle.db),
       formOf({ ...FORM, headline: 'Another one', ecpm: 'free' }),
-      { advertisers: [], appIds: [appId] },
+      { advertisers: [], appIds: [appId], allowGlobalCatalog: true },
     );
     expect(result.ok).toBe(false);
     expect(await seed`select count(*)::int as total from creatives`).toEqual(before);
@@ -179,7 +183,7 @@ describe('a creative saved through the server action’s own function', () => {
       createCreativeWriter(handle.db),
       formOf({ ...FORM, advertiser: 'Impostor Co', headline: 'A different headline' }),
       // The form does not know the advertiser here, so this is the gateway's own refusal.
-      { advertisers: [], appIds: [appId] },
+      { advertisers: [], appIds: [appId], allowGlobalCatalog: true },
     );
     expect(result.ok).toBe(false);
     expect(result.ok ? '' : (result.issues[0]?.message ?? '')).toContain(

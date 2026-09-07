@@ -20,14 +20,22 @@ const SEARCHED_DIRS = ['app', 'components', 'lib', 'e2e'] as const;
 const SOURCE_SUFFIXES = ['.ts', '.tsx'] as const;
 
 /**
- * The only modules allowed to import the read-write handle: the admin server actions, and the
- * integration test that exercises the creative writes against the dashboard's test database
- * (it must use THIS handle rather than opening a second writable client of its own).
+ * The only modules allowed to import the read-write handle: the admin server actions, the two
+ * credential endpoints that create an account or stamp a sign-in on one, and the integration
+ * tests that exercise the writes against the dashboard's test database (they must use THIS
+ * handle rather than opening a second writable client of their own).
+ *
+ * /api/signup INSERTs a `users` row and /api/login UPDATEs `users.last_login_at`. Both are
+ * writes an ANONYMOUS request causes, which is exactly why they are listed by name here instead
+ * of being covered by a general "route handlers may write" rule: adding a third one has to be a
+ * decision somebody makes on purpose.
  */
 const ALLOWED = new Set([
   'app/(dashboard)/apps/actions.ts',
   'app/(dashboard)/creatives/actions.ts',
   'app/(dashboard)/reports/actions.ts',
+  'app/api/login/route.ts',
+  'app/api/signup/route.ts',
   'lib/creative-write.integration.test.ts',
   'lib/report-generate.integration.test.ts',
 ]);

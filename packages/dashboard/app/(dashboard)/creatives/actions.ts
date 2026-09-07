@@ -8,7 +8,7 @@ import { readText } from '@/lib/app-form';
 import { requireSession } from '@/lib/auth';
 import { readCreativeFormValues } from '@/lib/creative-form';
 import type { CreativeFieldIssue } from '@/lib/creative-issue';
-import { listAdvertiserOptions, listAppOptions } from '@/lib/creative-queries';
+import { getCreative, listAdvertiserOptions, listAppOptions } from '@/lib/creative-queries';
 import { CREATIVE_WRITE_FAILED_MESSAGE, saveCreative } from '@/lib/creative-save';
 import { createCreativeWriter, setCreativeActiveById } from '@/lib/creative-store';
 import { dashboardWriteDb } from '@/lib/db-write';
@@ -39,8 +39,11 @@ export const saveCreativeAction = async (
   previous: CreativeSaveState,
   formData: FormData,
 ): Promise<CreativeSaveState> => {
-  await requireSession();
-  const [advertisers, apps] = await Promise.all([listAdvertiserOptions(), listAppOptions()]);
+  const session = await requireSession();
+  const [advertisers, apps] = await Promise.all([
+    listAdvertiserOptions(),
+    listAppOptions(session.scope),
+  ]);
 
   /** Every refusal hands the typed values back, or React 19's form reset would erase them. */
   const refused = (issues: CreativeFieldIssue[]): CreativeSaveState => ({
@@ -50,11 +53,20 @@ export const saveCreativeAction = async (
     issues,
   });
 
+  // Editing names a creative id in the request, so the row has to be one this account can read
+  // before it can be one this account rewrites. `apps` is already scoped, which is what stops a
+  // creative being attached to somebody else's app.
+  const editing = readText(formData, 'id').trim();
+  if (editing !== '' && (await getCreative(session.scope, editing)) === null) {
+    return refused([{ field: 'form', message: 'That creative no longer exists.' }]);
+  }
+
   let result;
   try {
     result = await saveCreative(createCreativeWriter(writeDb()), formData, {
       advertisers,
       appIds: apps.map((app) => app.id),
+      allowGlobalCatalog: session.role === 'admin',
     });
   } catch {
     return refused([{ field: 'form', message: CREATIVE_WRITE_FAILED_MESSAGE }]);
@@ -74,10 +86,17 @@ export const saveCreativeAction = async (
  * in SQL in the meantime.
  */
 export const setCreativeActiveAction = async (formData: FormData): Promise<void> => {
-  await requireSession();
+  const session = await requireSession();
   const id = readText(formData, 'id').trim();
   const active = readText(formData, 'active') === 'true';
   if (id === '') {
+    return;
+  }
+  // A pause button is a POST with a creative id in it. The row must be one this account can see,
+  // and it must not be shared inventory: pausing a global creative would stop it for every app
+  // on the gateway, which is the operator's decision and nobody else's.
+  const creative = await getCreative(session.scope, id);
+  if (creative === null || (creative.appId === null && session.role !== 'admin')) {
     return;
   }
   await setCreativeActiveById(writeDb(), id, active);

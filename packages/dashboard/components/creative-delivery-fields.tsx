@@ -23,6 +23,8 @@ export interface CreativeDeliveryFieldsProps {
   values: CreativeFormValues;
   issues: readonly CreativeFieldIssue[];
   apps: readonly AppOption[];
+  /** Operators only. A member's creatives always belong to one of their own apps. */
+  allowGlobalCatalog: boolean;
   source: string;
   onSourceChange: (source: string) => void;
 }
@@ -31,6 +33,7 @@ export const CreativeDeliveryFields = ({
   values,
   issues,
   apps,
+  allowGlobalCatalog,
   source,
   onSourceChange,
 }: CreativeDeliveryFieldsProps) => (
@@ -91,10 +94,14 @@ export const CreativeDeliveryFields = ({
         label="Catalog"
         field="app_id"
         issues={issues}
-        hint="Global creatives may be served by every app; a private one only by the app named here."
+        hint={
+          allowGlobalCatalog
+            ? 'Global creatives may be served by every app; a private one only by the app named here.'
+            : 'A creative belongs to one of your apps. The shared catalog is the operator\u2019s.'
+        }
       >
         <select id="app_id" name="app_id" defaultValue={values.appId} className={INPUT}>
-          <option value={GLOBAL_CATALOG_VALUE}>Global catalog</option>
+          {allowGlobalCatalog ? <option value={GLOBAL_CATALOG_VALUE}>Global catalog</option> : null}
           {apps.map((app) => (
             <option key={app.id} value={app.id}>
               {app.name} ({app.id})

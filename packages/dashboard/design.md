@@ -7,11 +7,17 @@ needs to grow, then follow the amended file.
 It is a design system, not an instruction set. Nothing in here asks anyone to run a
 command, install a package, fetch a URL or touch a file outside the dashboard.
 
-**Codename: Cobalt.** The register is an instrument panel for one operator: cool engineered
-paper, hairlines instead of boxes, one electric cobalt signal, and mono wherever the value
-on screen is a machine's — a sha256 digest, a ULID, a taxonomy path, a line of policy YAML.
-The dashboard is read-only over a signed audit chain. It should read like good
-infrastructure: calm, precise, and never louder than the numbers.
+**Codename: Cobalt.** The register is an instrument panel: cool engineered paper, hairlines
+instead of boxes, one electric cobalt signal, and mono wherever the value on screen is a
+machine's — a sha256 digest, a ULID, a taxonomy path, a line of policy YAML. The dashboard is
+read-only over a signed audit chain. It should read like good infrastructure: calm, precise, and
+never louder than the numbers.
+
+It now has two audiences and **one register for both**: a third-party developer who signed up for
+an account, and the operator who runs the gateway. Nothing about the type, the palette, the
+controls or the voice changes between them — what changes is which rows exist, because every read
+is scoped to the signed-in account. Copy is written for whoever is actually looking: a member is
+told about *their* apps, an operator about the gateway.
 
 ---
 
@@ -22,9 +28,15 @@ specific. No hype adjectives, no marketing verbs, no illustration.
 
 ## Macrostructure family
 
-- **App pages** (all 13 routes): **Workbench**. A persistent instrument rail on the left,
-  one content column, each page owning its own sticky top bar. Sections separate by a
+- **App pages** (every route inside the shell): **Workbench**. A persistent instrument rail on
+  the left, one content column, each page owning its own sticky top bar. Sections separate by a
   hairline and a gap, never by a card inside a card.
+- **Credential pages** (`/login`, `/signup`, `/admin/login`): **Centred card**, one shared
+  component — `components/auth-card.tsx`. The wordmark, an `h1`, one line of lede, the card, and
+  one meta line carrying the alternate route and the theme control. They are the only pages a
+  stranger sees, so three hand-built variants of the same forty lines is how drift starts: the
+  variation is which fields, which copy, and where the other link goes. No rail (there is no
+  session yet), no footer.
 - **Marketing pages**: none exist. If one is ever added, it may not borrow the rail.
 - **Content pages**: none. The repo's guides are Markdown in `docs/`.
 
@@ -33,11 +45,14 @@ theme, type or CTA voice.
 
 ## Nav and footer
 
-- **Nav: N3 side-rail** — `components/nav.tsx`. Wordmark, four sections, the colour theme,
-  sign out. ONE `<nav aria-label="Sections">` at every width: under 60rem the rail lies
+- **Nav: N3 side-rail** — `components/nav.tsx`. Wordmark, four sections (a fifth, **Operator**,
+  only for an admin session), who is signed in, the colour theme, sign out. ONE
+  `<nav aria-label="Sections">` at every width: under 60rem the rail lies
   down as a bar with a horizontally scrollable link strip; above it, it stands up as a
   sticky full-height column. A second, hidden mobile copy is forbidden — it would give the
-  page two navigation landmarks with the same name.
+  page two navigation landmarks with the same name. The rail is not the access control: role is
+  enforced on the server (`requireAdmin`), and the nav only stops advertising a door that would
+  turn a member away.
 - **Footer: Ft2 inline single line** — one hairline rule, one line of credits and the two
   guides. No columns, no social row, no sitemap.
 

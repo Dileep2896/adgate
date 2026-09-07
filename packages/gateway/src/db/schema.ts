@@ -7,6 +7,7 @@ import { creatives } from './tables/catalog.js';
 import { rateLimits } from './tables/rate-limits.js';
 import { reports } from './tables/reports.js';
 import { retentionState } from './tables/retention.js';
+import { users } from './tables/users.js';
 
 /**
  * The Drizzle schema: every table in one place for `drizzle(sql, { schema })` and for tests
@@ -19,8 +20,11 @@ export * from './tables/catalog.js';
 export * from './tables/rate-limits.js';
 export * from './tables/reports.js';
 export * from './tables/retention.js';
+export * from './tables/users.js';
 
 export const ALL_TABLES = [
+  // users first: apps.owner_user_id and reports.owner_user_id reference it.
+  users,
   apps,
   advertisers,
   apiKeys,

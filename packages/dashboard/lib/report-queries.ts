@@ -6,11 +6,13 @@ import {
   events,
   reports,
 } from '@adgate/gateway/schema';
-import { and, asc, count, desc, eq, gte, inArray, lt } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, lt, type SQL, sql } from 'drizzle-orm';
 
+import type { AppScope } from './app-scope';
 import { type DashboardDb, dashboardDb } from './db';
 import type { ReportDocument } from './report';
 import type { BundleCreative } from './report-bundle';
+import { reportScopeCondition } from './scope-queries';
 
 /**
  * The SQL behind /reports. Reads only (lib/db.ts); the writes are one INSERT in
@@ -52,7 +54,25 @@ export interface ReportRange {
   since: Date;
   /** Exclusive. */
   until: Date;
+  /**
+   * The apps whose records may go into this report, or null for "every app" (an admin).
+   *
+   * AN ADVERTISER'S RECORDS SPAN APPS, so this is the one place a predicate on `apps` is not
+   * available: the range starts from `audit_records.advertiser_id`. The ids are resolved in
+   * JavaScript by visibleAppIds() (lib/scope-queries.ts) and inlined, which keeps
+   * audit_records_advertiser_id_ts_idx as the index condition of the range scan rather than
+   * turning it into a semi-join. Null leaves the query the EXPLAIN suite plans untouched.
+   */
+  appIds: string[] | null;
 }
+
+/** `app_id in (…)`, or the constant false when the scope owns no apps at all. */
+const appsInRange = (appIds: string[] | null): SQL | undefined => {
+  if (appIds === null) {
+    return undefined;
+  }
+  return appIds.length === 0 ? sql`false` : inArray(auditRecords.appId, appIds);
+};
 
 const inRange = (range: ReportRange) =>
   and(
@@ -60,6 +80,7 @@ const inRange = (range: ReportRange) =>
     gte(auditRecords.ts, range.since),
     lt(auditRecords.ts, range.until),
     eq(auditRecords.isLatest, true),
+    appsInRange(range.appIds),
   );
 
 /**
@@ -161,6 +182,8 @@ export interface StoredReport {
   periodStart: Date;
   periodEnd: Date;
   createdAt: Date;
+  /** The account that generated it, or null for one the operator generated. */
+  ownerUserId: string | null;
   document: ReportDocument;
 }
 
@@ -172,6 +195,7 @@ const storedReportColumns = {
   periodStart: reports.periodStart,
   periodEnd: reports.periodEnd,
   createdAt: reports.createdAt,
+  ownerUserId: reports.ownerUserId,
   document: reports.report,
 };
 
@@ -188,21 +212,25 @@ const asStoredReport = (row: StoredReportRow): StoredReport => ({
   document: row.document as unknown as ReportDocument,
 });
 
-/** The reports that have been generated, newest first. */
+/** The reports this scope generated, newest first. An admin sees every one. */
 export const listReports = async (
+  scope: AppScope,
   db: DashboardDb = dashboardDb(),
   limit: number = REPORT_LIST_LIMIT,
 ): Promise<StoredReport[]> => {
-  const rows = await db
+  const base = db
     .select(storedReportColumns)
     .from(reports)
-    .innerJoin(advertisers, eq(reports.advertiserId, advertisers.id))
-    .orderBy(desc(reports.createdAt), desc(reports.id))
-    .limit(limit);
+    .innerJoin(advertisers, eq(reports.advertiserId, advertisers.id));
+  const owned = reportScopeCondition(scope);
+  const scoped = owned === undefined ? base : base.where(owned);
+  const rows = await scoped.orderBy(desc(reports.createdAt), desc(reports.id)).limit(limit);
   return rows.map(asStoredReport);
 };
 
+/** One stored report, or null - including when it belongs to another account. */
 export const getReport = async (
+  scope: AppScope,
   id: string,
   db: DashboardDb = dashboardDb(),
 ): Promise<StoredReport | null> => {
@@ -210,7 +238,7 @@ export const getReport = async (
     .select(storedReportColumns)
     .from(reports)
     .innerJoin(advertisers, eq(reports.advertiserId, advertisers.id))
-    .where(eq(reports.id, id))
+    .where(and(eq(reports.id, id), reportScopeCondition(scope)))
     .limit(1);
   return row === undefined ? null : asStoredReport(row);
 };

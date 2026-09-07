@@ -4,6 +4,7 @@ import { CreativeActiveToggle } from '@/components/creative-active-toggle';
 import { CreativeFiltersForm } from '@/components/creative-filters';
 import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
+import { requireSession } from '@/lib/auth';
 import { formatAmount, truncateHash } from '@/lib/format';
 import {
   ALL_FILTER,
@@ -51,9 +52,17 @@ const CreativesPage = async ({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) => {
-  const filters = parseCreativeFilters(await searchParams);
-  const [creatives, apps] = await Promise.all([listCreatives(filters), listAppOptions()]);
+  const [session, params] = await Promise.all([requireSession('/creatives'), searchParams]);
+  const filters = parseCreativeFilters(params);
+  // The shared catalog (app_id null) plus this account's own private catalogs; an admin sees
+  // every one. A `?scope=<another account's app id>` narrows to nothing rather than revealing it.
+  const [creatives, apps] = await Promise.all([
+    listCreatives(session.scope, filters),
+    listAppOptions(session.scope),
+  ]);
   const filtered = isFiltered(filters);
+  // Only the operator edits the shared catalog; a member sees it and edits their own apps'.
+  const admin = session.role === 'admin';
 
   return (
     <section>
@@ -209,7 +218,11 @@ const CreativesPage = async ({
                     {truncateHash(creative.contentHash)}
                   </td>
                   <td className="table-cell">
-                    <CreativeActiveToggle id={creative.id} active={creative.active} />
+                    {admin || creative.appId !== null ? (
+                      <CreativeActiveToggle id={creative.id} active={creative.active} />
+                    ) : (
+                      <span className="ag-hint">shared</span>
+                    )}
                   </td>
                 </tr>
               ))}

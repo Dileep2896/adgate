@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
+import { requireSession } from '@/lib/auth';
 import { formatCount, formatDate, formatPercent, formatTimestamp } from '@/lib/format';
 import { listReports } from '@/lib/report-queries';
 
@@ -32,7 +33,11 @@ const HEAD = [
 ] as const;
 
 const ReportsPage = async () => {
-  const reports = await listReports();
+  // A report belongs to the account that generated it, not to the advertiser it names: a member's
+  // report covers only their own apps' records, so it is a different document from an operator's
+  // about the same advertiser and period, and each account sees only its own.
+  const session = await requireSession('/reports');
+  const reports = await listReports(session.scope);
 
   return (
     <section>

@@ -24,7 +24,8 @@ export interface PageHeaderProps {
   title: string;
   /** One line under the title saying what this page is for. */
   lede?: ReactNode;
-  back?: PageHeaderBackLink;
+  /** Explicitly `| undefined`: a caller may compute "no back link" (the first-run app form). */
+  back?: PageHeaderBackLink | undefined;
   /** Links and buttons, right aligned. The primary one goes last. */
   actions?: ReactNode;
   /** Identifiers and timestamps, under the title. */

@@ -46,7 +46,10 @@ const FIXTURE_TURNS: [string, string | null, 'none' | 'impression' | 'click', nu
 
 export const truncateAll = async (sql: Sql): Promise<void> => {
   await sql.unsafe(
-    'truncate table events, audit_records, retention_state, reports, creatives, advertisers, api_keys, apps restart identity cascade',
+    // `users` is at the end because apps.owner_user_id and reports.owner_user_id reference it.
+    // CASCADE would reach it anyway; naming it keeps the list an honest inventory of the tables
+    // a dashboard suite may empty.
+    'truncate table events, audit_records, retention_state, reports, creatives, advertisers, api_keys, apps, users restart identity cascade',
   );
 };
 

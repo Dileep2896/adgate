@@ -12,6 +12,7 @@ import {
   type SQLWrapper,
 } from 'drizzle-orm';
 
+import type { AppScope } from './app-scope';
 import { type DashboardDb, dashboardDb } from './db';
 import {
   metricsWindow,
@@ -19,11 +20,18 @@ import {
   type EventCountRow,
   type MetricsWindow,
 } from './metrics';
+import { appScopeCondition, reportScopeCondition } from './scope-queries';
 
 /**
  * The SQL behind the overview numbers. Reads only (lib/db.ts); the arithmetic lives in the pure
  * lib/metrics.ts, which is why every query here GROUPs and COUNTs in Postgres and returns a
  * handful of buckets rather than a row per turn.
+ *
+ * SCOPE RIDES ON THE `apps` SCAN. Every query that cannot name an app already walks `apps` and
+ * takes one lateral slice per app, so scoping the whole overview is one extra predicate on that
+ * outer scan - and for an admin the predicate is `undefined`, which drizzle drops, leaving the
+ * query the EXPLAIN suite plans byte for byte unchanged. The per-APP queries take an app id the
+ * caller has already had authorised by getApp()/appIsVisible() and carry no scope of their own.
  *
  * INDEXES. audit_records is the biggest table in the database and the one holding the signed
  * chain, so nothing here may scan it whole: every access is filtered by (app_id, ts) and lands
@@ -141,10 +149,14 @@ const appDaySlice = (db: DashboardDb, window: MetricsWindow) => {
     .as('app_days');
 };
 
-/** Turns of every app, counted per (day, decision, reason). */
-export const globalDecisionCountsQuery = (db: DashboardDb, window: MetricsWindow) => {
+/** Turns of every app in scope, counted per (day, decision, reason). */
+export const globalDecisionCountsQuery = (
+  db: DashboardDb,
+  scope: AppScope,
+  window: MetricsWindow,
+) => {
   const slice = appDaySlice(db, window);
-  return db
+  const base = db
     .select({
       day: slice.day,
       decision: slice.decision,
@@ -152,8 +164,10 @@ export const globalDecisionCountsQuery = (db: DashboardDb, window: MetricsWindow
       count: sql<number>`sum(${slice.turns})::int`,
     })
     .from(apps)
-    .crossJoinLateral(slice)
-    .groupBy(slice.day, slice.decision, slice.reason);
+    .crossJoinLateral(slice);
+  const owned = appScopeCondition(scope);
+  const scoped = owned === undefined ? base : base.where(owned);
+  return scoped.groupBy(slice.day, slice.decision, slice.reason);
 };
 
 /** One app's events, already grouped: the lateral of the global event query. */
@@ -174,10 +188,10 @@ const appEventDaySlice = (db: DashboardDb, window: MetricsWindow) => {
     .as('app_event_days');
 };
 
-/** Events of every app, counted per (day, type), with the ecpm of the creative served. */
-export const globalEventCountsQuery = (db: DashboardDb, window: MetricsWindow) => {
+/** Events of every app in scope, counted per (day, type), with the ecpm of the creative served. */
+export const globalEventCountsQuery = (db: DashboardDb, scope: AppScope, window: MetricsWindow) => {
   const slice = appEventDaySlice(db, window);
-  return db
+  const base = db
     .select({
       day: slice.day,
       type: slice.type,
@@ -185,8 +199,10 @@ export const globalEventCountsQuery = (db: DashboardDb, window: MetricsWindow) =
       ecpmTotal: sql<number>`sum(${slice.ecpm})::float8`,
     })
     .from(apps)
-    .crossJoinLateral(slice)
-    .groupBy(slice.day, slice.type);
+    .crossJoinLateral(slice);
+  const owned = appScopeCondition(scope);
+  const scoped = owned === undefined ? base : base.where(owned);
+  return scoped.groupBy(slice.day, slice.type);
 };
 
 /**
@@ -194,16 +210,19 @@ export const globalEventCountsQuery = (db: DashboardDb, window: MetricsWindow) =
  * app list rather than `count(distinct app_id)` over audit_records: the semi-join probes
  * audit_records_app_id_ts_idx once per app instead of reading the whole chain.
  */
-export const appsIntegratedQuery = (db: DashboardDb) =>
+export const appsIntegratedQuery = (db: DashboardDb, scope: AppScope) =>
   db
     .select({ total: count() })
     .from(apps)
     .where(
-      exists(
-        db
-          .select({ one: sql`1` })
-          .from(auditRecords)
-          .where(eq(auditRecords.appId, apps.id)),
+      and(
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(auditRecords)
+            .where(eq(auditRecords.appId, apps.id)),
+        ),
+        appScopeCondition(scope),
       ),
     );
 
@@ -226,10 +245,12 @@ const appWindowCountSlice = (db: DashboardDb, window: MetricsWindow) =>
     .where(inWindow(apps.id, window))
     .as('app_window_turns');
 
-/** Turns per app in the window, counting each turn once. One row per app, 0 included. */
-export const appWindowCountsQuery = (db: DashboardDb, window: MetricsWindow) => {
+/** Turns per app in scope in the window, counting each turn once. One row per app, 0 included. */
+export const appWindowCountsQuery = (db: DashboardDb, scope: AppScope, window: MetricsWindow) => {
   const slice = appWindowCountSlice(db, window);
-  return db.select({ appId: apps.id, turns: slice.turns }).from(apps).crossJoinLateral(slice);
+  const base = db.select({ appId: apps.id, turns: slice.turns }).from(apps).crossJoinLateral(slice);
+  const owned = appScopeCondition(scope);
+  return owned === undefined ? base : base.where(owned);
 };
 
 /** One app's most recent record, ever: max() is an aggregate, so it is a fence like the rest. */
@@ -240,10 +261,15 @@ const appLastTurnSlice = (db: DashboardDb) =>
     .where(and(eq(auditRecords.appId, apps.id), eq(auditRecords.isLatest, true)))
     .as('app_last_turn');
 
-/** The timestamp of each app's most recent audit record, or null when it has none. */
-export const appLastTurnsQuery = (db: DashboardDb) => {
+/** The timestamp of each in-scope app's most recent audit record, or null when it has none. */
+export const appLastTurnsQuery = (db: DashboardDb, scope: AppScope) => {
   const slice = appLastTurnSlice(db);
-  return db.select({ appId: apps.id, lastTs: slice.lastTs }).from(apps).crossJoinLateral(slice);
+  const base = db
+    .select({ appId: apps.id, lastTs: slice.lastTs })
+    .from(apps)
+    .crossJoinLateral(slice);
+  const owned = appScopeCondition(scope);
+  return owned === undefined ? base : base.where(owned);
 };
 
 /**
@@ -266,9 +292,18 @@ export const appLastTurn = async (
   return row?.lastTs ?? null;
 };
 
-/** Advertisers with at least one generated verification report. S35 writes the rows. */
-export const advertisersWithReportQuery = (db: DashboardDb) =>
-  db.select({ total: countDistinct(reports.advertiserId) }).from(reports);
+/**
+ * Advertisers with at least one generated verification report. S35 writes the rows.
+ *
+ * `reports` is the one table whose ownership is its own column and not `apps.owner_user_id`: a
+ * report is generated BY an account, over that account's apps, so two members reporting on the
+ * same advertiser hold two different documents (lib/report-queries.ts).
+ */
+export const advertisersWithReportQuery = (db: DashboardDb, scope: AppScope) => {
+  const base = db.select({ total: countDistinct(reports.advertiserId) }).from(reports);
+  const owned = reportScopeCondition(scope);
+  return owned === undefined ? base : base.where(owned);
+};
 
 export interface GlobalMetricRows {
   decisions: DecisionCountRow[];
@@ -277,16 +312,20 @@ export interface GlobalMetricRows {
   advertisersWithReport: number;
 }
 
-/** Everything the /apps header needs, in four queries. */
+/**
+ * Everything the /apps header needs, in four queries, over the apps this scope may see. An admin
+ * gets the gateway-wide numbers this dashboard has always shown; a member gets their own.
+ */
 export const globalMetricRows = async (
+  scope: AppScope,
   window: MetricsWindow,
   db: DashboardDb = dashboardDb(),
 ): Promise<GlobalMetricRows> => {
   const [decisions, eventRows, integrated, withReport] = await Promise.all([
-    globalDecisionCountsQuery(db, window),
-    globalEventCountsQuery(db, window),
-    appsIntegratedQuery(db),
-    advertisersWithReportQuery(db),
+    globalDecisionCountsQuery(db, scope, window),
+    globalEventCountsQuery(db, scope, window),
+    appsIntegratedQuery(db, scope),
+    advertisersWithReportQuery(db, scope),
   ]);
   return {
     decisions,
