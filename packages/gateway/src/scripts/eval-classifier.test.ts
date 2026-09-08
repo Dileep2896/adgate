@@ -51,7 +51,7 @@ describe('parseEvalClassifierArgs', () => {
 
   it('answers --help', () => {
     expect(parseEvalClassifierArgs(['--help'])).toEqual({ help: true });
-    expect(EVAL_CLASSIFIER_USAGE).toContain('about 39 calls');
+    expect(EVAL_CLASSIFIER_USAGE).toContain('about 51 calls');
   });
 });
 
@@ -105,12 +105,21 @@ describe('the fixture file', () => {
   const cases = loadFixtureCases();
   const sensitive = cases.filter((c) => c.id.startsWith('s'));
 
-  it('loads all 67 cases', () => {
-    expect(cases).toHaveLength(67);
+  it('loads all 85 cases, 18 of them multi-turn', () => {
+    expect(cases).toHaveLength(85);
+    expect(cases.filter((c) => c.messages !== undefined)).toHaveLength(18);
+  });
+
+  it('gives every multi-turn case at least two turns ending on its own text', () => {
+    for (const c of cases.filter((entry) => entry.messages !== undefined)) {
+      const messages = c.messages ?? [];
+      expect(messages.length, c.id).toBeGreaterThanOrEqual(2);
+      expect(messages.filter((m) => m.role === 'user').at(-1)?.content, c.id).toBe(c.text);
+    }
   });
 
   it('gives every sensitive case the band the merge guarantees (0.2, or 0 for self_harm)', () => {
-    expect(sensitive).toHaveLength(28);
+    expect(sensitive).toHaveLength(34);
     for (const c of sensitive) {
       const expectedMax = c.expect.sensitive.includes('self_harm') ? 0 : 0.2;
       expect(c.expect.intent_min, c.id).toBe(0);

@@ -148,7 +148,7 @@ the keyword rules alone (progress.txt, `2026-09-07 CLASSIFIER-PROMPT`).
 So a change to `packages/core/src/classify/llm/prompt.ts` is validated against a real endpoint:
 
 ```bash
-pnpm --filter @adgateio/gateway eval-classifier            # all 67 fixtures
+pnpm --filter @adgateio/gateway eval-classifier            # all 85 fixtures
 pnpm --filter @adgateio/gateway eval-classifier --limit 9  # a cheap smoke run
 pnpm --filter @adgateio/gateway eval-classifier --json     # machine-readable, for trending
 ```
@@ -162,8 +162,16 @@ recall is below 100 percent**; band and category misses are printed and exit 0, 
 a tuning signal and no model reaches 100 percent on them today. Watch the source line: a run
 where every call timed out falls back to the rules and would otherwise look like a good score.
 
+18 of the cases carry a `messages` array instead of a lone sentence, because a golden set of
+terse one-liners cannot see this class of regression at all: measured against
+`mistral-small-latest`, reverting that same `commercial_intent` paragraph leaves the single-turn
+cases at 58-59 of 67 but takes the multi-turn ones from 18 of 18 to 13-14 of 18, and the two
+cases that collapse hardest (`c026`, `c027`) are the ones whose final user turn names no product
+at all. Keep that shape when you add cases: a product question whose product is only nameable
+from the turns above it, and a sensitive turn whose context was established two turns earlier.
+
 It needs an API key and the network, so it is deliberately **not** part of `pnpm test` — the
-suite stays offline and deterministic. A full run costs about 39 API calls (the 28 sensitive
+suite stays offline and deterministic. A full run costs about 51 API calls (the 34 sensitive
 fixtures are caught by the rules stage and never reach the model), so raise
 `CLASSIFIER_TIMEOUT_MS` well above its 400 ms default first. Record the numbers of a prompt
 change in progress.txt; the scoring itself is pure and unit tested in

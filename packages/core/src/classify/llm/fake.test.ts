@@ -4,7 +4,7 @@ import { Classification, ClassifyFixture, type ClassifyFixtureCase } from '@adga
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { FakeLlmClassifier, fakeLlmFailure, fakeLlmSuccess } from './fake.js';
-import { fakeLlmFromFixtures } from './fixtures.js';
+import { fakeLlmFromFixtures, fixtureLlmText } from './fixtures.js';
 import { PROMPT_VERSION } from './prompt.js';
 import type { LlmClassifier } from './types.js';
 
@@ -133,25 +133,25 @@ describe('fakeLlmFromFixtures', () => {
 
   it('sensitive cases answer with the expected flags, low intent and confidence 0.9', () => {
     for (const c of cases.filter((c) => c.id.startsWith('s'))) {
-      const classification = classify(c.text);
+      const classification = classify(fixtureLlmText(c));
       expect(classification.sensitive, c.id).toEqual(c.expect.sensitive);
       expect(classification.commercial_intent, c.id).toBeLessThanOrEqual(0.2);
       expect(classification.confidence).toBe(0.9);
       expect(classification.method).toBe('llm');
       expect(Classification.safeParse(classification).success).toBe(true);
     }
-    expect(classify(byId('s027').text).commercial_intent).toBe(0);
+    expect(classify(fixtureLlmText(byId('s027'))).commercial_intent).toBe(0);
   });
 
   it('serve cases answer with the midpoint intent and every categories_any entry', () => {
     for (const c of cases.filter((c) => c.id.startsWith('c'))) {
-      const classification = classify(c.text);
+      const classification = classify(fixtureLlmText(c));
       const { intent_min = 0, intent_max = 1, categories_any } = c.expect;
       expect(classification.commercial_intent, c.id).toBeCloseTo((intent_min + intent_max) / 2, 3);
       expect(classification.categories, c.id).toEqual(categories_any ?? ['general']);
       expect(classification.sensitive).toEqual([]);
     }
-    expect(classify(byId('c005').text).categories).toEqual([
+    expect(classify(fixtureLlmText(byId('c005'))).categories).toEqual([
       'software.devtools.database',
       'software.devtools.ai',
     ]);
@@ -159,7 +159,7 @@ describe('fakeLlmFromFixtures', () => {
 
   it('low intent cases stay under their intent_max', () => {
     for (const c of cases.filter((c) => c.id.startsWith('l'))) {
-      const classification = classify(c.text);
+      const classification = classify(fixtureLlmText(c));
       expect(classification.commercial_intent, c.id).toBeLessThanOrEqual(c.expect.intent_max ?? 1);
       expect(classification.categories).toEqual(['general']);
     }
@@ -170,6 +170,15 @@ describe('fakeLlmFromFixtures', () => {
     const expected = classify(c007.text);
     expect(classify('  BEST VPN, for public WiFi!! ')).toEqual(expected);
     expect(classify(`user: hi there\nuser: ${c007.text}\nassistant: sure`)).toEqual(expected);
+  });
+
+  it('answers a multi-turn case on its prepared conversation, never on its final turn alone', () => {
+    const s029 = byId('s029');
+    expect(s029.messages).toBeDefined();
+    expect(classify(fixtureLlmText(s029))).toMatchObject({ sensitive: ['health'] });
+    // "which meal kit delivery service should I order from?" on its own is not a health turn
+    // and must not be handed the case's expectation: only the conversation carries it.
+    expect(classify(s029.text)).toMatchObject({ sensitive: [], categories: ['general'] });
   });
 
   it('unknown text gets intent 0.1, general and confidence 0.5', () => {

@@ -1,12 +1,18 @@
 import { readFileSync } from 'node:fs';
 
-import { Classification, ClassifyFixture, type ClassifyFixtureCase } from '@adgateio/schemas';
+import {
+  Classification,
+  ClassifyFixture,
+  fixtureMessages,
+  type ClassifyFixtureCase,
+} from '@adgateio/schemas';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { createLruCache } from './cache.js';
 import { classify } from './classify.js';
 import { FakeLlmClassifier } from './llm/fake.js';
 import { fakeLlmFromFixtures } from './llm/fixtures.js';
+import { prepareText } from './prepare.js';
 import type { ClassifyOutcome, ClassifyPolicy } from './types.js';
 
 /**
@@ -25,12 +31,23 @@ const serveCases = cases.filter((c) => c.id.startsWith('c'));
 const lowCases = cases.filter((c) => c.id.startsWith('l'));
 const nonSensitiveCases = [...serveCases, ...lowCases];
 
+/**
+ * Serve cases whose merged confidence lands under the default min_confidence. The rules stage
+ * caps merged confidence (min of the two), and these two multi-turn cases carry no product term
+ * in their final turn, so the rules are only weakly sure however certain the LLM is. See the
+ * test of the same name and RULES_CANNOT_SERVE in rules/fixtures.test.ts.
+ */
+const MERGE_BELOW_MIN_CONFIDENCE = ['c027', 'c029'];
+
 const STRICT: ClassifyPolicy = { sensitive_detection: 'strict', min_confidence: 0.7 };
 const BALANCED: ClassifyPolicy = { sensitive_detection: 'balanced', min_confidence: 0.7 };
 
-const input = (c: ClassifyFixtureCase) => ({
-  messages: [{ role: 'user' as const, content: c.text }],
-});
+/**
+ * A case is always classified as the turns it carries: its own `messages` for a multi-turn
+ * case, otherwise the single user turn `text` stands for. Never `text` alone, which for a
+ * multi-turn case is only the final user turn and drops the context the case exists to test.
+ */
+const input = (c: ClassifyFixtureCase) => ({ messages: fixtureMessages(c) });
 
 const runAll = async (
   policy: ClassifyPolicy,
@@ -59,11 +76,27 @@ const hasListedCategory = (c: ClassifyFixtureCase, categories: string[]) =>
   c.expect.categories_any.some((category) => categories.includes(category));
 
 describe('fixture shape', () => {
-  it('has 67 cases: 28 sensitive, 25 serve, 14 low intent', () => {
-    expect(cases).toHaveLength(67);
-    expect(sensitiveCases).toHaveLength(28);
-    expect(serveCases).toHaveLength(25);
-    expect(lowCases).toHaveLength(14);
+  it('has 85 cases: 34 sensitive, 33 serve, 18 low intent', () => {
+    expect(cases).toHaveLength(85);
+    expect(sensitiveCases).toHaveLength(34);
+    expect(serveCases).toHaveLength(33);
+    expect(lowCases).toHaveLength(18);
+  });
+
+  it('has 18 multi-turn cases across all three groups', () => {
+    const multiTurn = cases.filter((c) => c.messages !== undefined);
+    expect(multiTurn).toHaveLength(18);
+    expect(multiTurn.filter((c) => c.id.startsWith('s'))).toHaveLength(6);
+    expect(multiTurn.filter((c) => c.id.startsWith('c'))).toHaveLength(8);
+    expect(multiTurn.filter((c) => c.id.startsWith('l'))).toHaveLength(4);
+  });
+
+  it('classifies a multi-turn case on more than its final user turn', () => {
+    for (const c of cases.filter((entry) => entry.messages !== undefined)) {
+      const prepared = prepareText(input(c));
+      expect(prepared.text.length, c.id).toBeGreaterThan(c.text.length);
+      expect(prepared.rulesText, c.id).toContain(c.text);
+    }
   });
 });
 
@@ -136,8 +169,22 @@ describe.each([
     // Rules fire on every serve case (a product or topic match) so confidence is
     // min(rules, llm); the fixture rules confidence is high enough that the default policy
     // (min_confidence 0.7) still serves. Low-intent cases may drop lower; they suppress anyway.
-    for (const c of serveCases) {
+    for (const c of serveCases.filter((entry) => !MERGE_BELOW_MIN_CONFIDENCE.includes(entry.id))) {
       expect(outcomeOf(first, c.id).classification.confidence, c.id).toBeGreaterThanOrEqual(0.7);
+    }
+  });
+
+  it('drops the two weak-rules serve cases BELOW min_confidence, however sure the LLM is', () => {
+    // Not a weakened assertion, a documented consequence of mergeClassifications: whenever the
+    // rules fire at all, merged confidence is min(rules, llm). c027 and c029 name no product in
+    // their final turn, so the rules match only weakly (0.6) and drag a certain LLM (0.9) down
+    // with them. Under the default policy these turns suppress as low confidence even though
+    // the classification is right. Pinned here so the behaviour cannot change unnoticed.
+    for (const id of MERGE_BELOW_MIN_CONFIDENCE) {
+      const { classification } = outcomeOf(first, id);
+      expect(classification.confidence, id).toBeLessThan(0.7);
+      expect(classification.commercial_intent, id).toBeGreaterThanOrEqual(0.6);
+      expect(classification.sensitive, id).toEqual([]);
     }
   });
 

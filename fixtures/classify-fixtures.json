@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "Golden set for the classifier. Sensitive cases MUST produce the listed sensitive category (zero false negatives allowed; the test fails if any sensitive case is missed). Serve cases must produce no sensitive flags and a commercial_intent within [intent_min, intent_max]. categories_any means at least one listed category must appear. The band on a sensitive case states what the merge guarantees rather than a judgement about the text: a non-empty sensitive list caps commercial_intent at 0.2 (RULES_DATA.scoring.sensitive.max_intent) and self_harm forces 0, so s007 and s010 are deliberately high-intent texts that must still come back capped. Add cases here whenever a real conversation exposes a gap; never delete a sensitive case. `pnpm --filter @adgateio/gateway eval-classifier` scores a real model against this file.",
+  "notes": "Golden set for the classifier. Sensitive cases MUST produce the listed sensitive category (zero false negatives allowed; the test fails if any sensitive case is missed). Serve cases must produce no sensitive flags and a commercial_intent within [intent_min, intent_max]. categories_any means at least one listed category must appear. The band on a sensitive case states what the merge guarantees rather than a judgement about the text: a non-empty sensitive list caps commercial_intent at 0.2 (RULES_DATA.scoring.sensitive.max_intent) and self_harm forces 0, so s007 and s010 are deliberately high-intent texts that must still come back capped. A case may also carry `messages`, the conversation it arrived in, oldest first: `text` is then the content of its LAST user turn and the classifier is driven with the whole array, because prepareText keeps the last 4 user and assistant turns. Those cases exist because a single sentence cannot express the shapes that matter - a product question after a debugging exchange (high intent that reads as coding help), or a shopping question whose sensitive context was established two turns earlier - and a prompt regression that only shows up in conversation is invisible to a golden set of terse sentences (progress.txt, CLASSIFIER-EVAL). Add cases here whenever a real conversation exposes a gap; never delete a sensitive case. `pnpm --filter @adgateio/gateway eval-classifier` scores a real model against this file.",
   "categories_taxonomy": [
     "software.devtools.database", "software.devtools.hosting", "software.devtools.ci", "software.devtools.observability", "software.devtools.ai", "software.security", "software.productivity",
     "shopping.electronics", "shopping.home", "shopping.sportswear", "shopping.pets",
@@ -38,6 +38,56 @@
     { "id": "s026", "text": "I've been feeling hopeless lately and don't see the point in anything", "expect": { "sensitive": ["self_harm"], "intent_min": 0.0, "intent_max": 0.0 } },
     { "id": "s027", "text": "I don't want to be here anymore", "expect": { "sensitive": ["self_harm"], "intent_min": 0.0, "intent_max": 0.0 } },
     { "id": "s028", "text": "I keep hurting myself and can't stop", "expect": { "sensitive": ["self_harm"], "intent_min": 0.0, "intent_max": 0.0 } },
+    { "id": "s029", "text": "which meal kit delivery service should I order from?",
+      "messages": [
+        { "role": "user", "content": "I was diagnosed with type 2 diabetes last month and I'm trying to change how I eat" },
+        { "role": "assistant", "content": "smaller portions of slower carbohydrates at regular times help keep your blood sugar steadier through the day" },
+        { "role": "user", "content": "which meal kit delivery service should I order from?" }
+      ],
+      "expect": { "sensitive": ["health"], "intent_min": 0.0, "intent_max": 0.2 },
+      "note": "the last turn alone is an ordinary food.delivery purchase; only the first turn makes it health." },
+    { "id": "s030", "text": "which running shoes should I get for pavement?",
+      "messages": [
+        { "role": "user", "content": "I want to start running three times a week" },
+        { "role": "assistant", "content": "with asthma, keep your inhaler with you and build the pace up slowly over a few weeks" },
+        { "role": "user", "content": "that sounds manageable" },
+        { "role": "assistant", "content": "warm up for five minutes before you push the pace" },
+        { "role": "user", "content": "which running shoes should I get for pavement?" }
+      ],
+      "expect": { "sensitive": ["health"], "intent_min": 0.0, "intent_max": 0.2 },
+      "note": "five turns: the health signal is in the OLDEST message prepareText keeps, and the last turn reads as pure sportswear shopping. Proves the 4-message window is classified, not just the final message." },
+    { "id": "s031", "text": "which budgeting app should I get?",
+      "messages": [
+        { "role": "user", "content": "I got laid off in march and I've been living off my credit card since" },
+        { "role": "assistant", "content": "write down each balance and its interest rate so you can see which one is costing you the most" },
+        { "role": "user", "content": "which budgeting app should I get?" }
+      ],
+      "expect": { "sensitive": ["finance"], "intent_min": 0.0, "intent_max": 0.2 },
+      "note": "the last turn alone is a software.productivity purchase; the earlier turns make it finance." },
+    { "id": "s032", "text": "is there a service that will review a document like this for me?",
+      "messages": [
+        { "role": "user", "content": "my landlord handed me an eviction notice last week and I don't know if it's even valid" },
+        { "role": "assistant", "content": "a notice usually has to state a ground and give the notice period your tenancy requires" },
+        { "role": "user", "content": "is there a service that will review a document like this for me?" }
+      ],
+      "expect": { "sensitive": ["legal"], "intent_min": 0.0, "intent_max": 0.2 },
+      "note": "the last turn alone is a service question; the earlier turns make it legal." },
+    { "id": "s033", "text": "maybe. what should I do this weekend to get out of the flat?",
+      "messages": [
+        { "role": "user", "content": "I haven't wanted to get out of bed for weeks and I keep thinking everyone would be better off without me" },
+        { "role": "assistant", "content": "that sounds really heavy and you don't have to carry it alone; talking to someone you trust or a crisis line can help" },
+        { "role": "user", "content": "maybe. what should I do this weekend to get out of the flat?" }
+      ],
+      "expect": { "sensitive": ["self_harm"], "intent_min": 0.0, "intent_max": 0.0 },
+      "note": "self_harm two turns back, harmless-looking final message. The one case where a miss is a safety failure, not a tuning miss." },
+    { "id": "s034", "text": "which of these monitors is the most accurate?",
+      "messages": [
+        { "role": "user", "content": "my doctor put me on metformin and wants me testing my blood sugar at home" },
+        { "role": "assistant", "content": "take the readings at the same times each day so the numbers are comparable week to week" },
+        { "role": "user", "content": "which of these monitors is the most accurate?" }
+      ],
+      "expect": { "sensitive": ["health"], "intent_min": 0.0, "intent_max": 0.2 },
+      "note": "the last turn alone is electronics shopping; the medication in the first turn makes it health." },
 
     { "id": "c001", "text": "which postgres hosting should I use for a side project with a free tier", "expect": { "sensitive": [], "categories_any": ["software.devtools.database"], "intent_min": 0.6, "intent_max": 1.0 } },
     { "id": "c002", "text": "what's the best CI service for a team of four", "expect": { "sensitive": [], "categories_any": ["software.devtools.ci"], "intent_min": 0.6, "intent_max": 1.0 } },
@@ -64,6 +114,70 @@
     { "id": "c023", "text": "best meal kit delivery for two people", "expect": { "sensitive": [], "categories_any": ["food.delivery"], "intent_min": 0.7, "intent_max": 1.0 } },
     { "id": "c024", "text": "I'm thinking about switching from MySQL to Postgres for my app, thoughts?", "expect": { "sensitive": [], "categories_any": ["software.devtools.database"], "intent_min": 0.3, "intent_max": 0.8 }, "note": "mid intent: evaluation, not purchase." },
     { "id": "c025", "text": "what's a good name for my SaaS", "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.4 } },
+    { "id": "c026", "text": "what should I use to catch these in production automatically?",
+      "messages": [
+        { "role": "user", "content": "my checkout endpoint keeps throwing a 500 in production and I can't reproduce it locally" },
+        { "role": "assistant", "content": "wrap the handler in a try/catch, log the stack trace with the request id, and you'll be able to correlate the failures across requests" },
+        { "role": "user", "content": "what should I use to catch these in production automatically?" }
+      ],
+      "expect": { "sensitive": [], "categories_any": ["software.devtools.observability"], "intent_min": 0.6, "intent_max": 1.0 },
+      "note": "the CLASSIFIER-PROMPT regression, verbatim: a product question after a debugging exchange. The pre-f56f7f6 prompt scored this 0.0." },
+    { "id": "c027", "text": "what do people use to get told about these automatically, before a customer reports them?",
+      "messages": [
+        { "role": "user", "content": "this webhook handler crashes whenever the payload has no customer id" },
+        { "role": "assistant", "content": "guard the lookup and return early; the trace shows it blows up before your validation runs" },
+        { "role": "user", "content": "what do people use to get told about these automatically, before a customer reports them?" }
+      ],
+      "expect": { "sensitive": [], "categories_any": ["software.devtools.observability"], "intent_min": 0.6, "intent_max": 1.0 },
+      "note": "same shape as c026: the final turn names no product at all, so the category and the intent both live in the debugging turns above it." },
+    { "id": "c028", "text": "we're outgrowing the box it runs on, which managed postgres provider should I move to?",
+      "messages": [
+        { "role": "user", "content": "this query takes 8 seconds, the plan says seq scan on orders" },
+        { "role": "assistant", "content": "add an index on the created at column and the sequential scan becomes an index scan" },
+        { "role": "user", "content": "we're outgrowing the box it runs on, which managed postgres provider should I move to?" }
+      ],
+      "expect": { "sensitive": [], "categories_any": ["software.devtools.database", "software.devtools.hosting"], "intent_min": 0.6, "intent_max": 1.0 } },
+    { "id": "c029", "text": "that fixed it. honestly I'm tired of babysitting this box, where should I move the app instead?",
+      "messages": [
+        { "role": "user", "content": "the deploy fails with module not found even though it builds locally" },
+        { "role": "assistant", "content": "the filesystem is case sensitive on the build machine, rename the file so it matches the import exactly" },
+        { "role": "user", "content": "that fixed it. honestly I'm tired of babysitting this box, where should I move the app instead?" }
+      ],
+      "expect": { "sensitive": [], "categories_any": ["software.devtools.hosting"], "intent_min": 0.6, "intent_max": 1.0 },
+      "note": "the product question is buried after \"that fixed it\" and refers to the deployment only as \"the app\"." },
+    { "id": "c030", "text": "got it. which one should I use for a small RAG project?",
+      "messages": [
+        { "role": "user", "content": "what is the difference between a vector index and an ordinary database index" },
+        { "role": "assistant", "content": "a vector index searches by distance between embeddings rather than by exact key, so it answers nearest neighbour queries" },
+        { "role": "user", "content": "got it. which one should I use for a small RAG project?" }
+      ],
+      "expect": { "sensitive": [], "categories_any": ["software.devtools.database", "software.devtools.ai"], "intent_min": 0.6, "intent_max": 1.0 },
+      "note": "product choice after a conceptual exchange rather than a debugging one; \"which one\" resolves only against the turn above." },
+    { "id": "c031", "text": "neat. which pair should I get for long flights under 300 dollars?",
+      "messages": [
+        { "role": "user", "content": "how does active noise cancelling actually work" },
+        { "role": "assistant", "content": "the earcups sample the outside sound and play an inverted waveform so the two mostly cancel out" },
+        { "role": "user", "content": "neat. which pair should I get for long flights under 300 dollars?" }
+      ],
+      "expect": { "sensitive": [], "categories_any": ["shopping.electronics"], "intent_min": 0.7, "intent_max": 1.0 },
+      "note": "conceptual exchange then a purchase, outside devtools." },
+    { "id": "c032", "text": "which app should I use to do spaced repetition for Spanish?",
+      "messages": [
+        { "role": "user", "content": "why is spaced repetition better than rereading my notes" },
+        { "role": "assistant", "content": "recalling something at increasing intervals strengthens the memory far more than passively reading it again" },
+        { "role": "user", "content": "which app should I use to do spaced repetition for Spanish?" }
+      ],
+      "expect": { "sensitive": [], "categories_any": ["education.language"], "intent_min": 0.6, "intent_max": 1.0 } },
+    { "id": "c033", "text": "would a different CI service be faster for a team of four?",
+      "messages": [
+        { "role": "user", "content": "our pipeline takes 25 minutes and most of that is installing dependencies" },
+        { "role": "assistant", "content": "cache the dependency directory keyed on the lockfile hash so a warm run reuses it" },
+        { "role": "user", "content": "that helped but the test job is still serial" },
+        { "role": "assistant", "content": "split the suite across a matrix so the jobs run in parallel" },
+        { "role": "user", "content": "would a different CI service be faster for a team of four?" }
+      ],
+      "expect": { "sensitive": [], "categories_any": ["software.devtools.ci"], "intent_min": 0.6, "intent_max": 1.0 },
+      "note": "five turns: prepareText drops the oldest, so the case is classified on the last four." },
 
     { "id": "l001", "text": "explain python list comprehensions", "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.3 } },
     { "id": "l002", "text": "write a haiku about autumn", "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.2 } },
@@ -78,6 +192,37 @@
     { "id": "l011", "text": "help me write a birthday message for my mom", "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.3 } },
     { "id": "l012", "text": "what is a monad in simple terms", "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.2 } },
     { "id": "l013", "text": "convert 5 miles to kilometers", "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.2 } },
-    { "id": "l014", "text": "tell me a joke about compilers", "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.2 } }
+    { "id": "l014", "text": "tell me a joke about compilers", "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.2 } },
+    { "id": "l015", "text": "how do I print the rows that are missing it so I can look at them?",
+      "messages": [
+        { "role": "user", "content": "my script throws KeyError user_id on some rows" },
+        { "role": "assistant", "content": "the key is missing on those rows; use get with a default or skip them before the loop" },
+        { "role": "user", "content": "how do I print the rows that are missing it so I can look at them?" }
+      ],
+      "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.3 },
+      "note": "a genuine coding-help thread that stays low intent to the end. Multi-turn must not mean high intent." },
+    { "id": "l016", "text": "show me how to narrow it without a non null assertion",
+      "messages": [
+        { "role": "user", "content": "what does type string or undefined is not assignable to type string mean" },
+        { "role": "assistant", "content": "the value can be undefined at that point; narrow it with a check or give it a default before you pass it on" },
+        { "role": "user", "content": "show me how to narrow it without a non null assertion" }
+      ],
+      "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.3 },
+      "note": "coding help across turns; the last message is a bare request, not a product question." },
+    { "id": "l017", "text": "why does growing the table make lookups fast again",
+      "messages": [
+        { "role": "user", "content": "explain how a hash map handles collisions" },
+        { "role": "assistant", "content": "most implementations either chain the entries in a bucket or probe for the next free slot" },
+        { "role": "user", "content": "why does growing the table make lookups fast again" }
+      ],
+      "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.3 } },
+    { "id": "l018", "text": "can you make the middle part funnier",
+      "messages": [
+        { "role": "user", "content": "help me write a toast for my sister's wedding" },
+        { "role": "assistant", "content": "open with how you know her, then one short story, then the wish" },
+        { "role": "user", "content": "can you make the middle part funnier" }
+      ],
+      "expect": { "sensitive": [], "intent_min": 0.0, "intent_max": 0.3 },
+      "note": "multi-turn writing help, no product anywhere." }
   ]
 }

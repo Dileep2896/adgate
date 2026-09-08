@@ -7,7 +7,12 @@ import {
   type ClassifyPolicy,
   OpenAiCompatibleClassifier,
 } from '@adgateio/core';
-import { ClassifyFixture, type ClassifyFixtureCase, PolicyConfig } from '@adgateio/schemas';
+import {
+  ClassifyFixture,
+  fixtureMessages,
+  type ClassifyFixtureCase,
+  PolicyConfig,
+} from '@adgateio/schemas';
 
 import { isMainModule } from '../cli.js';
 import { type EnvSource, GatewayEnv } from '../config.js';
@@ -49,7 +54,7 @@ export const EVAL_CLASSIFIER_USAGE = [
   '  --json         Print the summary as JSON instead of the report, for trending in CI.',
   '',
   'Cost: one API call per case that the rules stage does not short-circuit and the cache does',
-  'not answer, so a full 67-case run is about 39 calls (the 28 sensitive fixtures are caught by',
+  'not answer, so a full 85-case run is about 51 calls (the 34 sensitive fixtures are caught by',
   'the rules and never reach the model). Each call is bounded by CLASSIFIER_TIMEOUT_MS, which',
   'must be raised well above its 400 ms default for a hosted endpoint (2500 works for Mistral).',
   '',
@@ -236,8 +241,10 @@ export const runEval = async (
       if (fixture === undefined) {
         continue;
       }
+      // The whole conversation, not fixture.text: a multi-turn case is only itself when the
+      // model sees the turns its expectation was written against.
       const outcome = await classify(
-        { messages: [{ role: 'user', content: fixture.text }] },
+        { messages: fixtureMessages(fixture) },
         { llm, cache, policy: EVAL_POLICY, timeoutMs: config.timeoutMs },
       );
       results[index] = {

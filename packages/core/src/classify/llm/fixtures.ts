@@ -1,5 +1,6 @@
-import type { ClassifyFixtureCase } from '@adgateio/schemas';
+import { fixtureMessages, type ClassifyFixtureCase } from '@adgateio/schemas';
 
+import { prepareText } from '../prepare.js';
 import { normalizeText } from '../rules/normalize.js';
 import { fakeLlmSuccess } from './fake.js';
 import { normalizeCategories, normalizeSensitive } from './output.js';
@@ -50,18 +51,40 @@ export const unknownTextLlmResult = (): LlmClassifyResult =>
   });
 
 /**
- * Matching is on normalizeText(text): an exact match first, then the longest fixture text
- * contained in the input, so a joined multi-turn conversation that includes a fixture message
- * still hits it. Anything else gets unknownTextLlmResult().
+ * Exactly what classify() hands the LLM for a case: prepareText() over its turns, so a
+ * single-turn case gives "user: <text>" and a multi-turn one gives the last four turns as
+ * "role: content" lines. Tests that call a fixture script directly must use this rather than
+ * `text`, which for a multi-turn case is only the final user turn.
+ */
+export const fixtureLlmText = (c: ClassifyFixtureCase): string =>
+  prepareText({ messages: fixtureMessages(c) }).text;
+
+/**
+ * The strings a case answers to. A single-turn case keeps its bare `text` as well as the
+ * prepared form, so a caller holding only the sentence still hits it. A multi-turn case answers
+ * ONLY to the prepared conversation: its `text` alone is deliberately not registered, because
+ * that sentence on its own ("which meal kit delivery service should I order from?") does not
+ * carry the case's expectation (health, from a turn two back) and must not be given it.
+ */
+const keysOf = (c: ClassifyFixtureCase): string[] =>
+  c.messages === undefined
+    ? [normalizeText(c.text), normalizeText(fixtureLlmText(c))]
+    : [normalizeText(fixtureLlmText(c))];
+
+/**
+ * Matching is on normalizeText: an exact match on one of keysOf() first, then the longest
+ * registered key contained in the input, so a joined conversation that includes a fixture
+ * message still hits it. Anything else gets unknownTextLlmResult().
  */
 export const fakeLlmFromFixtures = (
   cases: readonly ClassifyFixtureCase[],
 ): ((text: string) => LlmClassifyResult) => {
   const byText = new Map<string, ClassifyFixtureCase>();
   for (const c of cases) {
-    const key = normalizeText(c.text);
-    if (key !== '' && !byText.has(key)) {
-      byText.set(key, c);
+    for (const key of keysOf(c)) {
+      if (key !== '' && !byText.has(key)) {
+        byText.set(key, c);
+      }
     }
   }
   const longestFirst = [...byText.entries()].sort((a, b) => b[0].length - a[0].length);

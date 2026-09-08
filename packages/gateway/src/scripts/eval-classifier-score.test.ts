@@ -116,6 +116,39 @@ describe('scoreCase', () => {
   });
 });
 
+describe('multi-turn cases', () => {
+  const multi: ClassifyFixtureCase = {
+    id: 's099',
+    text: 'which meal kit should I order',
+    messages: [
+      { role: 'user', content: 'I was diagnosed with type 2 diabetes' },
+      { role: 'assistant', content: 'smaller portions of slower carbohydrates help' },
+      { role: 'user', content: 'which meal kit should I order' },
+    ],
+    expect: { sensitive: ['health'], intent_min: 0, intent_max: 0.2 },
+  };
+
+  it('counts the turns on the score and the multi-turn cases in the summary', () => {
+    expect(scoreCase(result(multi, { sensitive: ['health'], commercial_intent: 0.1 })).turns).toBe(
+      3,
+    );
+    expect(scoreCase(result(fixture('c001'))).turns).toBe(1);
+    const summary = summarize(
+      [result(multi, { sensitive: ['health'], commercial_intent: 0.1 }), result(fixture('c001'))],
+      OPTIONS,
+    );
+    expect(summary.multi_turn).toBe(1);
+    expect(summary.cases).toBe(2);
+  });
+
+  it('marks a multi-turn miss with its turn count, so the quoted sentence is not misread', () => {
+    const report = renderReport(summarize([result(multi, { commercial_intent: 0.9 })], OPTIONS));
+    expect(report).toContain('s099  missing health');
+    expect(report).toContain('(3 turns)');
+    expect(report).toContain('multi-turn cases     1 of 1');
+  });
+});
+
 describe('summarize', () => {
   const cases: EvalResult[] = [
     result(fixture('s001', { sensitive: ['health'], intent_min: 0, intent_max: 0.2 }), {

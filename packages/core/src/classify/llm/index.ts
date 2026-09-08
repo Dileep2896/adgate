@@ -8,6 +8,7 @@ export {
   FIXTURE_LLM_CONFIDENCE,
   fakeLlmFromFixtures,
   fixtureLlmResult,
+  fixtureLlmText,
   unknownTextLlmResult,
 } from './fixtures.js';
 export {

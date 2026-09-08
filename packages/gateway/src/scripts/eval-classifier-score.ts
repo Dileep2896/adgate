@@ -40,7 +40,10 @@ export interface EvalBand {
 
 export interface EvalCaseScore {
   id: string;
+  /** The case's `text`: for a multi-turn case, its final user turn, not the whole window. */
   text: string;
+  /** Messages classified: 1 for a single-turn case, otherwise the case's own turn count. */
+  turns: number;
   group: EvalGroup;
   intent: number;
   band: EvalBand;
@@ -90,6 +93,7 @@ export const scoreCase = ({ fixture, observed }: EvalResult): EvalCaseScore => {
   return {
     id: fixture.id,
     text: fixture.text,
+    turns: fixture.messages?.length ?? 1,
     group,
     intent: observed.commercial_intent,
     band: bandOf(fixture),
@@ -145,6 +149,8 @@ export interface EvalSummary {
   };
   bands: { ok: number; checked: number };
   categories: { ok: number; checked: number };
+  /** Cases carrying a `messages` array. Their score is the half a single sentence cannot show. */
+  multi_turn: number;
   sources: Record<string, number>;
   methods: Record<string, number>;
   llm_failures: Record<string, number>;
@@ -219,6 +225,7 @@ export const summarize = (
       ok: withCategories.filter((score) => score.categoryOk === true).length,
       checked: withCategories.length,
     },
+    multi_turn: scores.filter((score) => score.turns > 1).length,
     sources: tallyOf(results.map((result) => result.observed.source)),
     methods: tallyOf(results.map((result) => result.observed.method)),
     llm_failures: tallyOf(
@@ -254,6 +261,14 @@ const tallyLine = (counts: Record<string, number>): string =>
 const quote = (text: string, width = 62): string =>
   `"${text.length > width ? `${text.slice(0, width - 1)}…` : text}"`;
 
+/**
+ * The quoted case text, marked with its turn count when the case is multi-turn: the quoted
+ * sentence is only the final user turn, and reading a band miss without knowing that is how you
+ * conclude a perfectly good prompt is broken.
+ */
+const label = (score: EvalCaseScore): string =>
+  score.turns > 1 ? `${quote(score.text)} (${String(score.turns)} turns)` : quote(score.text);
+
 const num = (value: number): string => value.toFixed(2);
 
 const listSection = (
@@ -280,24 +295,24 @@ export const renderReport = (summary: EvalSummary): string => {
           `sensitive misses (${String(missed.length)})  <-- fails the run`,
           ...missed.map(
             (score) =>
-              `  ${score.id}  missing ${score.missingSensitive.join(',')}  ${quote(score.text)}`,
+              `  ${score.id}  missing ${score.missingSensitive.join(',')}  ${label(score)}`,
           ),
         ]),
     ...listSection(
       'sensitive false positives',
       falsePositive,
-      (score) => `  ${score.id}  flagged ${score.falseSensitive.join(',')}  ${quote(score.text)}`,
+      (score) => `  ${score.id}  flagged ${score.falseSensitive.join(',')}  ${label(score)}`,
     ),
     ...listSection(
       'intent band misses',
       bandMiss,
       (score) =>
-        `  ${score.id}  ${num(score.intent)} outside [${num(score.band.min)}, ${num(score.band.max)}]  ${quote(score.text)}`,
+        `  ${score.id}  ${num(score.intent)} outside [${num(score.band.min)}, ${num(score.band.max)}]  ${label(score)}`,
     ),
     ...listSection(
       'category misses',
       categoryMiss,
-      (score) => `  ${score.id}  no listed category  ${quote(score.text)}`,
+      (score) => `  ${score.id}  no listed category  ${label(score)}`,
     ),
     '',
     'summary',
@@ -306,6 +321,7 @@ export const renderReport = (summary: EvalSummary): string => {
     `  sensitive false pos  ${String(summary.false_positives.cases)} of ${String(summary.false_positives.checked)} non-sensitive cases`,
     `  intent bands         ${String(summary.bands.ok)}/${String(summary.bands.checked)} (${pct(summary.bands.ok, summary.bands.checked)})`,
     `  categories           ${String(summary.categories.ok)}/${String(summary.categories.checked)} (${pct(summary.categories.ok, summary.categories.checked)})`,
+    `  multi-turn cases     ${String(summary.multi_turn)} of ${String(summary.cases)}`,
     `  source               ${tallyLine(summary.sources)}`,
     `  method               ${tallyLine(summary.methods)}`,
     `  llm failures         ${tallyLine(summary.llm_failures)}`,
