@@ -136,6 +136,16 @@ On **Render**: New → Web Service → point at the repository, Runtime "Docker"
 `fly launch --dockerfile packages/gateway/Dockerfile` from the root, then `fly secrets set …`
 for each variable. Railway and Cloud Run are the same two settings under different names.
 
+`render.yaml` at the repo root is the same Render service as a Blueprint, so the settings above
+come from the file rather than from you: **New → Blueprint → pick this repo**, then fill the four
+values Render prompts for. It deliberately declares no database — Render's free Postgres expires
+and Neon's does not — so `DATABASE_URL` stays a value you paste in from section 1.
+
+This image has been booted and exercised end to end: `/v1/evaluate` on a commercial turn served a
+creative, a self-harm turn suppressed with `commercial_intent` capped to 0, `/v1/attest` returned
+204, and `/v1/verify/:id` then passed all eight checks including the hash chain and the Ed25519
+signature. If a deploy of it fails, the cause is configuration, not the image.
+
 Three things to get right:
 
 1. **The host injects `PORT`.** Render, Fly and Cloud Run all set it and expect the process to

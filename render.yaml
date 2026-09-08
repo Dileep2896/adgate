@@ -1,0 +1,70 @@
+# adgate gateway, as a Render Blueprint.
+#
+# Render's own Postgres free instance expires, so this blueprint deliberately does NOT declare a
+# database: point DATABASE_URL at a Neon free project (docs/deploy.md section 1), which does not
+# expire, and keep the two concerns separable. Everything here is the gateway service only.
+#
+#   1. Create the Neon project and run `pnpm db:migrate` against it from a checkout FIRST.
+#      This image does not migrate at boot, by design (see packages/gateway/Dockerfile).
+#   2. Render dashboard -> New -> Blueprint -> pick this repo. It reads this file.
+#   3. Fill the four `sync: false` values when Render prompts. They are secrets or unknowable
+#      until the service exists; see the note on PUBLIC_BASE_URL below.
+#
+# THE FIRST DEPLOY WILL FAIL IF PUBLIC_BASE_URL IS WRONG, and that is intentional. The runtime
+# stage sets NODE_ENV=production, which rejects an http:// or localhost base URL rather than
+# serving click URLs that point back into the container. Render only tells you the hostname once
+# the service is created, and a blueprint cannot prepend "https://" to it, so the sequence is:
+# deploy, copy the assigned host, set PUBLIC_BASE_URL to `https://<that host>`, redeploy.
+services:
+  - type: web
+    name: adgate-gateway
+    runtime: docker
+    dockerfilePath: ./packages/gateway/Dockerfile
+    # The build context is the repo root: the gateway imports its workspace siblings and pnpm
+    # needs the lockfile and every package manifest.
+    dockerContext: .
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      # --- required, entered by hand ---
+      # Neon POOLED connection string (the host contains `-pooler`), keeping ?sslmode=require.
+      - key: DATABASE_URL
+        sync: false
+      # PKCS#8 PEM of the Ed25519 private key. Losing or rotating this makes every existing
+      # audit record fail its signature check. Generate with `pnpm --filter @adgateio/gateway keygen`.
+      - key: ADGATE_SIGNING_KEY_PEM
+        sync: false
+      # `https://<your-service>.onrender.com` once Render has assigned it. See the note above.
+      - key: PUBLIC_BASE_URL
+        sync: false
+      # --- required, fixed ---
+      - key: ADGATE_SIGNING_KEY_ID
+        value: k_2026_09
+      # --- recommended ---
+      # Unset, GET /metrics is not mounted at all, so a forgotten deployment exposes nothing.
+      # Render generates a value so it is never left at a placeholder.
+      - key: METRICS_TOKEN
+        generateValue: true
+      - key: LOG_LEVEL
+        value: info
+      # A free instance has no cron, so the gateway runs retention itself: one pass a minute
+      # after boot, then daily. Each app's policy promises privacy.retain_days and something has
+      # to keep it.
+      - key: RETENTION_INTERVAL_HOURS
+        value: '24'
+      # Exact browser origins, comma separated. Leave empty for a server-to-server integration,
+      # which is the normal case; the gateway warns at boot either way.
+      - key: CORS_ALLOWED_ORIGINS
+        value: ''
+      # --- optional: the LLM classifier stage ---
+      # Leave CLASSIFIER_MODEL empty and the gateway runs the keyword rules only, which is a
+      # supported configuration, not a degraded one.
+      - key: CLASSIFIER_BASE_URL
+        value: https://api.mistral.ai/v1
+      - key: CLASSIFIER_MODEL
+        value: mistral-small-latest
+      - key: CLASSIFIER_API_KEY
+        sync: false
+      # A free instance is slow to wake, and a classification that overruns fails closed.
+      - key: CLASSIFIER_TIMEOUT_MS
+        value: '2500'
