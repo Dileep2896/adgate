@@ -32,12 +32,13 @@ const lowCases = cases.filter((c) => c.id.startsWith('l'));
 const nonSensitiveCases = [...serveCases, ...lowCases];
 
 /**
- * Serve cases whose merged confidence lands under the default min_confidence. The rules stage
- * caps merged confidence (min of the two), and these two multi-turn cases carry no product term
- * in their final turn, so the rules are only weakly sure however certain the LLM is. See the
- * test of the same name and RULES_CANNOT_SERVE in rules/fixtures.test.ts.
+ * Serve cases the rules stage alone cannot serve: these two multi-turn cases carry no product
+ * term in their final turn, so the rules find the category from the earlier turns but only weak
+ * intent, and score themselves at 0.6. See RULES_CANNOT_SERVE in rules/fixtures.test.ts. Under
+ * the old min(rules, llm) merge that 0.6 became the merged confidence and suppressed the turn as
+ * low-confidence; the corroboration rule (see the test of this name) is what changed.
  */
-const MERGE_BELOW_MIN_CONFIDENCE = ['c027', 'c029'];
+const WEAK_RULES_SERVE_CASES = ['c027', 'c029'];
 
 const STRICT: ClassifyPolicy = { sensitive_detection: 'strict', min_confidence: 0.7 };
 const BALANCED: ClassifyPolicy = { sensitive_detection: 'balanced', min_confidence: 0.7 };
@@ -165,24 +166,25 @@ describe.each([
     expect(callsAfterFirst).toBe(nonSensitiveCases.length);
   });
 
-  it('keeps every serve case at or above the default min_confidence after the merge', () => {
-    // Rules fire on every serve case (a product or topic match) so confidence is
-    // min(rules, llm); the fixture rules confidence is high enough that the default policy
-    // (min_confidence 0.7) still serves. Low-intent cases may drop lower; they suppress anyway.
-    for (const c of serveCases.filter((entry) => !MERGE_BELOW_MIN_CONFIDENCE.includes(entry.id))) {
+  it('keeps EVERY serve case at or above the default min_confidence after the merge', () => {
+    // Rules fire on every serve case (a product or topic match) and name a category the LLM
+    // also names, so the stages corroborate and merged confidence is max(rules, llm). Low-intent
+    // cases may drop lower; they suppress on intent anyway. No exceptions: the two weak-rules
+    // cases below used to be excluded from this assertion.
+    for (const c of serveCases) {
       expect(outcomeOf(first, c.id).classification.confidence, c.id).toBeGreaterThanOrEqual(0.7);
     }
   });
 
-  it('drops the two weak-rules serve cases BELOW min_confidence, however sure the LLM is', () => {
-    // Not a weakened assertion, a documented consequence of mergeClassifications: whenever the
-    // rules fire at all, merged confidence is min(rules, llm). c027 and c029 name no product in
-    // their final turn, so the rules match only weakly (0.6) and drag a certain LLM (0.9) down
-    // with them. Under the default policy these turns suppress as low confidence even though
-    // the classification is right. Pinned here so the behaviour cannot change unnoticed.
-    for (const id of MERGE_BELOW_MIN_CONFIDENCE) {
+  it('lets a corroborated LLM carry the two weak-rules serve cases OVER min_confidence', () => {
+    // The regression this pins. c027 and c029 name no product in their final turn, so the rules
+    // find the category from the earlier turns but score themselves 0.6. The old merge took
+    // min(rules, llm) whenever the rules fired at all, so a certain LLM (0.9) was dragged to 0.6
+    // and the turn suppressed as low confidence although the classification was right. The rules
+    // and the LLM AGREE here, so the merge now takes max and the turn can serve.
+    for (const id of WEAK_RULES_SERVE_CASES) {
       const { classification } = outcomeOf(first, id);
-      expect(classification.confidence, id).toBeLessThan(0.7);
+      expect(classification.confidence, id).toBeGreaterThanOrEqual(0.7);
       expect(classification.commercial_intent, id).toBeGreaterThanOrEqual(0.6);
       expect(classification.sensitive, id).toEqual([]);
     }

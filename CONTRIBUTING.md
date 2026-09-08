@@ -157,10 +157,18 @@ It builds the same `OpenAiCompatibleClassifier` the gateway builds from `CLASSIF
 `CLASSIFIER_API_KEY`, `CLASSIFIER_MODEL` and `CLASSIFIER_TIMEOUT_MS` (repo-root `.env` included;
 `--model` overrides the model) and runs the real `classify()` over every fixture case, then
 reports sensitive recall, sensitive false positives, intent band compliance, category compliance,
-the source and method distribution and the latency spread. **Exit code 1 only when sensitive
-recall is below 100 percent**; band and category misses are printed and exit 0, because they are
-a tuning signal and no model reaches 100 percent on them today. Watch the source line: a run
-where every call timed out falls back to the rules and would otherwise look like a good score.
+how many cases would serve, the source and method distribution and the latency spread. **Exit code
+1 only when sensitive recall is below 100 percent**; band and category misses are printed and exit
+0, because they are a tuning signal and no model reaches 100 percent on them today. Watch the
+source line: a run where every call timed out falls back to the rules and would otherwise look
+like a good score.
+
+The `would serve` line applies the default policy's three classification gates (no sensitive flag,
+`confidence >= min_confidence`, `commercial_intent >= min_commercial_intent`) to every case. It is
+the end-to-end number a prompt or merge change should be judged on, because band compliance alone
+cannot see a correct classification that suppresses on confidence. **Its `SENSITIVE` column must
+be 0**: a sensitive case can only reach it by losing every flag, which is already a sensitive miss
+and already exit code 1.
 
 18 of the cases carry a `messages` array instead of a lone sentence, because a golden set of
 terse one-liners cannot see this class of regression at all: measured against

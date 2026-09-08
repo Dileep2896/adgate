@@ -8,6 +8,12 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": [],
+      // Tests in packages/core, packages/schemas and packages/gateway read the golden sets in
+      // the ROOT fixtures/ directory. Turbo's default inputs are package-scoped, so without the
+      // $TURBO_ROOT$ entry a fixture edit does not reach the hash and a red suite can come back
+      // FULL TURBO from a stale result (progress.txt, CLASSIFIER-MULTITURN). $TURBO_DEFAULT$
+      // restores the per-package defaults, which naming inputs at all otherwise switches off.
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/fixtures/**"],
       "env": [
         "DATABASE_URL",
         "DATABASE_URL_TEST",

@@ -32,7 +32,9 @@ describe('classify: merged path', () => {
       commercial_intent: 0.84,
       categories: ['software.devtools.database'],
       sensitive: [],
-      confidence: 0.91, // rules fired on a commercial match with 0.95; min(0.95, 0.91)
+      // The rules matched software.devtools.database at 0.95 and the LLM named the same
+      // category, so the stages corroborate and the merge takes max(0.95, 0.91).
+      confidence: 0.95,
       method: 'llm',
       prompt_version: PROMPT_VERSION,
     });

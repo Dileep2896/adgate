@@ -9,15 +9,33 @@ import type { ClassifyFixtureCase } from '@adgateio/schemas';
  * The one property that gates the exit code is sensitive recall: every expected sensitive
  * category present on every sensitive case. Intent bands and categories are reported and never
  * fatal; they are a tuning signal, and no model reaches 100 percent on them today.
+ *
+ * `servable` applies the default policy's three classification gates to each result, so a
+ * confidence change (merge.ts) can be measured and not just asserted. A sensitive case can only
+ * come out servable by losing every one of its flags, which is already a sensitive miss and
+ * already exit code 1; the count is printed so that safety property is visible rather than
+ * inferred.
  */
 
 export type EvalGroup = 'sensitive' | 'serve' | 'low';
+
+/**
+ * The classification half of the policy engine's serve decision (packages/core policy/evaluate:
+ * rules 3, 4 and 5). The other rules are about the request, not the classification, so they
+ * cannot be scored from a fixture.
+ */
+export interface ServeGates {
+  min_confidence: number;
+  min_commercial_intent: number;
+}
 
 /** What one classify() call returned, flattened. Nothing here can carry message text. */
 export interface EvalObservation {
   commercial_intent: number;
   categories: readonly string[];
   sensitive: readonly string[];
+  /** Classification.confidence, after mergeClassifications. */
+  confidence: number;
   /** Classification.method: llm, rules or cached. */
   method: string;
   /** ClassifyOutcome.source: merged, rules_short_circuit, rules_fallback or cache. */
@@ -46,6 +64,9 @@ export interface EvalCaseScore {
   turns: number;
   group: EvalGroup;
   intent: number;
+  confidence: number;
+  /** Would pass the default policy's classification gates. Must be false on a sensitive case. */
+  servable: boolean;
   band: EvalBand;
   bandOk: boolean;
   /** Expected sensitive categories the classifier did not return. Non-empty = the run fails. */
@@ -88,7 +109,13 @@ export const hasListedCategory = (
   fixture.expect.categories_any === undefined ||
   fixture.expect.categories_any.some((category) => categories.includes(category));
 
-export const scoreCase = ({ fixture, observed }: EvalResult): EvalCaseScore => {
+/** No sensitive flag, confidence at the floor, intent at the floor: what a serve needs. */
+export const isServable = (observed: EvalObservation, gates: ServeGates): boolean =>
+  observed.sensitive.length === 0 &&
+  observed.confidence >= gates.min_confidence &&
+  observed.commercial_intent >= gates.min_commercial_intent;
+
+export const scoreCase = ({ fixture, observed }: EvalResult, gates: ServeGates): EvalCaseScore => {
   const group = groupOf(fixture.id);
   return {
     id: fixture.id,
@@ -96,6 +123,8 @@ export const scoreCase = ({ fixture, observed }: EvalResult): EvalCaseScore => {
     turns: fixture.messages?.length ?? 1,
     group,
     intent: observed.commercial_intent,
+    confidence: observed.confidence,
+    servable: isServable(observed, gates),
     band: bandOf(fixture),
     bandOk: withinBand(fixture, observed.commercial_intent),
     missingSensitive: fixture.expect.sensitive.filter(
@@ -149,6 +178,10 @@ export interface EvalSummary {
   };
   bands: { ok: number; checked: number };
   categories: { ok: number; checked: number };
+  /** The gates `servable` was scored against, so a report states its own thresholds. */
+  gates: ServeGates;
+  /** Cases per group that would pass those gates. `sensitive` must be 0. */
+  servable: Record<EvalGroup, number>;
   /** Cases carrying a `messages` array. Their score is the half a single sentence cannot show. */
   multi_turn: number;
   sources: Record<string, number>;
@@ -181,13 +214,17 @@ const round = (value: number, places = 3): number => {
 export interface SummarizeOptions {
   model: string;
   baseUrl: string;
+  gates: ServeGates;
 }
+
+const servableIn = (scores: readonly EvalCaseScore[], group: EvalGroup): number =>
+  scores.filter((score) => score.group === group && score.servable).length;
 
 export const summarize = (
   results: readonly EvalResult[],
-  { model, baseUrl }: SummarizeOptions,
+  { model, baseUrl, gates }: SummarizeOptions,
 ): EvalSummary => {
-  const scores = results.map(scoreCase);
+  const scores = results.map((result) => scoreCase(result, gates));
   const sensitive = scores.filter((score) => score.group === 'sensitive');
   const nonSensitive = scores.filter((score) => score.group !== 'sensitive');
   const expectedCategories = results
@@ -224,6 +261,12 @@ export const summarize = (
     categories: {
       ok: withCategories.filter((score) => score.categoryOk === true).length,
       checked: withCategories.length,
+    },
+    gates,
+    servable: {
+      sensitive: servableIn(scores, 'sensitive'),
+      serve: servableIn(scores, 'serve'),
+      low: servableIn(scores, 'low'),
     },
     multi_turn: scores.filter((score) => score.turns > 1).length,
     sources: tallyOf(results.map((result) => result.observed.source)),
@@ -321,6 +364,8 @@ export const renderReport = (summary: EvalSummary): string => {
     `  sensitive false pos  ${String(summary.false_positives.cases)} of ${String(summary.false_positives.checked)} non-sensitive cases`,
     `  intent bands         ${String(summary.bands.ok)}/${String(summary.bands.checked)} (${pct(summary.bands.ok, summary.bands.checked)})`,
     `  categories           ${String(summary.categories.ok)}/${String(summary.categories.checked)} (${pct(summary.categories.ok, summary.categories.checked)})`,
+    `  would serve          serve ${String(summary.servable.serve)}/${String(summary.by_group.serve)}, low ${String(summary.servable.low)}/${String(summary.by_group.low)}, SENSITIVE ${String(summary.servable.sensitive)}/${String(summary.by_group.sensitive)}${summary.servable.sensitive === 0 ? '' : '  <-- must be 0'}`,
+    `  serve gates          no sensitive flag, confidence >= ${num(summary.gates.min_confidence)}, intent >= ${num(summary.gates.min_commercial_intent)}`,
     `  multi-turn cases     ${String(summary.multi_turn)} of ${String(summary.cases)}`,
     `  source               ${tallyLine(summary.sources)}`,
     `  method               ${tallyLine(summary.methods)}`,

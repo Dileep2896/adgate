@@ -24,6 +24,7 @@ import {
   groupOf,
   renderJson,
   renderReport,
+  type ServeGates,
   summarize,
 } from './eval-classifier-score.js';
 import { runScript } from './run.js';
@@ -67,13 +68,18 @@ export const DEFAULT_EVAL_CONCURRENCY = 4;
 export const EVAL_FIXTURE_PATH = join('fixtures', 'classify-fixtures.json');
 
 /** The classifier is scored under the PolicyConfig defaults, so the run matches a default app. */
-export const EVAL_POLICY: ClassifyPolicy = (() => {
-  const policy = PolicyConfig.parse({ app_id: 'app_eval_classifier' });
-  return {
-    sensitive_detection: policy.sensitive_detection,
-    min_confidence: policy.min_confidence,
-  };
-})();
+const EVAL_DEFAULT_POLICY = PolicyConfig.parse({ app_id: 'app_eval_classifier' });
+
+export const EVAL_POLICY: ClassifyPolicy = {
+  sensitive_detection: EVAL_DEFAULT_POLICY.sensitive_detection,
+  min_confidence: EVAL_DEFAULT_POLICY.min_confidence,
+};
+
+/** The same defaults, as the classification gates a serve has to clear (`servable`). */
+export const EVAL_SERVE_GATES: ServeGates = {
+  min_confidence: EVAL_DEFAULT_POLICY.min_confidence,
+  min_commercial_intent: EVAL_DEFAULT_POLICY.min_commercial_intent,
+};
 
 export interface EvalClassifierArgs {
   model: string | null;
@@ -253,6 +259,7 @@ export const runEval = async (
           commercial_intent: outcome.classification.commercial_intent,
           categories: outcome.classification.categories,
           sensitive: outcome.classification.sensitive,
+          confidence: outcome.classification.confidence,
           method: outcome.classification.method,
           source: outcome.source,
           latency_ms: outcome.latency_ms,
@@ -281,6 +288,7 @@ const main = async (argv: readonly string[]): Promise<string> => {
   const summary = summarize(await runEval(cases, config, args.concurrency), {
     model: config.model,
     baseUrl: config.baseUrl,
+    gates: EVAL_SERVE_GATES,
   });
   process.exitCode = exitCodeFor(summary);
   return args.json ? renderJson(summary) : renderReport(summary);

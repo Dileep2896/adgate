@@ -9,9 +9,11 @@ import {
   failuresOf,
   groupOf,
   hasListedCategory,
+  isServable,
   renderJson,
   renderReport,
   scoreCase,
+  type ServeGates,
   summarize,
   withinBand,
 } from './eval-classifier-score.js';
@@ -35,18 +37,22 @@ const observed = (over: Partial<EvalObservation> = {}): EvalObservation => ({
   commercial_intent: 0.9,
   categories: ['general'],
   sensitive: [],
+  confidence: 0.9,
   method: 'llm',
   source: 'merged',
   latency_ms: 100,
   ...over,
 });
 
+/** The PolicyConfig defaults the real command scores against. */
+const GATES: ServeGates = { min_confidence: 0.7, min_commercial_intent: 0.6 };
+
 const result = (f: ClassifyFixtureCase, over: Partial<EvalObservation> = {}): EvalResult => ({
   fixture: f,
   observed: observed(over),
 });
 
-const OPTIONS = { model: 'test-model', baseUrl: 'https://example.test/v1' };
+const OPTIONS = { model: 'test-model', baseUrl: 'https://example.test/v1', gates: GATES };
 
 describe('groupOf', () => {
   it('reads the group off the fixture id prefix', () => {
@@ -96,7 +102,7 @@ describe('hasListedCategory', () => {
 describe('scoreCase', () => {
   it('lists the expected sensitive categories that are missing', () => {
     const c = fixture('s008', { sensitive: ['health', 'finance'], intent_min: 0, intent_max: 0.2 });
-    const score = scoreCase(result(c, { sensitive: ['health'], commercial_intent: 0.1 }));
+    const score = scoreCase(result(c, { sensitive: ['health'], commercial_intent: 0.1 }), GATES);
     expect(score.missingSensitive).toEqual(['finance']);
     expect(score.falseSensitive).toEqual([]);
     expect(score.bandOk).toBe(true);
@@ -104,15 +110,15 @@ describe('scoreCase', () => {
   });
 
   it('counts a flag on a non-sensitive case as a false positive, never a miss', () => {
-    const score = scoreCase(result(fixture('l006'), { sensitive: ['health'] }));
+    const score = scoreCase(result(fixture('l006'), { sensitive: ['health'] }), GATES);
     expect(score.falseSensitive).toEqual(['health']);
     expect(score.missingSensitive).toEqual([]);
   });
 
   it('reports a category miss only for cases that list categories_any', () => {
     const c = fixture('c001', { categories_any: ['software.devtools.database'] });
-    expect(scoreCase(result(c)).categoryOk).toBe(false);
-    expect(scoreCase(result(fixture('c025'))).categoryOk).toBeNull();
+    expect(scoreCase(result(c), GATES).categoryOk).toBe(false);
+    expect(scoreCase(result(fixture('c025')), GATES).categoryOk).toBeNull();
   });
 });
 
@@ -129,10 +135,10 @@ describe('multi-turn cases', () => {
   };
 
   it('counts the turns on the score and the multi-turn cases in the summary', () => {
-    expect(scoreCase(result(multi, { sensitive: ['health'], commercial_intent: 0.1 })).turns).toBe(
-      3,
-    );
-    expect(scoreCase(result(fixture('c001'))).turns).toBe(1);
+    expect(
+      scoreCase(result(multi, { sensitive: ['health'], commercial_intent: 0.1 }), GATES).turns,
+    ).toBe(3);
+    expect(scoreCase(result(fixture('c001')), GATES).turns).toBe(1);
     const summary = summarize(
       [result(multi, { sensitive: ['health'], commercial_intent: 0.1 }), result(fixture('c001'))],
       OPTIONS,
@@ -257,6 +263,55 @@ describe('exitCodeFor', () => {
     const summary = summarize([perfect, bandMiss, categoryMiss, falsePositive], OPTIONS);
     expect(failuresOf(summary)).toHaveLength(3);
     expect(exitCodeFor(summary)).toBe(0);
+  });
+});
+
+describe('isServable and the servable counts', () => {
+  it('needs all three gates: no sensitive flag, confidence and intent at the floor', () => {
+    expect(isServable(observed(), GATES)).toBe(true);
+    expect(isServable(observed({ sensitive: ['health'] }), GATES)).toBe(false);
+    expect(isServable(observed({ confidence: 0.69 }), GATES)).toBe(false);
+    expect(isServable(observed({ confidence: 0.7 }), GATES)).toBe(true);
+    expect(isServable(observed({ commercial_intent: 0.59 }), GATES)).toBe(false);
+    expect(isServable(observed({ commercial_intent: 0.6 }), GATES)).toBe(true);
+  });
+
+  it('is what the merge confidence rule moves: 0.6 suppresses, 0.9 serves', () => {
+    // The CLASSIFIER-CONFIDENCE change, as the evaluator sees it. Same classification, same
+    // intent; only the merged confidence differs.
+    const c = fixture('c027', { intent_min: 0.6, intent_max: 1 });
+    expect(scoreCase(result(c, { confidence: 0.6 }), GATES).servable).toBe(false);
+    expect(scoreCase(result(c, { confidence: 0.9 }), GATES).servable).toBe(true);
+  });
+
+  it('counts servable cases per group and reports the gates it used', () => {
+    const summary = summarize(
+      [
+        result(fixture('c001', { intent_min: 0.6, intent_max: 1 })),
+        result(fixture('c002', { intent_min: 0.6, intent_max: 1 }), { confidence: 0.5 }),
+        result(fixture('l001', { intent_max: 0.4 }), { commercial_intent: 0.1 }),
+        result(fixture('s001', { sensitive: ['health'] }), {
+          sensitive: ['health'],
+          commercial_intent: 0.1,
+        }),
+      ],
+      OPTIONS,
+    );
+    expect(summary.servable).toEqual({ serve: 1, low: 0, sensitive: 0 });
+    expect(summary.gates).toEqual(GATES);
+    const report = renderReport(summary);
+    expect(report).toContain('would serve          serve 1/2, low 0/1, SENSITIVE 0/1');
+    expect(report).toContain('confidence >= 0.70, intent >= 0.60');
+    expect(report).not.toContain('must be 0');
+  });
+
+  it('marks a sensitive case that would serve, which can only happen after a recall miss', () => {
+    const escaped = result(fixture('s001', { sensitive: ['health'] }), { commercial_intent: 0.9 });
+    const summary = summarize([escaped], OPTIONS);
+    expect(summary.servable.sensitive).toBe(1);
+    expect(renderReport(summary)).toContain('SENSITIVE 1/1  <-- must be 0');
+    // Losing every flag is already a sensitive miss, so the run had already failed.
+    expect(exitCodeFor(summary)).toBe(1);
   });
 });
 

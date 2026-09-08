@@ -1,53 +1,14 @@
-import { Classification, type ContentCategory, type SensitiveCategory } from '@adgateio/schemas';
+import { Classification } from '@adgateio/schemas';
 import { describe, expect, it } from 'vitest';
 
-import { fakeLlmSuccess } from './llm/fake.js';
-import type { LlmClassificationFields } from './llm/fake.js';
 import { PROMPT_VERSION } from './llm/prompt.js';
+import { balanced, commercialMatch, llm, rules, sensitiveMatch, strict } from './merge.fixture.js';
 import { mergeClassifications, rulesFired, strongSensitiveFlags } from './merge.js';
-import type { CommercialMatch, RulesResult, SensitiveMatch } from './rules/types.js';
-import { RULES_VERSION } from './rules/version.js';
-import type { ClassifyPolicy } from './types.js';
 
-const strict: ClassifyPolicy = { sensitive_detection: 'strict', min_confidence: 0.7 };
-const balanced: ClassifyPolicy = { sensitive_detection: 'balanced', min_confidence: 0.7 };
-
-const sensitiveMatch = (
-  category: SensitiveCategory,
-  strength: 'strong' | 'weak',
-  flagged = true,
-): SensitiveMatch => ({ category, strength, terms: ['term'], flagged });
-
-const commercialMatch = (category: ContentCategory & `${string}.${string}`): CommercialMatch => ({
-  category,
-  strength: 'topic',
-  score: 0.5,
-  terms: ['postgres'],
-});
-
-interface RulesFields {
-  commercial_intent?: number;
-  confidence?: number;
-  sensitive?: SensitiveMatch[];
-  commercial?: CommercialMatch[];
-}
-
-const rules = (fields: RulesFields = {}): RulesResult => {
-  const sensitive = fields.sensitive ?? [];
-  const commercial = fields.commercial ?? [];
-  return {
-    commercial_intent: fields.commercial_intent ?? 0,
-    categories: commercial.length > 0 ? commercial.map((match) => match.category) : ['general'],
-    sensitive: sensitive.filter((match) => match.flagged).map((match) => match.category),
-    confidence: fields.confidence ?? 0.3,
-    method: 'rules',
-    prompt_version: RULES_VERSION,
-    matches: { sensitive, commercial, intent: [], informational: [] },
-  };
-};
-
-const llm = (fields: Partial<LlmClassificationFields>) => fakeLlmSuccess(fields).classification;
-
+/**
+ * The sensitive-flag and intent-cap half of mergeClassifications. The confidence rule has its
+ * own file, merge-confidence.test.ts.
+ */
 describe('mergeClassifications', () => {
   it('lets the LLM win on categories, intent and confidence when rules found nothing', () => {
     const merged = mergeClassifications({
@@ -69,38 +30,6 @@ describe('mergeClassifications', () => {
     });
     expect(merged).not.toHaveProperty('matches');
     expect(Classification.parse(merged)).toEqual(merged);
-  });
-
-  it('takes min(rules, llm) confidence when rules matched a commercial category', () => {
-    const fired = rules({
-      commercial: [commercialMatch('software.devtools.database')],
-      commercial_intent: 0.2,
-      confidence: 0.45,
-    });
-    const merged = mergeClassifications({
-      rules: fired,
-      llm: llm({
-        commercial_intent: 0.9,
-        categories: ['software.devtools.hosting'],
-        confidence: 0.9,
-      }),
-      policy: strict,
-    });
-    expect(merged.confidence).toBe(0.45);
-    expect(merged.categories).toEqual(['software.devtools.hosting']);
-    expect(merged.commercial_intent).toBe(0.9);
-  });
-
-  it('takes min(rules, llm) confidence when rules flagged a sensitive category', () => {
-    const fired = rules({ sensitive: [sensitiveMatch('health', 'weak')], confidence: 0.75 });
-    expect(
-      mergeClassifications({ rules: fired, llm: llm({ confidence: 0.9 }), policy: strict })
-        .confidence,
-    ).toBe(0.75);
-    expect(
-      mergeClassifications({ rules: fired, llm: llm({ confidence: 0.6 }), policy: strict })
-        .confidence,
-    ).toBe(0.6);
   });
 
   it('strict: sensitive is the union of rules and LLM flags in taxonomy order, intent capped at 0.2', () => {

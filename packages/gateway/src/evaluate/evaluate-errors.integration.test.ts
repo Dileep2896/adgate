@@ -207,7 +207,28 @@ describe('POST /v1/evaluate with an LLM', () => {
     });
   });
 
-  it('suppresses with low_confidence when the merged confidence is under the threshold', async () => {
+  it('suppresses with low_confidence when an unsure LLM contradicts the rules', async () => {
+    // The rules read TEXT.serve as software.devtools.*; an LLM that names an unrelated category
+    // conflicts with them, so mergeClassifications takes min(rules, llm) and the turn suppresses.
+    const llm = new FakeLlmClassifier(
+      fakeLlmSuccess({
+        commercial_intent: 0.84,
+        categories: ['travel.hotels'],
+        confidence: 0.3,
+      }),
+    );
+    await isolated({ overrides: { llm } }, async (withLlm) => {
+      const res = await withLlm.evaluate(evaluateBody(withLlm.appId));
+      expect(res.reason).toBe('low_confidence');
+      expect(res.classification.method).toBe('llm');
+      expect(res.classification.confidence).toBe(0.3);
+    });
+  });
+
+  it('serves when an unsure LLM agrees with the rules, never below what rules alone would give', async () => {
+    // The other half of the corroboration rule (packages/core classify/merge.ts). Same unsure
+    // model, but it names the category the rules found, so merged confidence is max(rules, llm)
+    // and the turn is no less servable than it would have been with no LLM configured at all.
     const llm = new FakeLlmClassifier(
       fakeLlmSuccess({
         commercial_intent: 0.84,
@@ -217,9 +238,9 @@ describe('POST /v1/evaluate with an LLM', () => {
     );
     await isolated({ overrides: { llm } }, async (withLlm) => {
       const res = await withLlm.evaluate(evaluateBody(withLlm.appId));
-      expect(res.reason).toBe('low_confidence');
       expect(res.classification.method).toBe('llm');
-      expect(res.classification.confidence).toBe(0.3);
+      expect(res.classification.confidence).toBeGreaterThanOrEqual(0.7);
+      expect(res.reason).not.toBe('low_confidence');
     });
   });
 
